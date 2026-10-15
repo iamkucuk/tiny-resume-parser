@@ -152,18 +152,12 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit(f"label mask check failed: {n_img} image tokens for {n_tiles} tiles")
     print(f"mask check ok: {n_img} image tokens masked, {int((probe['labels'] != -100).sum())} answer tokens learnt")
 
-    # bf16 on CUDA/MPS; float32 on CPU, where bf16 math without hardware support stalled a run at step 0.
-    cuda = torch.cuda.is_available()
-    accel = cuda or torch.backends.mps.is_available()
-    model = AutoModelForImageTextToText.from_pretrained(args.model, dtype=torch.bfloat16 if accel else torch.float32)
+    # Weights always in float32: in pure bf16 many small updates round away (and gave grad-norm spikes). On a GPU
+    # with bf16 (A100, L4, H100) the matmuls run in bf16 autocast; on a T4, Apple MPS or a CPU, in float32.
+    bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+    model = AutoModelForImageTextToText.from_pretrained(args.model, dtype=torch.float32)
     model.enable_input_require_grads()
-    print(f"full fine-tune: {sum(p.numel() for p in model.parameters()) / 1e6:.1f} M parameters")
-    if cuda:
-        # Mixed precision: weights in float32, matmuls in bf16 autocast (pure bf16 gave grad-norm spikes).
-        if not torch.cuda.is_bf16_supported():
-            raise SystemExit(f"{torch.cuda.get_device_name()} has no bf16; use an A100, L4 or newer GPU")
-        for p in model.parameters():
-            p.data = p.data.float()
+    print(f"full fine-tune: {sum(p.numel() for p in model.parameters()) / 1e6:.1f} M parameters, bf16 {bf16}")
 
     trainer = Trainer(
         model=model,
@@ -174,7 +168,7 @@ def main(argv: list[str] | None = None) -> int:
             lr_scheduler_type="cosine",
             warmup_ratio=0.03,
             weight_decay=0.01,
-            bf16=cuda,
+            bf16=bf16,
             per_device_train_batch_size=args.batch,
             gradient_accumulation_steps=args.accum,
             gradient_checkpointing=not args.no_grad_ckpt,

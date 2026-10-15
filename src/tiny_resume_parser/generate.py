@@ -1,7 +1,8 @@
 """Load a trained student and generate answers for page images (used by evaluate.py and parse.py).
 
 Generation is greedy. Pages in one batch are left-padded, so every answer continues from the right end of its row.
-On CPU the model runs in float32: bf16 is ~80x slower on CPUs without bf16 hardware.
+The model runs in bf16 where the hardware supports it, else in float32 (bf16 is ~80x slower on CPUs without bf16
+hardware, and T4 GPUs have none).
 """
 
 from __future__ import annotations
@@ -22,7 +23,8 @@ def load_model(model: str, device: str | None = None):
     device = pick_device(device)
     processor = load_processor(model)
     processor.tokenizer.padding_side = "left"
-    m = AutoModelForImageTextToText.from_pretrained(model, dtype=torch.float32 if device == "cpu" else torch.bfloat16)
+    bf16 = device == "mps" or (device == "cuda" and torch.cuda.is_bf16_supported())
+    m = AutoModelForImageTextToText.from_pretrained(model, dtype=torch.bfloat16 if bf16 else torch.float32)
     return m.to(device).eval(), processor, device
 
 
