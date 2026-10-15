@@ -2,12 +2,13 @@
 
     from colab_utils import summary, TrainingDashboard, generations_report
     summary("Data", {"images": 1726}, ok=True)                 # one status card
-    train_lora.main(args, callbacks=[TrainingDashboard()])     # live dashboard instead of tqdm
+    tiny_resume_parser.train.main(args, callbacks=[TrainingDashboard()])     # live dashboard instead of tqdm
     generations_report(out / "generations.jsonl")              # valid/invalid table with answers
 
 Plain HTML + inline SVG, no extra packages. Colours are semi-transparent so the cards read on
 Colab's light and dark themes.
 """
+
 from __future__ import annotations
 
 import html
@@ -40,8 +41,13 @@ def _fmt(v) -> str:
 
 
 def _grid(items: dict) -> str:
-    return '<div class="grid">' + "".join(
-        f'<div><div class="k">{html.escape(k)}</div><div class="v">{_fmt(v)}</div></div>' for k, v in items.items()) + "</div>"
+    return (
+        '<div class="grid">'
+        + "".join(
+            f'<div><div class="k">{html.escape(k)}</div><div class="v">{_fmt(v)}</div></div>' for k, v in items.items()
+        )
+        + "</div>"
+    )
 
 
 def _status(ok: bool | None) -> str:
@@ -58,10 +64,14 @@ def _sparkline(ys: list[float], w: int = 520, h: int = 90) -> str:
         return '<div class="k">loss chart appears after 2 logged steps</div>'
     lo, hi = min(ys), max(ys)
     span = (hi - lo) or 1.0
-    pts = " ".join(f"{i * (w - 10) / (len(ys) - 1) + 5:.1f},{h - 5 - (y - lo) * (h - 10) / span:.1f}" for i, y in enumerate(ys))
-    return (f'<svg width="{w}" height="{h}" style="display:block"><polyline fill="none" stroke="#3b82f6" '
-            f'stroke-width="1.8" points="{pts}"/><text x="5" y="12" font-size="10" fill="currentColor" opacity=".6">'
-            f'max {hi:.3g}</text><text x="5" y="{h - 2}" font-size="10" fill="currentColor" opacity=".6">min {lo:.3g}</text></svg>')
+    pts = " ".join(
+        f"{i * (w - 10) / (len(ys) - 1) + 5:.1f},{h - 5 - (y - lo) * (h - 10) / span:.1f}" for i, y in enumerate(ys)
+    )
+    return (
+        f'<svg width="{w}" height="{h}" style="display:block"><polyline fill="none" stroke="#3b82f6" '
+        f'stroke-width="1.8" points="{pts}"/><text x="5" y="12" font-size="10" fill="currentColor" opacity=".6">'
+        f'max {hi:.3g}</text><text x="5" y="{h - 2}" font-size="10" fill="currentColor" opacity=".6">min {lo:.3g}</text></svg>'
+    )
 
 
 def _hms(s: float) -> str:
@@ -81,6 +91,7 @@ class TrainingDashboard(TrainerCallback):
 
     def _render(self, state) -> None:
         import torch
+
         step, total = state.global_step, max(state.max_steps, 1)
         elapsed = time.time() - self.t0
         per_step = elapsed / step if step else None
@@ -97,13 +108,17 @@ class TrainingDashboard(TrainerCallback):
             "elapsed": _hms(elapsed),
             "time / step": f"{per_step:.1f} s" if per_step else "–",
             "time left": _hms(per_step * (total - step)) if per_step else "–",
-            "memory": f"{torch.cuda.max_memory_allocated() / 1e9:.1f} GB peak GPU" if torch.cuda.is_available() else "CPU run",
+            "memory": f"{torch.cuda.max_memory_allocated() / 1e9:.1f} GB peak GPU"
+            if torch.cuda.is_available()
+            else "CPU run",
         }
         ok = False if nan else (True if self.done else None)
         state_txt = "finished" if self.done else "running"
-        body = (f'<h4>{_status(ok)}{html.escape(self.title)} — {state_txt}{" — loss is NaN" if nan else ""}</h4>'
-                f'<div class="bar"><div style="width:{100 * step / total:.1f}%"></div></div>{_grid(items)}'
-                f'<div style="margin-top:8px">{_sparkline(losses)}</div>')
+        body = (
+            f"<h4>{_status(ok)}{html.escape(self.title)} — {state_txt}{' — loss is NaN' if nan else ''}</h4>"
+            f'<div class="bar"><div style="width:{100 * step / total:.1f}%"></div></div>{_grid(items)}'
+            f'<div style="margin-top:8px">{_sparkline(losses)}</div>'
+        )
         content = HTML(f'{_CSS}<div class="cvp">{body}</div>')
         if self.handle is None:
             self.handle = display(content, display_id=True)
@@ -135,9 +150,15 @@ def generations_report(path: Path, preview_chars: int = 1500) -> None:
     for r in rows:
         ok = r["result"] == "valid"
         err = "" if ok else html.escape(r["result"][:160])
-        trs.append(f'<tr><td>{_status(ok)}</td><td>{html.escape(r["cv_id"])} p{r["page"]}</td><td>{len(r["answer"]):,}</td>'
-                   f'<td>{err}<details><summary class="k">answer</summary><pre>{html.escape(r["answer"][:preview_chars])}'
-                   f'</pre></details></td></tr>')
-    head = f'<h4>{_status(valid == len(rows))}Generated answers: {valid} / {len(rows)} valid, {len({r["answer"] for r in rows})} distinct</h4>'
-    display(HTML(f'{_CSS}<div class="cvp">{head}<table><tr><th></th><th>page</th><th>chars</th><th>error / answer</th></tr>'
-                 f'{"".join(trs)}</table></div>'))
+        trs.append(
+            f"<tr><td>{_status(ok)}</td><td>{html.escape(r['cv_id'])} p{r['page']}</td><td>{len(r['answer']):,}</td>"
+            f'<td>{err}<details><summary class="k">answer</summary><pre>{html.escape(r["answer"][:preview_chars])}'
+            f"</pre></details></td></tr>"
+        )
+    head = f"<h4>{_status(valid == len(rows))}Generated answers: {valid} / {len(rows)} valid, {len({r['answer'] for r in rows})} distinct</h4>"
+    display(
+        HTML(
+            f'{_CSS}<div class="cvp">{head}<table><tr><th></th><th>page</th><th>chars</th><th>error / answer</th></tr>'
+            f"{''.join(trs)}</table></div>"
+        )
+    )

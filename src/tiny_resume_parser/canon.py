@@ -5,8 +5,9 @@ Rules (no page text is dropped):
   interests.keywords) are split on , ; | • · into one item each;
 - interests become one entry per interest: names and keywords merged, each as {"name": ...};
 - a skill group with no keywords is a list of skills, not a group name: its name moves to keywords.
-Used to build a training label file (python src/canon.py IN OUT) and by rescore.py --canon on answers and gold alike.
+Used to build a training label file (python -m tiny_resume_parser.canon IN OUT) and by rescore.py --canon on answers and gold alike.
 """
+
 from __future__ import annotations
 
 import copy
@@ -42,7 +43,7 @@ def canon(record: dict) -> dict:
 
 if __name__ == "__main__":
     src, dst = sys.argv[1], sys.argv[2]
-    rows = [json.loads(l) for l in open(src)]
+    rows = [json.loads(line) for line in open(src)]
     with open(dst, "w") as f:
         for row in rows:
             row["record"] = canon(row["record"])

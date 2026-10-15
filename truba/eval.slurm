@@ -15,11 +15,11 @@ set -euo pipefail
 NAME=$1; W=$2; EVAL_ARGS=$3
 D=/arf/scratch/fkucuk/cv_parser_test; R=$D/cv_parser; OUT=$R/runs/$NAME
 export HF_HOME=$D/hf_cache HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false
-source $D/venv/bin/activate; cd $R; mkdir -p $OUT
+source $D/venv/bin/activate; cd $R; export PYTHONPATH=$R/src; mkdir -p $OUT  # package without installing into the shared venv
 echo "== $NAME: score $W | eval $EVAL_ARGS"
 for SET in "gold --limit 50" "val"; do
   S=${SET%% *}; E=$OUT/eval_final_${S}
-  [ -e $E/summary.json ] || python -u src/evaluate.py --model $W --set $SET --batch 8 --out $E $EVAL_ARGS > $E.log 2>&1 || echo "eval failed: $E"
-  python src/rescore.py $E 2>/dev/null | grep -v Warn || true
+  [ -e $E/summary.json ] || python -u -m tiny_resume_parser.evaluate --model $W --set $SET --batch 8 --out $E $EVAL_ARGS > $E.log 2>&1 || echo "eval failed: $E"
+  python -m tiny_resume_parser.rescore $E 2>/dev/null | grep -v Warn || true
 done
 echo "== done $NAME"

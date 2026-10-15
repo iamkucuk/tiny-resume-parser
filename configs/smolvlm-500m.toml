@@ -1,0 +1,12 @@
+# SmolVLM-500M: the recipe behind the best SmolVLM model (weight average of 3 seeds, 0.644 / 0.676 lenient F1).
+# python -m tiny_resume_parser.train --config configs/smolvlm-500m.toml --seed 42 --out runs/NAME
+model = "HuggingFaceTB/SmolVLM-500M-Instruct"
+full_ft = true
+train_vision = true
+augment = 0.5
+lr = 6e-5               # 6x the InternVL rate: +0.22 / +0.19 over the InternVL recipe
+epochs = 10
+max_patches = 30        # longest edge 3072 px; 30 tiles beat 12 by +0.043 / +0.032 (2-seed means)
+no_grad_ckpt = true
+save_every_epoch = true
+workers = 8

@@ -1,7 +1,7 @@
-"""Deterministic checks of teacher page labels (src/auto_label.py output) against tesseract OCR.
+"""Deterministic checks of teacher page labels (tiny_resume_parser.label output) against tesseract OCR.
 
 Per page:
-  - schema: the record still validates against src/schema.py
+  - schema: the record still validates against tiny_resume_parser/schema.py
   - email: emails in the OCR text vs basics.emails, both directions
   - phone: the digits of each basics.phones entry appear in the OCR digits
   - ungrounded values: text values whose words are mostly absent from the OCR
@@ -13,26 +13,36 @@ OCR is tesseract 5 (fra+eng, tessdata_fast) of every page, one text file per ima
 data/processed/ocr_tesseract/<image file name>.txt. It has its own errors, so a flag is a
 reason to look, not a verdict; the Haiku page check and human review decide.
 """
+
 from __future__ import annotations
 
 import argparse
 import difflib
 import json
 import re
-import sys
 import unicodedata
 from pathlib import Path
 
 from pydantic import ValidationError
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from schema import to_record  # noqa: E402
+from tiny_resume_parser.schema import to_record
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 OCR_DIR = PROJECT_ROOT / "data" / "processed" / "ocr_tesseract"
 
 # Values the teacher converts or classifies rather than copies.
-SKIP_KEYS = {"type", "corrected", "kind", "hasPhoto", "network", "startDate", "endDate", "date", "releaseDate", "birthDate"}
+SKIP_KEYS = {
+    "type",
+    "corrected",
+    "kind",
+    "hasPhoto",
+    "network",
+    "startDate",
+    "endDate",
+    "date",
+    "releaseDate",
+    "birthDate",
+}
 EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
 
 
@@ -59,8 +69,9 @@ def grounding(value: str, ocr_set: set[str], ocr_list: list[str]) -> float:
     toks = [t for t in norm_tokens(value) if len(t) >= 2]
     if not toks:
         return 1.0
-    hit = sum(t in ocr_set or (len(t) >= 4 and bool(difflib.get_close_matches(t, ocr_list, n=1, cutoff=0.8)))
-              for t in toks)
+    hit = sum(
+        t in ocr_set or (len(t) >= 4 and bool(difflib.get_close_matches(t, ocr_list, n=1, cutoff=0.8))) for t in toks
+    )
     return hit / len(toks)
 
 
@@ -105,8 +116,9 @@ def check_row(row: dict, threshold: float) -> dict:
         if g < threshold:
             ungrounded.append({"path": path, "value": value, "grounding": round(g, 2)})
     words = {t for t in ocr_set if len(t) >= 4 and t.isalpha()}
-    out.update(n_values=n_values, ungrounded=ungrounded,
-               coverage=round(len(words & rec_tokens) / max(len(words), 1), 3))
+    out.update(
+        n_values=n_values, ungrounded=ungrounded, coverage=round(len(words & rec_tokens) / max(len(words), 1), 3)
+    )
     if ungrounded:
         out["flags"].append(f"ungrounded_values:{len(ungrounded)}")
     return out
@@ -114,10 +126,14 @@ def check_row(row: dict, threshold: float) -> dict:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Check teacher page labels against OCR.")
-    ap.add_argument("labels", type=Path, help="JSONL from src/auto_label.py")
+    ap.add_argument("labels", type=Path, help="JSONL from tiny_resume_parser.label")
     ap.add_argument("--output", type=Path, required=True, help="JSONL report, one line per page")
-    ap.add_argument("--threshold", type=float, default=0.5,
-                    help="flag a value when fewer than this share of its words are in the OCR")
+    ap.add_argument(
+        "--threshold",
+        type=float,
+        default=0.5,
+        help="flag a value when fewer than this share of its words are in the OCR",
+    )
     ap.add_argument("--min-coverage", type=float, default=0.7)
     args = ap.parse_args()
 
@@ -135,8 +151,10 @@ def main() -> int:
 
     flagged = [r for r in report if r["flags"]]
     covs = sorted(r["coverage"] for r in report if "coverage" in r)
-    print(f"{len(report)} pages, {len(flagged)} flagged; coverage median "
-          f"{covs[len(covs) // 2] if covs else None}, min {covs[0] if covs else None}")
+    print(
+        f"{len(report)} pages, {len(flagged)} flagged; coverage median "
+        f"{covs[len(covs) // 2] if covs else None}, min {covs[0] if covs else None}"
+    )
     for r in flagged:
         print(f"  {r['cv_id'][:40]:40s} p{r['page']} {'; '.join(r['flags'])}")
     return 0

@@ -1,11 +1,12 @@
-"""Build the reading-stage training file from granite-docling transcripts (src/transcribe.py shards).
+"""Build the reading-stage training file from granite-docling transcripts (experiments/transcribe.py shards).
 
-    python src/reading_file.py --out data/processed/reading_train.jsonl data/processed/transcripts_s*.jsonl
+    python experiments/reading_file.py --out data/processed/reading_train.jsonl data/processed/transcripts_s*.jsonl
 
 Cleaning: a transcript is cut before the third copy of any line (granite-docling loops repeat lines until the token
 limit; a third copy is where the cut costs little real text), then dropped if under 300 characters (empty pages:
 granite-docling returned the page as one picture) or if under 80 % of its lines are unique. Prints the counts.
 """
+
 import argparse
 import json
 from collections import Counter

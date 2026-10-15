@@ -1,10 +1,11 @@
-"""Progress of a running src/auto_label.py job, read from its output JSONL, log and PID file.
+"""Progress of a running tiny_resume_parser.label job, read from its output JSONL, log and PID file.
 
-    .venv/bin/python src/label_progress.py data/processed/labels_full_v6.jsonl --ids data/processed/cv_ids_full_size.json
+    python scripts/label_progress.py data/processed/labels_full_v6.jsonl --ids data/processed/cv_ids_full_size.json
 
 Prints: whether the process is alive, pages done / total, ok and failed counts, speed over the
 last hour, estimated time left, retries and rate-limit waits, and the latest failures.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -30,9 +31,11 @@ def _alive(pid_path: Path) -> str:
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Show progress of an auto_label.py run.")
+    ap = argparse.ArgumentParser(description="Show progress of an tiny_resume_parser.label run.")
     ap.add_argument("output", type=Path, help="the JSONL the run writes to")
-    ap.add_argument("--ids", type=Path, help="JSON list of cv_ids the run was limited to (auto_label.py --ids)")
+    ap.add_argument(
+        "--ids", type=Path, help="JSON list of cv_ids the run was limited to (tiny_resume_parser.label --ids)"
+    )
     args = ap.parse_args()
 
     docs = [json.loads(line) for line in DOCUMENTS_PATH.read_text().splitlines()]
@@ -58,13 +61,21 @@ def main() -> int:
     print(f"pages ok:       {n_ok} / {total} ({100 * n_ok / total:.1f}%)")
     print(f"pages not ok:   {sum(v for k, v in status.items() if k != 'ok')} {dict(status - Counter(ok=n_ok)) or ''}")
     print(f"speed:          {per_hour:.0f} pages/hour over the last hour")
-    print(f"time left:      {left / per_hour:.1f} h" if per_hour else "time left:      unknown (no pages finished in the last hour)")
+    print(
+        f"time left:      {left / per_hour:.1f} h"
+        if per_hour
+        else "time left:      unknown (no pages finished in the last hour)"
+    )
     print(f"pages retried:  {retried}; attempt outcomes: {dict(att)}")
     if rows:
-        print(f"last page:      {time.strftime('%H:%M:%S', time.localtime(rows[-1]['ts']))} {rows[-1]['cv_id']} p{rows[-1]['page']}")
+        print(
+            f"last page:      {time.strftime('%H:%M:%S', time.localtime(rows[-1]['ts']))} {rows[-1]['cv_id']} p{rows[-1]['page']}"
+        )
     for r in [r for r in latest.values() if r["status"] != "ok"][-5:]:
         last = (r.get("attempts") or [{}])[-1]
-        print(f"  failed: {r['cv_id']} p{r['page']} {r['status']}: {last.get('status')} {str(last.get('errors'))[:150]}")
+        print(
+            f"  failed: {r['cv_id']} p{r['page']} {r['status']}: {last.get('status')} {str(last.get('errors'))[:150]}"
+        )
     return 0
 
 

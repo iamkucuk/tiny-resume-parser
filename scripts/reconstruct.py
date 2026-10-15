@@ -25,19 +25,17 @@ Coordinate space: COCO bboxes are absolute pixels on each image's own canvas
 (`width` × `height`, which varies per page). Passed through unchanged;
 `schema.record_to_doctags(page_size=(width, height))` converts to loc tokens.
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import re
-import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = PROJECT_ROOT / "data"
@@ -81,28 +79,33 @@ def load_images() -> list[dict]:
             boxes_by_image[ann["image_id"]].append((cat_map[ann["category_id"]], ann["bbox"]))
         for im in coco["images"]:
             cv_key, page_no = parse_upload_name(im["extra"]["name"])
-            images.append({
-                "upload_name": im["extra"]["name"],
-                "cv_key": cv_key,
-                "page": page_no,
-                "image_path": f"roboflow_source/{split}/{im['file_name']}",
-                "split": split,
-                "image_id": im["id"],
-                "width": im["width"],
-                "height": im["height"],
-                "full_size": (im["width"], im["height"]) != SHRUNK_SIZE,
-                "boxes": boxes_by_image.get(im["id"], []),
-            })
+            images.append(
+                {
+                    "upload_name": im["extra"]["name"],
+                    "cv_key": cv_key,
+                    "page": page_no,
+                    "image_path": f"roboflow_source/{split}/{im['file_name']}",
+                    "split": split,
+                    "image_id": im["id"],
+                    "width": im["width"],
+                    "height": im["height"],
+                    "full_size": (im["width"], im["height"]) != SHRUNK_SIZE,
+                    "boxes": boxes_by_image.get(im["id"], []),
+                }
+            )
     return images
 
 
 def duplicate_clusters(images: list[dict]) -> list[int]:
     """Cluster id per image; images in one cluster are the same page."""
-    fps = np.stack([
-        np.asarray(Image.open(DATA_DIR / im["image_path"]).convert("L")
-                   .resize((FP_SIZE, FP_SIZE), Image.BOX), np.float32).ravel()
-        for im in images
-    ])
+    fps = np.stack(
+        [
+            np.asarray(
+                Image.open(DATA_DIR / im["image_path"]).convert("L").resize((FP_SIZE, FP_SIZE), Image.BOX), np.float32
+            ).ravel()
+            for im in images
+        ]
+    )
     fps -= fps.mean(1, keepdims=True)
     fps /= np.linalg.norm(fps, axis=1, keepdims=True) + 1e-6
     corr = fps @ fps.T
@@ -161,13 +164,28 @@ def reconstruct(images: list[dict], clusters: list[int]) -> tuple[list[dict], Co
                 prev = p
                 best = _best(copies)
                 stats["dropped_same_name_copies"] += len(copies) - 1
-                pages_out.append({
-                    "page": p,
-                    **{k2: best[k2] for k2 in ("image_path", "upload_name", "split", "image_id",
-                                               "width", "height", "full_size", "boxes", "cluster")},
-                })
-            docs.append({"cv_id": cv_id, "num_pages": len(pages_out),
-                         "multipage": len(pages_out) > 1, "pages": pages_out})
+                pages_out.append(
+                    {
+                        "page": p,
+                        **{
+                            k2: best[k2]
+                            for k2 in (
+                                "image_path",
+                                "upload_name",
+                                "split",
+                                "image_id",
+                                "width",
+                                "height",
+                                "full_size",
+                                "boxes",
+                                "cluster",
+                            )
+                        },
+                    }
+                )
+            docs.append(
+                {"cv_id": cv_id, "num_pages": len(pages_out), "multipage": len(pages_out) > 1, "pages": pages_out}
+            )
 
     # Cross-name duplicates: a CV whose every page is a duplicate of a page in an
     # earlier-kept CV of the same length is the same CV under another name.
@@ -188,8 +206,7 @@ def reconstruct(images: list[dict], clusters: list[int]) -> tuple[list[dict], Co
         for p in d["pages"]:
             owners[p["cluster"]].add(d["cv_id"])
     for d in kept:
-        d["shares_page_with"] = sorted(
-            {o for p in d["pages"] for o in owners[p["cluster"]]} - {d["cv_id"]})
+        d["shares_page_with"] = sorted({o for p in d["pages"] for o in owners[p["cluster"]]} - {d["cv_id"]})
         d["all_full_size"] = all(p["full_size"] for p in d["pages"])
         for p in d["pages"]:
             del p["cluster"]
@@ -217,8 +234,10 @@ def main() -> int:
 
     pages = [p for r in records for p in r["pages"]]
     print(f"\nWrote {len(records)} CV records to {args.output}")
-    print(f"  pages: {len(pages)}  (full-size {sum(p['full_size'] for p in pages)}, "
-          f"640x640 {sum(not p['full_size'] for p in pages)})")
+    print(
+        f"  pages: {len(pages)}  (full-size {sum(p['full_size'] for p in pages)}, "
+        f"640x640 {sum(not p['full_size'] for p in pages)})"
+    )
     print(f"  CVs with every page full-size: {sum(r['all_full_size'] for r in records)}")
     print(f"  multi-page CVs: {sum(r['multipage'] for r in records)}")
     print(f"  pages with >=1 box: {sum(1 for p in pages if p['boxes'])}")

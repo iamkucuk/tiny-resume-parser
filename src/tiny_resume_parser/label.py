@@ -1,4 +1,4 @@
-"""Teacher labeling: one CV page image -> one CVRecord (src/schema.py) via a teacher VLM.
+"""Teacher labeling: one CV page image -> one CVRecord (schema.py) via a teacher VLM.
 
 Default teacher: ``glm-5.3-flash`` through the LiteLLM proxy (decision 2026-10-09, docs/PLAN.md).
 One request per page; multi-page CVs are merged later by code (docs/PLAN.md "Multi-page").
@@ -21,6 +21,7 @@ Output: one JSONL line per page, appended:
 
 The API key is read from LITELLM_API_KEY: the environment, else .env at the project root.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,7 +30,6 @@ import io
 import json
 import os
 import random
-import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -38,8 +38,7 @@ import requests
 from PIL import Image
 from pydantic import ValidationError
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-from schema import entry_templates, template, to_record  # noqa: E402
+from .schema import entry_templates, template, to_record
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
@@ -61,8 +60,14 @@ DEFAULT_BASE_URL = os.environ.get("LITELLM_BASE_URL", "https://litellm.furkankuc
 DEFAULT_MODEL = os.environ.get("VLABEL_MODEL", "glm-5.3-flash")
 
 _REFUSAL_MARKERS = (
-    "no image", "cannot see", "forgot to attach", "forgot to include",
-    "please provide", "please upload", "upload the image", "i don't see an image",
+    "no image",
+    "cannot see",
+    "forgot to attach",
+    "forgot to include",
+    "please provide",
+    "please upload",
+    "upload the image",
+    "i don't see an image",
     "didn't receive",
 )
 
@@ -92,8 +97,9 @@ Rules:
 14. Anything on the page that fits no key goes to extra as {{"section": the heading it is under, "label": its label, "value": the text}}. Do not drop information. Section headings, page numbers and decorative text are not information.
 15. corrections: one entry per place you fixed under rule 1: {{"original": the word or words as written on the page, "corrected": what you wrote instead, "kind": "spelling" or "grammar"}}. Changed letters or accents of a word are "spelling"; changed gender, plural or verb form agreement is "grammar". Every word whose letters or accents differ from the page must be listed, one entry per place. corrections is [] when nothing was fixed."""
 
-FIX_PROMPT = ("Your JSON failed validation against the template:\n{errors}\n"
-              "Return the corrected, complete JSON object only.")
+FIX_PROMPT = (
+    "Your JSON failed validation against the template:\n{errors}\nReturn the corrected, complete JSON object only."
+)
 
 MAX_RATE_LIMIT_WAITS = 30
 SMALL_PAGE_PX = 1500  # longest side below this -> upscale 2x (1,130 of 2,451 pages)
@@ -107,7 +113,7 @@ def _extract_json(raw: str) -> dict | None:
     if "{" not in s or "}" not in s:
         return None
     try:
-        obj = json.loads(s[s.index("{"): s.rindex("}") + 1])
+        obj = json.loads(s[s.index("{") : s.rindex("}") + 1])
     except json.JSONDecodeError:
         return None
     return obj if isinstance(obj, dict) else None
@@ -135,10 +141,12 @@ def _image_part(path: Path) -> tuple[dict, int]:
     return {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}, factor
 
 
-STRIPS_NOTE = ("The first image is the whole page. The next {n} images are the same page cut into {n} "
-               "horizontal strips from top to bottom, enlarged for reading small text. Neighbouring strips "
-               "overlap slightly, so text in an overlap appears in two strips: record it once. Use the whole "
-               "page for the layout and the strips to read every letter.\n\n")
+STRIPS_NOTE = (
+    "The first image is the whole page. The next {n} images are the same page cut into {n} "
+    "horizontal strips from top to bottom, enlarged for reading small text. Neighbouring strips "
+    "overlap slightly, so text in an overlap appears in two strips: record it once. Use the whole "
+    "page for the layout and the strips to read every letter.\n\n"
+)
 
 
 def _strip_parts(path: Path, n: int, factor: int) -> list[dict]:
@@ -161,17 +169,29 @@ def _strip_parts(path: Path, n: int, factor: int) -> list[dict]:
     return parts
 
 
-def label_page(sess: requests.Session, img_path: Path, *, model: str, base_url: str, key: str,
-               max_tokens: int, max_retries: int, retry_sleep: float,
-               strips: int = 0) -> tuple[dict | None, list[dict], int]:
+def label_page(
+    sess: requests.Session,
+    img_path: Path,
+    *,
+    model: str,
+    base_url: str,
+    key: str,
+    max_tokens: int,
+    max_retries: int,
+    retry_sleep: float,
+    strips: int = 0,
+) -> tuple[dict | None, list[dict], int]:
     """Return (record or None, attempts, upscale factor). Each attempt: {status, raw, errors, usage, seconds}."""
     url = f"{base_url.rstrip('/')}/chat/completions"
     headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
     # Image FIRST, then text: the proxy drops an image that comes after the text.
     image, factor = _image_part(img_path)
     if strips:
-        content = [image, *_strip_parts(img_path, strips, factor),
-                   {"type": "text", "text": STRIPS_NOTE.format(n=strips) + PROMPT}]
+        content = [
+            image,
+            *_strip_parts(img_path, strips, factor),
+            {"type": "text", "text": STRIPS_NOTE.format(n=strips) + PROMPT},
+        ]
     else:
         content = [image, {"type": "text", "text": PROMPT}]
     first = [{"role": "user", "content": content}]
@@ -182,8 +202,12 @@ def label_page(sess: requests.Session, img_path: Path, *, model: str, base_url: 
         t0 = time.time()
         att = {"status": None, "raw": None, "errors": None, "usage": None}
         try:
-            r = sess.post(url, headers=headers, timeout=600, json={
-                "model": model, "max_tokens": max_tokens, "temperature": 0, "messages": messages})
+            r = sess.post(
+                url,
+                headers=headers,
+                timeout=600,
+                json={"model": model, "max_tokens": max_tokens, "temperature": 0, "messages": messages},
+            )
             data = r.json()
         except (requests.RequestException, ValueError) as e:
             att.update(status="transport_error", errors=f"{type(e).__name__}: {e}"[:500])
@@ -216,8 +240,10 @@ def label_page(sess: requests.Session, img_path: Path, *, model: str, base_url: 
                     errs = [f"{'.'.join(map(str, x['loc']))}: {x['msg']}" for x in e.errors()]
                     att.update(status="invalid", errors=errs)
                     # Same conversation, so the teacher corrects its own answer.
-                    messages = first + [{"role": "assistant", "content": raw},
-                                        {"role": "user", "content": FIX_PROMPT.format(errors="\n".join(errs))}]
+                    messages = first + [
+                        {"role": "assistant", "content": raw},
+                        {"role": "user", "content": FIX_PROMPT.format(errors="\n".join(errs))},
+                    ]
                 else:
                     if _is_empty(record):
                         att["status"] = "all_empty"
@@ -240,9 +266,15 @@ def label_task(task: dict, **kw) -> dict:
         return {**out, "status": "missing_image", "record": None, "attempts": []}
     t0 = time.time()
     record, attempts, factor = label_page(requests.Session(), img, **kw)
-    return {**out, "status": "ok" if record else "failed", "record": record, "upscale": factor,
-            "strips": kw.get("strips", 0),
-            "attempts": attempts, "latency_s": round(time.time() - t0, 1)}
+    return {
+        **out,
+        "status": "ok" if record else "failed",
+        "record": record,
+        "upscale": factor,
+        "strips": kw.get("strips", 0),
+        "attempts": attempts,
+        "latency_s": round(time.time() - t0, 1),
+    }
 
 
 def _read_ids(path: Path) -> list[str]:
@@ -254,7 +286,7 @@ def _read_ids(path: Path) -> list[str]:
     return [i.strip() for i in ids if i.strip()]
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Label CV pages with a teacher VLM (one call per page).")
     ap.add_argument("--documents", type=Path, default=DOCUMENTS_PATH)
     ap.add_argument("--output", type=Path, required=True, help="JSONL, appended to")
@@ -267,11 +299,16 @@ def main() -> int:
     ap.add_argument("--max-tokens", type=int, default=16384)
     ap.add_argument("--max-retries", type=int, default=6)
     ap.add_argument("--retry-sleep", type=float, default=3.0)
-    ap.add_argument("--workers", type=int, default=3,
-                    help="the proxy returns 429 for glm-5.3-flash at 8 parallel requests")
-    ap.add_argument("--strips", type=int, default=0,
-                    help="also send the page cut into N enlarged horizontal strips (0 = whole page only)")
-    args = ap.parse_args()
+    ap.add_argument(
+        "--workers", type=int, default=3, help="the proxy returns 429 for glm-5.3-flash at 8 parallel requests"
+    )
+    ap.add_argument(
+        "--strips",
+        type=int,
+        default=0,
+        help="also send the page cut into N enlarged horizontal strips (0 = whole page only)",
+    )
+    args = ap.parse_args(argv)
 
     key = os.environ.get("LITELLM_API_KEY")
     if not key:
@@ -296,13 +333,27 @@ def main() -> int:
             row = json.loads(line)
             if row["status"] == "ok":
                 done.add((row["cv_id"], row["page"]))
-    tasks = [{"cv_id": d["cv_id"], "page": p["page"], "num_pages": d["num_pages"], "image": p["image_path"]}
-             for d in docs for p in d["pages"] if (d["cv_id"], p["page"]) not in done]
-    print(f"{len(docs)} CVs, {len(tasks)} pages to label ({len(done)} already ok) "
-          f"with {args.model}, {args.workers} workers", flush=True)
+    tasks = [
+        {"cv_id": d["cv_id"], "page": p["page"], "num_pages": d["num_pages"], "image": p["image_path"]}
+        for d in docs
+        for p in d["pages"]
+        if (d["cv_id"], p["page"]) not in done
+    ]
+    print(
+        f"{len(docs)} CVs, {len(tasks)} pages to label ({len(done)} already ok) "
+        f"with {args.model}, {args.workers} workers",
+        flush=True,
+    )
 
-    kw = dict(model=args.model, base_url=args.base_url, key=key, max_tokens=args.max_tokens,
-              max_retries=args.max_retries, retry_sleep=args.retry_sleep, strips=args.strips)
+    kw = dict(
+        model=args.model,
+        base_url=args.base_url,
+        key=key,
+        max_tokens=args.max_tokens,
+        max_retries=args.max_retries,
+        retry_sleep=args.retry_sleep,
+        strips=args.strips,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     n_ok = n_fail = 0
     t_start = time.time()
@@ -315,9 +366,12 @@ def main() -> int:
             n_ok += row["status"] == "ok"
             n_fail += row["status"] != "ok"
             statuses = ",".join(a["status"] for a in row["attempts"])
-            print(f"[{i}/{len(tasks)}] {row['cv_id'][:40]:40s} p{row['page']} {row['status']:7s} "
-                  f"{row.get('latency_s', 0):5.0f}s [{statuses}] | ok={n_ok} fail={n_fail} "
-                  f"| {time.time() - t_start:.0f}s", flush=True)
+            print(
+                f"[{i}/{len(tasks)}] {row['cv_id'][:40]:40s} p{row['page']} {row['status']:7s} "
+                f"{row.get('latency_s', 0):5.0f}s [{statuses}] | ok={n_ok} fail={n_fail} "
+                f"| {time.time() - t_start:.0f}s",
+                flush=True,
+            )
 
     print(f"Done: {n_ok} ok, {n_fail} not ok -> {args.output}")
     return 0 if n_fail == 0 else 1

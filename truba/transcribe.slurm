@@ -1,5 +1,5 @@
 #!/bin/bash
-# Transcribe training pages with granite-docling-258M (src/transcribe.py), one shard per job.
+# Transcribe training pages with granite-docling-258M (experiments/transcribe.py), one shard per job.
 #   sbatch -J NAME truba/transcribe.slurm OUT_FILE "transcribe args"     (paths relative to cv_parser/)
 #SBATCH --partition=kolyoz-cuda
 #SBATCH --account=romer
@@ -14,7 +14,7 @@
 set -euo pipefail
 D=/arf/scratch/fkucuk/cv_parser_test; R=$D/cv_parser
 export HF_HOME=$D/hf_cache HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false
-source $D/venv/bin/activate; cd $R
+source $D/venv/bin/activate; cd $R; export PYTHONPATH=$R/src  # package without installing into the shared venv
 echo "== transcribe -> $1 | $2"
-python -u src/transcribe.py --train-file data/processed/labels_train_v6_hk1k.jsonl --out $1 $2
+python -u experiments/transcribe.py --train-file data/processed/labels_train_v6_hk1k.jsonl --out $1 $2
 echo "== done"

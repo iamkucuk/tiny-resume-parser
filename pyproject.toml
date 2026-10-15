@@ -1,12 +1,51 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "tiny-resume-parser"
 version = "0.1.0"
 description = "Fine-tuned sub-1B vision-language models that read a CV page image and write ATS JSON; runs on a laptop CPU"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = { file = "LICENSE.md" }
 authors = [{ name = "Furkan Kucuk" }]
+keywords = ["resume-parser", "cv-parser", "vision-language-model", "document-ai", "ats"]
+dependencies = [
+    "torch>=2.6",
+    "transformers==4.57.6",
+    "accelerate>=1.0",
+    "pydantic>=2.13",
+    "pillow",
+    "safetensors",
+    "pypdfium2>=4",
+]
+
+[project.optional-dependencies]
+train = ["peft==0.21.2", "requests"]            # fine-tuning, LoRA, teacher labelling
+experiments = ["trl", "lm-format-enforcer==0.11.3"]  # DPO / GRPO, constrained decoding
+dev = ["pytest", "ruff", "pre-commit", "matplotlib"]
+
+[project.scripts]
+tiny-resume-parser = "tiny_resume_parser.cli:main"
+
+[project.urls]
+Repository = "https://github.com/iamkucuk/tiny-resume-parser"
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+ignore = ["E731", "B905", "E501"]  # E501: the formatter wraps code; long strings and comments stay readable
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["E741", "B007"]          # one-off data and analysis scripts, kept as they ran
+"notebooks/*" = ["E741"]

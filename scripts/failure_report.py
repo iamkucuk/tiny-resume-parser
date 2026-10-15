@@ -1,101 +1,187 @@
 """Build reports/failure_report.html (local only: rendered CV pages) from the classified errors of lora_v4 epoch 6 (free decoding)."""
-import json, base64, io, html, collections, re, sys
+
+import base64
+import collections
+import html
+import io
+import json
+import os
+import re
+import sys
+
 from PIL import Image
+
 S = sys.argv[1]
-R = json.load(open(f'{S}/v4ep6_free.json')); C = json.load(open(f'{S}/v4ep6_con.json'))
-P = {(r['cv_id'], r['page']): r for r in R}
+R = json.load(open(f"{S}/v4ep6_free.json"))
+C = json.load(open(f"{S}/v4ep6_con.json"))
+P = {(r["cv_id"], r["page"]): r for r in R}
 esc = lambda s: html.escape(str(s))
 
+
 def img(r, w=900):
-    im = Image.open('data/' + r['image']).convert('RGB'); im.thumbnail((w, w * 1.5))
-    b = io.BytesIO(); im.save(b, 'JPEG', quality=68)
+    im = Image.open("data/" + r["image"]).convert("RGB")
+    im.thumbnail((w, w * 1.5))
+    b = io.BytesIO()
+    im.save(b, "JPEG", quality=68)
     return f'<details class="page"><summary>Show the page image ({esc(r["cv_id"])}, page {r["page"]})</summary><img src="data:image/jpeg;base64,{base64.b64encode(b.getvalue()).decode()}" alt="CV page"></details>'
 
-def f1(r): return 2 * r['hit_n'] / max(r['pred_n'] + r['gold_n'], 1)
-cnt = collections.Counter(i['type'] for r in R for i in r['items'])
-gold_total = sum(r['gold_n'] for r in R); hits = sum(r['hit_n'] for r in R); pred_total = sum(r['pred_n'] for r in R)
-unparsed_missing = sum(r['gold_n'] for r in R if r['status'] == 'unparsed')
-parts = [('Correct', hits, 'ok'), ('Lost: answer was not JSON (4 pages)', unparsed_missing, 'bad'),
-         ('Missing on parsed pages', cnt['missing'] - unparsed_missing, 'bad2'), ('Misread (similar text, ≥ 0.8)', cnt['misread'], 'warn'),
-         ('Under the wrong key', cnt['wrong_key'], 'warn2'), ('Differs only in case, spaces or punctuation', cnt['format'], 'muted')]
-bar = ''.join(f'<span class="seg {c}" style="width:{100*n/gold_total:.2f}%" title="{esc(l)}: {n}"></span>' for l, n, c in parts)
-legend = ''.join(f'<tr><td><span class="dot {c}"></span>{esc(l)}</td><td class="num">{n:,}</td><td class="num">{100*n/gold_total:.1f}%</td></tr>' for l, n, c in parts)
+
+def f1(r):
+    return 2 * r["hit_n"] / max(r["pred_n"] + r["gold_n"], 1)
+
+
+cnt = collections.Counter(i["type"] for r in R for i in r["items"])
+gold_total = sum(r["gold_n"] for r in R)
+hits = sum(r["hit_n"] for r in R)
+pred_total = sum(r["pred_n"] for r in R)
+unparsed_missing = sum(r["gold_n"] for r in R if r["status"] == "unparsed")
+parts = [
+    ("Correct", hits, "ok"),
+    ("Lost: answer was not JSON (4 pages)", unparsed_missing, "bad"),
+    ("Missing on parsed pages", cnt["missing"] - unparsed_missing, "bad2"),
+    ("Misread (similar text, ≥ 0.8)", cnt["misread"], "warn"),
+    ("Under the wrong key", cnt["wrong_key"], "warn2"),
+    ("Differs only in case, spaces or punctuation", cnt["format"], "muted"),
+]
+bar = "".join(
+    f'<span class="seg {c}" style="width:{100 * n / gold_total:.2f}%" title="{esc(l)}: {n}"></span>'
+    for l, n, c in parts
+)
+legend = "".join(
+    f'<tr><td><span class="dot {c}"></span>{esc(l)}</td><td class="num">{n:,}</td><td class="num">{100 * n / gold_total:.1f}%</td></tr>'
+    for l, n, c in parts
+)
 
 # per-section table
 sec = collections.defaultdict(lambda: [0, 0, 0])
 for r in R:
-    for i in r['items']:
-        s = i['path'].split('.')[0]
-        if i['type'] == 'missing': sec[s][1] += 1
-        elif i['type'] in ('extra', 'extra_on_page', 'duplicate'): sec[s][0] += 1
-        else: sec[s][0] += 1; sec[(i.get('gold_path') or i['path']).split('.')[0]][1] += 1
-    for h in r['hits']:
-        s = h[0].split('.')[0]; sec[s][0] += 1; sec[s][1] += 1; sec[s][2] += 1
-sec_rows = ''.join(f'<tr><td><code>{s}</code></td><td class="num">{g}</td><td class="num">{h/max(p,1):.2f}</td><td class="num">{h/max(g,1):.2f}</td>'
-                   f'<td class="num"><span class="f1bar"><span style="width:{100*2*h/max(p+g,1):.0f}%"></span></span>{2*h/max(p+g,1):.2f}</td></tr>'
-                   for s, (p, g, h) in sorted(sec.items(), key=lambda kv: -kv[1][1]) if g)
+    for i in r["items"]:
+        s = i["path"].split(".")[0]
+        if i["type"] == "missing":
+            sec[s][1] += 1
+        elif i["type"] in ("extra", "extra_on_page", "duplicate"):
+            sec[s][0] += 1
+        else:
+            sec[s][0] += 1
+            sec[(i.get("gold_path") or i["path"]).split(".")[0]][1] += 1
+    for h in r["hits"]:
+        s = h[0].split(".")[0]
+        sec[s][0] += 1
+        sec[s][1] += 1
+        sec[s][2] += 1
+sec_rows = "".join(
+    f'<tr><td><code>{s}</code></td><td class="num">{g}</td><td class="num">{h / max(p, 1):.2f}</td><td class="num">{h / max(g, 1):.2f}</td>'
+    f'<td class="num"><span class="f1bar"><span style="width:{100 * 2 * h / max(p + g, 1):.0f}%"></span></span>{2 * h / max(p + g, 1):.2f}</td></tr>'
+    for s, (p, g, h) in sorted(sec.items(), key=lambda kv: -kv[1][1])
+    if g
+)
+
 
 def table(rows, heads):
-    return '<table class="ex"><tr>' + ''.join(f'<th>{h}</th>' for h in heads) + '</tr>' + ''.join('<tr>' + ''.join(f'<td>{c}</td>' for c in row) + '</tr>' for row in rows) + '</table>'
+    return (
+        '<table class="ex"><tr>'
+        + "".join(f"<th>{h}</th>" for h in heads)
+        + "</tr>"
+        + "".join("<tr>" + "".join(f"<td>{c}</td>" for c in row) + "</tr>" for row in rows)
+        + "</table>"
+    )
+
 
 def mark_diff(a, b):
     """Highlight characters of b that differ from a."""
     from difflib import SequenceMatcher
+
     out = []
     for op, i1, i2, j1, j2 in SequenceMatcher(None, a, b).get_opcodes():
-        out.append(esc(b[j1:j2]) if op == 'equal' else f'<mark>{esc(b[j1:j2]) or "∅"}</mark>')
-    return ''.join(out)
+        out.append(esc(b[j1:j2]) if op == "equal" else f"<mark>{esc(b[j1:j2]) or '∅'}</mark>")
+    return "".join(out)
+
 
 # 1 loops
 loops = []
-for k, note in [(('CV-Hessine-Chebbi', 1), 'repeats two list items until the 2,500-token limit'),
-                (('Ahmedou-Ahmoudi-1', 1), 'reaches the last key, <code>extra</code>, then repeats the same two entries'),
-                (('1655908000107', 1), 'in <code>extra</code>, writes the key <code>label</code> twice in one entry and repeats the entry'),
-                (('Belhassen-MEJRI', 1), 'not a loop: one syntax slip, <code>"Windows Server cybersecrité":"Kali Linux"</code> inside a list')]:
-    r = P[k]; c = {(x['cv_id'], x['page']): x for x in C}[k]
-    tail = r['answer'][-230:] if 'Belhassen' not in k[0] else r['answer'][2290:2400]
-    loops.append([f'<code>{esc(k[0])}</code>', f'{r["tokens"]:,}', note, f'<pre>…{esc(tail)}…</pre>', f'{2*c["hit_n"]/max(c["pred_n"]+c["gold_n"],1):.2f}'])
+for k, note in [
+    (("CV-Hessine-Chebbi", 1), "repeats two list items until the 2,500-token limit"),
+    (("Ahmedou-Ahmoudi-1", 1), "reaches the last key, <code>extra</code>, then repeats the same two entries"),
+    (
+        ("1655908000107", 1),
+        "in <code>extra</code>, writes the key <code>label</code> twice in one entry and repeats the entry",
+    ),
+    (
+        ("Belhassen-MEJRI", 1),
+        'not a loop: one syntax slip, <code>"Windows Server cybersecrité":"Kali Linux"</code> inside a list',
+    ),
+]:
+    r = P[k]
+    c = {(x["cv_id"], x["page"]): x for x in C}[k]
+    tail = r["answer"][-230:] if "Belhassen" not in k[0] else r["answer"][2290:2400]
+    loops.append(
+        [
+            f"<code>{esc(k[0])}</code>",
+            f"{r['tokens']:,}",
+            note,
+            f"<pre>…{esc(tail)}…</pre>",
+            f"{2 * c['hit_n'] / max(c['pred_n'] + c['gold_n'], 1):.2f}",
+        ]
+    )
 
 # 2 schema errors
 schema = []
 for r in R:
-    if r['status'] == 'schema_error':
-        e = r['err']; loc, msg = e[1].strip(), e[2].strip()
+    if r["status"] == "schema_error":
+        e = r["err"]
+        loc, msg = e[1].strip(), e[2].strip()
         m = re.search(r"input_value=(.{0,60})", msg)
-        kind = 'invented key' if 'Extra inputs' in msg else 'value not allowed'
-        schema.append([f'<code>{esc(r["cv_id"][:24])}</code> p{r["page"]}', kind, f'<code>{esc(loc)}</code>', esc(m.group(1).rstrip(", ") if m else msg[:60])])
-inv = collections.Counter(re.sub(r'\.\d+\.', '.', s[2]) for s in schema if s[1] == 'invented key')
+        kind = "invented key" if "Extra inputs" in msg else "value not allowed"
+        schema.append(
+            [
+                f"<code>{esc(r['cv_id'][:24])}</code> p{r['page']}",
+                kind,
+                f"<code>{esc(loc)}</code>",
+                esc(m.group(1).rstrip(", ") if m else msg[:60]),
+            ]
+        )
+inv = collections.Counter(re.sub(r"\.\d+\.", ".", s[2]) for s in schema if s[1] == "invented key")
 
 # 5 misreads
-mis = [(r, i) for r in R for i in r['items'] if i['type'] == 'misread']
+mis = [(r, i) for r in R for i in r["items"] if i["type"] == "misread"]
 chosen, seen = [], set()
-for r, i in sorted(mis, key=lambda x: (len(x[1]['gold']), x[1]['path'])):
-    if len(i['gold']) < 4 or len(i['gold']) > 70 or i['gold'] in seen: continue
-    digits = re.sub(r'\D', '', i['gold']) != re.sub(r'\D', '', i['pred'])
+for r, i in sorted(mis, key=lambda x: (len(x[1]["gold"]), x[1]["path"])):
+    if len(i["gold"]) < 4 or len(i["gold"]) > 70 or i["gold"] in seen:
+        continue
+    digits = re.sub(r"\D", "", i["gold"]) != re.sub(r"\D", "", i["pred"])
     if digits or len(chosen) < 14:
-        chosen.append([f'<code>{esc(i["path"])}</code>', esc(i['gold']), mark_diff(i['gold'], i['pred'])]); seen.add(i['gold'])
-    if len(chosen) >= 22: break
-longdrift = next(i for r, i in mis if i['path'] == 'work.summary' and 'orca' in i['pred'])
+        chosen.append([f"<code>{esc(i['path'])}</code>", esc(i["gold"]), mark_diff(i["gold"], i["pred"])])
+        seen.add(i["gold"])
+    if len(chosen) >= 22:
+        break
+longdrift = next(i for r, i in mis if i["path"] == "work.summary" and "orca" in i["pred"])
 
 # 7 grouped skill lines
-dh = P[('CV-Dhiya-BACCARI', 1)]
-dh_gold = [esc(x) for x in dh['gold_record']['skills'][0]['keywords'][:3]]
-dh_pred = json.loads(dh['answer'])['skills'][:3]
-dh_pred_s = '<br>'.join(f'<b>{esc(s["name"])}</b>: ' + ', '.join(esc(k) for k in s.get('keywords', [])) for s in dh_pred)
-fmt = [(i['gold'], i['pred']) for r in R for i in r['items'] if i['type'] == 'format']
+dh = P[("CV-Dhiya-BACCARI", 1)]
+dh_gold = [esc(x) for x in dh["gold_record"]["skills"][0]["keywords"][:3]]
+dh_pred = json.loads(dh["answer"])["skills"][:3]
+dh_pred_s = "<br>".join(
+    f"<b>{esc(s['name'])}</b>: " + ", ".join(esc(k) for k in s.get("keywords", [])) for s in dh_pred
+)
+fmt = [(i["gold"], i["pred"]) for r in R for i in r["items"] if i["type"] == "format"]
 fmt_rows = [[esc(g), esc(p)] for g, p in fmt[:8]]
 
-anis = P[('CV-Anis-Mefteh', 2)]; ala = P[('CV-Ala-Antabli', 1)]; hes = P[('CV-Hessine-Chebbi', 1)]
-anis_pred = json.loads(anis['answer'])
-anis_edu = anis_pred['education'][1]
-ala_pred = json.loads(ala['answer'])
+anis = P[("CV-Anis-Mefteh", 2)]
+ala = P[("CV-Ala-Antabli", 1)]
+hes = P[("CV-Hessine-Chebbi", 1)]
+anis_pred = json.loads(anis["answer"])
+anis_edu = anis_pred["education"][1]
+ala_pred = json.loads(ala["answer"])
 dist = sorted(f1(r) for r in R)
 hist = collections.Counter(min(int(f * 10), 9) for f in dist)
-hist_html = ''.join(f'<div class="hcol"><span style="height:{hist[b]*9}px" title="{hist[b]} pages"></span><small>{b/10:.1f}</small></div>' for b in range(10))
-f_fmt = 2 * (hits + cnt['format']) / (pred_total + gold_total)
-f_sim = 2 * (hits + cnt['format'] + cnt['misread']) / (pred_total + gold_total)
+hist_html = "".join(
+    f'<div class="hcol"><span style="height:{hist[b] * 9}px" title="{hist[b]} pages"></span><small>{b / 10:.1f}</small></div>'
+    for b in range(10)
+)
+f_fmt = 2 * (hits + cnt["format"]) / (pred_total + gold_total)
+f_sim = 2 * (hits + cnt["format"] + cnt["misread"]) / (pred_total + gold_total)
 
-page = f'''<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+page = f"""<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>CV Parser Failures</title><style>
 :root{{--bg:#fbfaf8;--fg:#1d1d1b;--mut:#6b6a66;--line:#e4e1db;--card:#fff;--ok:#2f7d4f;--bad:#b23a32;--bad2:#d9776f;--warn:#c4861b;--warn2:#e2b65c;--muted:#a9a59c;--acc:#2c5d8f;--mark:#f6d8a8}}
 @media (prefers-color-scheme:dark){{:root:not([data-theme=light]){{--bg:#161615;--fg:#ecebe7;--mut:#a09e98;--line:#34332f;--card:#1f1f1d;--mark:#6b4a17;--acc:#7fb0e0}}}}
@@ -130,7 +216,7 @@ mark{{background:var(--mark);color:inherit;border-radius:2px}}details.page summa
 
 <h2>Where the 4,612 gold values go</h2>
 <div class="bar">{bar}</div><table>{legend}</table>
-<p>On the model's side, {pred_total - hits:,} written values match nothing: {cnt["misread"]+cnt["format"]+cnt["wrong_key"]} are the misread, format-only and wrong-key values above; {cnt["extra"]+cnt["extra_on_page"]:,} are extra values (for {cnt["extra_on_page"]} of them the text appears inside some gold value, usually a list split differently); {cnt["duplicate"]} repeat a value already written.</p>
+<p>On the model's side, {pred_total - hits:,} written values match nothing: {cnt["misread"] + cnt["format"] + cnt["wrong_key"]} are the misread, format-only and wrong-key values above; {cnt["extra"] + cnt["extra_on_page"]:,} are extra values (for {cnt["extra_on_page"]} of them the text appears inside some gold value, usually a list split differently); {cnt["duplicate"]} repeat a value already written.</p>
 <p>If case, spaces and punctuation were ignored, F1 would be <b>{f_fmt:.2f}</b>; if near misses (similarity ≥ 0.8) also counted, <b>{f_sim:.2f}</b>.</p>
 
 <h3>F1 per page</h3><div class="hist">{hist_html}</div>
@@ -163,7 +249,7 @@ mark{{background:var(--mark);color:inherit;border-radius:2px}}details.page summa
 {table(schema, ["Page", "Kind", "Where", "Value"])}
 <p class="fix">Constrained decoding removes all of these (50/50 valid). In training they could be cut by teaching one schema per section, e.g. by adding the key list to the prompt.</p></div>
 
-<div class="case"><span class="tag m">model</span><span class="tag">{cnt["missing"]-unparsed_missing:,} values missing on parsed pages</span>
+<div class="case"><span class="tag m">model</span><span class="tag">{cnt["missing"] - unparsed_missing:,} values missing on parsed pages</span>
 <h3>4. A whole block is skipped</h3>
 <p><b>Example.</b> <code>CV-Ala-Antabli</code> has two skill areas: rating bars on the left (“Skills”) and a block “Compétences techniques” at the bottom right. The model writes the five soft skills from the left and stops; the 30 keywords of the second block are missing. It also marks the soft skills as <code>technical</code> and reads the bar levels differently from gold (gold ~4/5, model “rapide”, ~5/5, ~3/5 …). The two certificates listed under “Éducation” go to <code>education</code> instead of <code>certificates</code>. Page F1 {f1(ala):.2f}.</p>
 <div class="cols"><div class="box"><h4>Gold skills (excerpt)</h4>5 soft skills, ~4/5–~5/5<br><b>Réseau</b>: Bonne connaissance de TCP / IP, LAN, WAN, VLAN, OSPF …<br><b>Programmation</b>: Python, Java / JEE, C / C ++, Matlab<br>+ Cloud, Base de données, La modélisation, Autre</div>
@@ -192,11 +278,12 @@ mark{{background:var(--mark);color:inherit;border-radius:2px}}details.page summa
 <p class="fix">Possible fixes: decide one style for grouped skill lines and relabel the 301 training pages (code can split “Name: a, b, c” lines); compare case- and punctuation-insensitively in scoring.</p></div>
 
 <h2>What to work on, in order of lost values</h2>
-<ol><li><b>Missing values on parsed pages</b> ({cnt["missing"]-unparsed_missing:,}): skipped blocks, certificates, awards (case 4).</li>
+<ol><li><b>Missing values on parsed pages</b> ({cnt["missing"] - unparsed_missing:,}): skipped blocks, certificates, awards (case 4).</li>
 <li><b>Answers that are not JSON</b> ({unparsed_missing}): solved for validity by constrained decoding (case 1).</li>
 <li><b>Misreads</b> ({cnt["misread"]}): resolution, long-text drift (case 5).</li>
 <li><b>Wrong section</b> ({cnt["wrong_key"]}): continuation pages, certificates under Education (case 2).</li>
 <li><b>Label style</b>: one rule for grouped skill lines; case-insensitive scoring (case 6). Cheap, code-only.</li></ol>
-</main></body></html>'''
-import os; os.makedirs('reports', exist_ok=True); open('reports/failure_report.html', 'w').write(page)
-print('written', len(page) // 1024, 'KB')
+</main></body></html>"""
+os.makedirs("reports", exist_ok=True)
+open("reports/failure_report.html", "w").write(page)
+print("written", len(page) // 1024, "KB")

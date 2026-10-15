@@ -18,15 +18,13 @@ are sampled. Every other CV goes to the train pool.
 
 Sampling is seeded for reproducibility.
 """
+
 from __future__ import annotations
 
 import argparse
 import json
 import random
-import sys
 from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 DOCUMENTS_PATH = PROJECT_ROOT / "data" / "processed" / "documents.jsonl"
@@ -56,14 +54,15 @@ def main() -> int:
     eligible = [d for d in docs if is_gold_eligible(d)]
     single = [d for d in eligible if not d["multipage"]]
     multi = [d for d in eligible if d["multipage"]]
-    print(f"Gold-eligible pool: {len(single)} single-page, {len(multi)} multi-page CVs "
-          f"(of {len(docs)} total)")
+    print(f"Gold-eligible pool: {len(single)} single-page, {len(multi)} multi-page CVs (of {len(docs)} total)")
 
     if args.n_single > len(single):
         print(f"⚠ requested {args.n_single} single but only {len(single)} available")
     if args.n_multi > len(multi):
-        print(f"⚠ requested {args.n_multi} multi but only {len(multi)} available "
-              f"(multi-page coverage in gold will be lower)")
+        print(
+            f"⚠ requested {args.n_multi} multi but only {len(multi)} available "
+            f"(multi-page coverage in gold will be lower)"
+        )
 
     rng = random.Random(args.seed)
     gold_single = rng.sample(single, min(args.n_single, len(single)))
@@ -79,9 +78,7 @@ def main() -> int:
     args.gold_dir.mkdir(parents=True, exist_ok=True)
 
     # 1) gold_ids.json — the membership contract
-    (args.gold_dir / "gold_ids.json").write_text(
-        json.dumps(sorted(gold_ids), indent=2)
-    )
+    (args.gold_dir / "gold_ids.json").write_text(json.dumps(sorted(gold_ids), indent=2))
 
     # 2) gold manifest — page paths + box summary for the reviewer / M4
     gold_manifest = {
@@ -110,9 +107,7 @@ def main() -> int:
     (args.gold_dir / "manifest.json").write_text(json.dumps(gold_manifest, indent=2))
 
     # 3) train pool
-    args.gold_dir.parent.joinpath("train_pool_ids.json").write_text(
-        json.dumps(train_pool_ids, indent=2)
-    )
+    args.gold_dir.parent.joinpath("train_pool_ids.json").write_text(json.dumps(train_pool_ids, indent=2))
 
     print(f"\nGold set: {len(gold)} CVs ({len(gold_single)} single + {len(gold_multi)} multi)")
     print(f"  -> {args.gold_dir / 'gold_ids.json'}")
@@ -122,6 +117,7 @@ def main() -> int:
 
     # Multi-page page-count distribution in gold (for eval-strata awareness)
     from collections import Counter
+
     multi_dist = Counter(d["num_pages"] for d in gold_multi)
     print(f"\nGold multi-page distribution: {dict(sorted(multi_dist.items()))}")
     return 0

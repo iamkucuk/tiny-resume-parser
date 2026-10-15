@@ -17,14 +17,14 @@ set -euo pipefail
 NAME=$1; GRPO_ARGS=$2; EVAL_ARGS=$3
 D=/arf/scratch/fkucuk/cv_parser_test; R=$D/cv_parser; OUT=$R/runs/$NAME
 export HF_HOME=$D/hf_cache HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false
-source $D/venv/bin/activate; cd $R
+source $D/venv/bin/activate; cd $R; export PYTHONPATH=$R/src  # package without installing into the shared venv
 nvidia-smi --query-gpu=name --format=csv,noheader
 echo "== $NAME: grpo $GRPO_ARGS | eval $EVAL_ARGS"
-[ -e $OUT/log_history.json ] || PYTHONPATH=$D/venv/trl_pkgs python -u src/train_grpo.py --out $OUT $GRPO_ARGS
+[ -e $OUT/log_history.json ] || PYTHONPATH=$R/src:$D/venv/trl_pkgs python -u experiments/train_grpo.py --out $OUT $GRPO_ARGS
 for SET in "gold --limit 50" "val"; do
   S=${SET%% *}; E=$OUT/eval_final_${S}
-  [ -e $E/summary.json ] || python -u src/evaluate.py --model $OUT/model --set $SET --batch 8 --out $E $EVAL_ARGS > $E.log 2>&1 || echo "eval failed: $E"
-  python src/rescore.py $E 2>/dev/null | grep -v Warn || true
+  [ -e $E/summary.json ] || python -u -m tiny_resume_parser.evaluate --model $OUT/model --set $SET --batch 8 --out $E $EVAL_ARGS > $E.log 2>&1 || echo "eval failed: $E"
+  python -m tiny_resume_parser.rescore $E 2>/dev/null | grep -v Warn || true
 done
 rm -rf $OUT/checkpoint-*  # intermediate GRPO checkpoints, 3.5 GB each; model/ is kept
 echo "== done $NAME"

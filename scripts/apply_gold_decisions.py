@@ -1,6 +1,6 @@
 """Apply the reviewed gold-label fixes and write a separate verified gold file.
 
-    .venv/bin/python src/apply_gold_decisions.py
+    python scripts/apply_gold_decisions.py
 
 Reads data/processed/labels_gold_v6.jsonl (left unchanged) and
 data/processed/gold_v6_check/decisions.json (one entry per accepted Haiku finding, each
@@ -12,13 +12,14 @@ Each decision names a page id prefix (`<cv_id>_p<page>`), a path like "work[0].n
   append: item           added to the list
 Any mismatch stops the run: a decision written against a different label is an error.
 """
+
 from __future__ import annotations
 
 import json
 import re
 from pathlib import Path
 
-from schema import to_record
+from tiny_resume_parser.schema import to_record
 
 ROOT = Path(__file__).resolve().parent.parent
 GOLD = ROOT / "data" / "processed" / "labels_gold_v6.jsonl"

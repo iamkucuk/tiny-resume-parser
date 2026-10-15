@@ -1,23 +1,31 @@
-"""Key-by-key mode (src/keywise.py) must lose nothing: for every labelled page, the 29 value texts re-assemble into an
+"""Key-by-key mode (tiny_resume_parser/keywise.py) must lose nothing: for every labelled page, the 29 value texts re-assemble into an
 answer with the same scored fields as the label, and every prefix is an exact text prefix of the assembled JSON
-(so training prompts equal the prompts generation builds). Run: pytest, or .venv/bin/python tests/test_keywise.py
+(so training prompts equal the prompts generation builds). Run: pytest, or python tests/test_keywise.py
 The full check needs data/processed/ (not in the repository); without it only the hand-made record is checked."""
+
 import json
-import sys
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT / "src"))
-import keywise  # noqa: E402
-from evaluate import pairs  # noqa: E402
-from schema import template, to_record  # noqa: E402
+import pytest
 
-SAMPLE = {"basics": {"name": "Ada Lovelace", "emails": ["ada@example.com"]},
-          "work": [{"name": "Analytical Engines Ltd", "position": "Programmer", "startDate": "1843-01",
-                    "highlights": ["Wrote the first program"]}],
-          "skills": [{"name": "Mathematics", "keywords": ["Calculus", "Algebra"]}],
-          "languages": [{"language": "English", "fluency": "Native"}]}
-LABEL_FILES = [ROOT / "data" / "processed" / n for n in ("labels_train_v6.jsonl", "labels_gold_v6_verified.jsonl")]
+from tiny_resume_parser import keywise
+from tiny_resume_parser.data import GOLD, LABELS
+from tiny_resume_parser.metrics import pairs
+from tiny_resume_parser.schema import template, to_record
+
+SAMPLE = {
+    "basics": {"name": "Ada Lovelace", "emails": ["ada@example.com"]},
+    "work": [
+        {
+            "name": "Analytical Engines Ltd",
+            "position": "Programmer",
+            "startDate": "1843-01",
+            "highlights": ["Wrote the first program"],
+        }
+    ],
+    "skills": [{"name": "Mathematics", "keywords": ["Calculus", "Algebra"]}],
+    "languages": [{"language": "English", "fluency": "Native"}],
+}
+LABEL_FILES = [LABELS, GOLD]
 
 
 def check(record: dict) -> int:
@@ -41,7 +49,6 @@ def test_round_trip_sample():
 
 def test_round_trip_all_labels():
     if not all(f.exists() for f in LABEL_FILES):
-        import pytest
         pytest.skip("data/processed/ label files not present (not in the repository)")
     pages = nulls = 0
     for f in LABEL_FILES:

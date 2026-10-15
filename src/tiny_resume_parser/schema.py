@@ -16,6 +16,7 @@ An ongoing entry has endDate "present".
 
 The previous flat-17-field / DocTags schema was removed (in git history before 2026-10-15).
 """
+
 from __future__ import annotations
 
 import json
@@ -234,9 +235,11 @@ def template() -> dict:
 
 def entry_templates() -> dict[str, dict]:
     """One empty entry per list section, to show the teacher the shape of each entry."""
-    return {name: field.annotation.__args__[0]().model_dump()
-            for name, field in CVRecord.model_fields.items()
-            if name != "basics"}
+    return {
+        name: field.annotation.__args__[0]().model_dump()
+        for name, field in CVRecord.model_fields.items()
+        if name != "basics"
+    }
 
 
 def to_record(data: dict) -> dict:

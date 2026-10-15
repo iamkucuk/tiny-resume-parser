@@ -1,6 +1,6 @@
 """Split the teacher labels into a training set and the gold evaluation set, and filter `corrections`.
 
-    .venv/bin/python src/build_label_sets.py
+    python scripts/build_label_sets.py
 
 Reads data/processed/labels_full_v6.jsonl (GLM teacher labels, one row per page) and keeps the
 last ok row per page for the CVs in cv_ids_full_size.json (every page longer than 640 px).
@@ -14,6 +14,7 @@ A corrections entry is dropped when:
               page most likely already had the corrected form (the teacher invented the "original")
 The label values are not changed. Each output row gets `corrections_dropped` with the reasons.
 """
+
 from __future__ import annotations
 
 import json
@@ -66,7 +67,9 @@ def main() -> int:
         raise SystemExit(f"{len(not_ok)} pages are not ok, e.g. {not_ok[:3]}")
     stray = {cv for cv, _ in latest} - pool - gold
     if stray:
-        raise SystemExit(f"{len(stray)} CVs are in neither the training pool nor the gold set, e.g. {sorted(stray)[:3]}")
+        raise SystemExit(
+            f"{len(stray)} CVs are in neither the training pool nor the gold set, e.g. {sorted(stray)[:3]}"
+        )
 
     reasons = Counter()
     kept_total = 0

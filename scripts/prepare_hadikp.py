@@ -1,13 +1,14 @@
 """Extra training pages from the hadikp resume PDFs (data/raw/Resumes PDF/<category>/*.pdf, one image per PDF).
 
-    .venv/bin/python src/prepare_hadikp.py --dims DIMS.txt --n 20 --out data/processed/documents_hadikp_pilot.jsonl
+    python scripts/prepare_hadikp.py --dims DIMS.txt --n 20 --out data/processed/documents_hadikp_pilot.jsonl
 
 DIMS.txt: one line per PDF, "<width> <height> <category>/<file>.pdf" (from `pdfimages -list`).
 Takes a seeded random sample of PDFs whose embedded image is at least --min-width px wide, copies the
 embedded JPEG unchanged (`pdfimages -j`) to data/hadikp/<cv_id>.jpg and writes documents.jsonl-style rows
-for `auto_label.py --documents`. cv_ids that would fall in the validation split (train_lora.is_validation)
+for `tiny_resume_parser.label --documents`. cv_ids that would fall in the validation split (data.is_validation)
 are skipped, so the dev pages stay the same.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,7 +19,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from train_lora import is_validation
+from tiny_resume_parser.data import is_validation
 
 ROOT = Path(__file__).resolve().parent.parent
 RAW = ROOT / "data" / "raw" / "Resumes PDF"
@@ -58,9 +59,25 @@ def main() -> None:
                     print(f"skip {rel}: {[p.name for p in found]}")
                     continue
                 found[0].rename(dest)
-        docs.append({"cv_id": cv_id, "num_pages": 1, "multipage": False, "source": "hadikp", "pdf": rel,
-                     "pages": [{"page": 1, "image_path": f"hadikp/{dest.name}", "width": w, "height": h,
-                                "split": "train", "full_size": True}]})
+        docs.append(
+            {
+                "cv_id": cv_id,
+                "num_pages": 1,
+                "multipage": False,
+                "source": "hadikp",
+                "pdf": rel,
+                "pages": [
+                    {
+                        "page": 1,
+                        "image_path": f"hadikp/{dest.name}",
+                        "width": w,
+                        "height": h,
+                        "split": "train",
+                        "full_size": True,
+                    }
+                ],
+            }
+        )
     args.out.write_text("".join(json.dumps(d) + "\n" for d in docs))
     print(f"{len(docs)} pages -> {args.out}")
 

@@ -1,17 +1,18 @@
 """DPO + SFT term: continue a LoRA adapter so that it stops writing broken or wrong JSON. No TRL; a plain PyTorch loop.
 
-    .venv/bin/python src/train_dpo.py --adapter runs/lora_v6/adapter --pages runs/lora_v6/eval_train_all_free/pages.jsonl \\
+    python experiments/train_dpo.py --adapter runs/lora_v6/adapter --pages runs/lora_v6/eval_train_all_free/pages.jsonl \\
         --max-patches 12 --out runs/dpo_v1
-    .venv/bin/python src/train_dpo.py --adapter ... --pages ... --limit 20 --epochs 1 --out runs/dpo_smoke     # smoke test
+    python experiments/train_dpo.py --adapter ... --pages ... --limit 20 --epochs 1 --out runs/dpo_smoke     # smoke test
 
 --pages is the pages.jsonl that evaluate.py --set train wrote for the starting adapter (its own greedy answers).
 A page becomes a preference pair when its answer is not valid, or its page F1 is below --f1-threshold:
-chosen = the SFT target of the label (train_lora.student_target), rejected = the model's own answer.
+chosen = the SFT target of the label (models.student_target), rejected = the model's own answer.
 Loss per pair = -logsigmoid(beta * ((pc - refc) - (pr - refr))) + sft_weight * (chosen NLL per answer token),
 p = sum of answer-token log-probs (the Collator's mask: after "<|im_start|>assistant\\n" up to the closing <|im_end|>).
 ref = the starting adapter, evaluated once before training and kept as numbers, so only one model is in memory.
 A rejected answer that hit the token limit never wrote <|im_end|>, so its mask stops before the one the chat template adds.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -28,7 +29,9 @@ from peft import PeftModel
 from peft.tuners.lora import LoraLayer
 from transformers import AutoModelForImageTextToText, AutoProcessor, get_cosine_schedule_with_warmup
 
-from train_lora import LABELS, MAX_PATCHES, MODEL_ID, Collator, is_validation, student_target
+from tiny_resume_parser.data import LABELS, is_validation
+from tiny_resume_parser.models import MAX_PATCHES, MODEL_ID, student_target
+from tiny_resume_parser.train import Collator
 
 
 def build_pairs(pages_file: Path, labels_file: Path, f1_threshold: float) -> tuple[list[dict], dict]:
@@ -55,12 +58,28 @@ def build_pairs(pages_file: Path, labels_file: Path, f1_threshold: float) -> tup
         if p["answer"] == chosen:
             skipped["answer equals chosen"] += 1
             continue
-        pairs.append({"cv_id": p["cv_id"], "page": p["page"], "image": row["image"], "record": row["record"],
-                      "rejected": p["answer"], "truncated": bool(p["hit_limit"]), "status": p["status"], "f1": f1})
+        pairs.append(
+            {
+                "cv_id": p["cv_id"],
+                "page": p["page"],
+                "image": row["image"],
+                "record": row["record"],
+                "rejected": p["answer"],
+                "truncated": bool(p["hit_limit"]),
+                "status": p["status"],
+                "f1": f1,
+            }
+        )
         kept[p["status"]] += 1
         buckets[f"{min(int(f1 * 10), 9) / 10:.1f}-{min(int(f1 * 10), 9) / 10 + 0.1:.1f}"] += 1
-    summary = {"pairs": len(pairs), "by_status": dict(kept), "truncated_rejected": sum(p["truncated"] for p in pairs),
-               "f1_histogram": dict(sorted(buckets.items())), "skipped": dict(skipped), "f1_threshold": f1_threshold}
+    summary = {
+        "pairs": len(pairs),
+        "by_status": dict(kept),
+        "truncated_rejected": sum(p["truncated"] for p in pairs),
+        "f1_histogram": dict(sorted(buckets.items())),
+        "skipped": dict(skipped),
+        "f1_threshold": f1_threshold,
+    }
     return pairs, summary
 
 
@@ -83,19 +102,36 @@ def dpo_loss(pc, pr, ref_c, ref_r, n_chosen, beta: float, sft_weight: float) -> 
     reward_c, reward_r = beta * (pc - ref_c), beta * (pr - ref_r)
     dpo = -F.logsigmoid(reward_c - reward_r)
     sft = -pc / n_chosen
-    return {"loss": dpo + sft_weight * sft, "dpo": dpo, "sft": sft, "margin": reward_c - reward_r,
-            "acc": (reward_c > reward_r).float()}
+    return {
+        "loss": dpo + sft_weight * sft,
+        "dpo": dpo,
+        "sft": sft,
+        "margin": reward_c - reward_r,
+        "acc": (reward_c > reward_r).float(),
+    }
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--adapter", type=Path, required=True, help="starting LoRA adapter directory (saved by train_lora.py)")
+    ap.add_argument("--adapter", type=Path, required=True, help="starting LoRA adapter directory (saved by train.py)")
     ap.add_argument("--pages", type=Path, required=True, help="pages.jsonl of evaluate.py --set train for that adapter")
     ap.add_argument("--out", type=Path, required=True)
-    ap.add_argument("--train-file", type=Path, default=LABELS, help="label JSONL the pages are looked up in, by (cv_id, page)")
+    ap.add_argument(
+        "--train-file", type=Path, default=LABELS, help="label JSONL the pages are looked up in, by (cv_id, page)"
+    )
     ap.add_argument("--model", default=MODEL_ID, help="base model id or path")
-    ap.add_argument("--max-patches", type=int, default=MAX_PATCHES, help="tile cap per page; use the value the adapter was trained with")
-    ap.add_argument("--f1-threshold", type=float, default=0.9, help="valid answers with a page F1 below this are rejected answers too")
+    ap.add_argument(
+        "--max-patches",
+        type=int,
+        default=MAX_PATCHES,
+        help="tile cap per page; use the value the adapter was trained with",
+    )
+    ap.add_argument(
+        "--f1-threshold",
+        type=float,
+        default=0.9,
+        help="valid answers with a page F1 below this are rejected answers too",
+    )
     ap.add_argument("--limit", type=int, help="use the first N pairs only (smoke test)")
     ap.add_argument("--beta", type=float, default=0.1)
     ap.add_argument("--sft-weight", type=float, default=1.0, help="weight of the chosen answer's NLL per token")
@@ -103,14 +139,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--epochs", type=int, default=1)
     ap.add_argument("--accum", type=int, default=8, help="pairs per optimizer step")
     ap.add_argument("--save-every", type=int, help="save the adapter to out/checkpoint-<step> every N optimizer steps")
-    ap.add_argument("--no-grad-ckpt", action="store_true",
-                    help="turn off gradient checkpointing: faster, but two ~5k-token graphs per pair need far more GPU memory")
+    ap.add_argument(
+        "--no-grad-ckpt",
+        action="store_true",
+        help="turn off gradient checkpointing: faster, but two ~5k-token graphs per pair need far more GPU memory",
+    )
     ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args(argv)
 
     pairs, summary = build_pairs(args.pages, args.train_file, args.f1_threshold)
     if args.limit:
-        pairs = pairs[:args.limit]
+        pairs = pairs[: args.limit]
         summary["used"] = len(pairs)
     print(json.dumps(summary))
     if not pairs:
@@ -129,7 +168,9 @@ def main(argv: list[str] | None = None) -> int:
     base.enable_input_require_grads()
     model = PeftModel.from_pretrained(base, args.adapter, is_trainable=True)
     for m in model.modules():
-        if isinstance(m, LoraLayer):  # the reference pass runs in eval mode (no dropout); the policy must match it, or the first margin is noise
+        if isinstance(
+            m, LoraLayer
+        ):  # the reference pass runs in eval mode (no dropout); the policy must match it, or the first margin is noise
             for name in m.lora_dropout:
                 m.lora_dropout[name] = torch.nn.Identity()
     if cuda:
@@ -160,8 +201,12 @@ def main(argv: list[str] | None = None) -> int:
     with torch.no_grad(), autocast():
         for i, pair in enumerate(pairs):
             chosen, rejected = rows_of(pair)
-            ref.append((seq_logp(model, collate([chosen]), device, dtype)[0].item(),
-                        seq_logp(model, collate([rejected]), device, dtype)[0].item()))
+            ref.append(
+                (
+                    seq_logp(model, collate([chosen]), device, dtype)[0].item(),
+                    seq_logp(model, collate([rejected]), device, dtype)[0].item(),
+                )
+            )
             if (i + 1) % 20 == 0 or i + 1 == len(pairs):
                 print(f"  reference {i + 1}/{len(pairs)} ({time.time() - t0:.0f} s)", flush=True)
     model.train()
@@ -175,7 +220,7 @@ def main(argv: list[str] | None = None) -> int:
         order = list(range(len(pairs)))
         random.shuffle(order)
         for g in range(0, len(order), args.accum):
-            group = order[g:g + args.accum]
+            group = order[g : g + args.accum]
             agg = Counter()
             t0 = time.time()
             for i in group:
@@ -194,11 +239,24 @@ def main(argv: list[str] | None = None) -> int:
             sched.step()
             opt.zero_grad(set_to_none=True)
             step += 1
-            rec = {"step": step, "epoch": epoch + g / len(order), "loss": agg["loss"], "dpo": agg["dpo"], "sft": agg["sft"],
-                   "reward_margin": agg["margin"], "reward_accuracy": agg["acc"], "grad_norm": grad_norm, "learning_rate": lr}
+            rec = {
+                "step": step,
+                "epoch": epoch + g / len(order),
+                "loss": agg["loss"],
+                "dpo": agg["dpo"],
+                "sft": agg["sft"],
+                "reward_margin": agg["margin"],
+                "reward_accuracy": agg["acc"],
+                "grad_norm": grad_norm,
+                "learning_rate": lr,
+            }
             history.append(rec)
-            print(f"step {step}/{total}: " + ", ".join(f"{k} {v:.4g}" for k, v in rec.items() if k not in ("step", "epoch"))
-                  + f", {time.time() - t0:.0f} s", flush=True)
+            print(
+                f"step {step}/{total}: "
+                + ", ".join(f"{k} {v:.4g}" for k, v in rec.items() if k not in ("step", "epoch"))
+                + f", {time.time() - t0:.0f} s",
+                flush=True,
+            )
             if args.save_every and step % args.save_every == 0:
                 model.save_pretrained(args.out / f"checkpoint-{step}")
 

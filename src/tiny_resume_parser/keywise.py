@@ -4,13 +4,14 @@
 in full by the model, quotes and brackets included, or `null` when the page has none. The prefix of key i holds every
 earlier key with its value (empty ones as null), so the model sees what it already wrote.
 """
+
 from __future__ import annotations
 
 import json
 
-from schema import _drop_empty, template, to_record
+from .models import STUDENT_SKIP as SKIP
+from .schema import _drop_empty, template, to_record
 
-SKIP = ("corrections",)  # = train_lora.STUDENT_SKIP (not imported: train_lora imports this module)
 KEYS = [("basics", k) for k in template()["basics"]] + [(k,) for k in template() if k not in ("basics", *SKIP)]
 
 
@@ -33,7 +34,7 @@ def values(record: dict) -> list[str]:
 def prefix(vals: list[str], i: int) -> str:
     """JSON text from `{` up to and including key i's `"key":`, holding the values of keys 0..i-1."""
     parts, in_basics = ["{"], False
-    for j, key in enumerate(KEYS[:i + 1]):
+    for j, key in enumerate(KEYS[: i + 1]):
         if key[0] == "basics" and not in_basics:
             parts.append('"basics":{')
             in_basics = True

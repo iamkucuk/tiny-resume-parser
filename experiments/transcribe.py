@@ -1,12 +1,13 @@
 """Plain-text transcripts of training pages with granite-docling-258M, for a reading stage before JSON training.
 
-    python src/transcribe.py --train-file data/processed/labels_train_v6_hk1k.jsonl --out data/processed/transcripts.jsonl \
+    python experiments/transcribe.py --train-file data/processed/labels_train_v6_hk1k.jsonl --out data/processed/transcripts.jsonl \
         [--shard 0 --shards 4] [--limit 16]
 
 granite-docling writes DocTags (text elements with <loc_N> boxes); to_text() keeps only the text, one element per
 line. Validation-split pages are skipped (they are scored), and the script stops if any page belongs to a gold CV.
 Output rows: cv_id, page, num_pages, image, transcript, tokens, hit_limit. Already written pages are skipped on rerun.
 """
+
 import argparse
 import json
 import re
@@ -17,7 +18,7 @@ import torch
 from PIL import Image
 from transformers import AutoModelForImageTextToText, AutoProcessor
 
-from train_lora import ROOT, is_validation
+from tiny_resume_parser.data import ROOT, is_validation
 
 GRANITE_ID = "ibm-granite/granite-docling-258M"
 GOLD = ROOT / "data" / "processed" / "labels_gold_v6_verified.jsonl"
@@ -45,7 +46,7 @@ def main() -> None:
 
     gold_cvs = {json.loads(line)["cv_id"] for line in GOLD.read_text().splitlines()}
     rows = [json.loads(line) for line in args.train_file.read_text().splitlines()]
-    rows = [r for r in rows if not is_validation(r["cv_id"])][args.shard::args.shards][:args.limit]
+    rows = [r for r in rows if not is_validation(r["cv_id"])][args.shard :: args.shards][: args.limit]
     if any(r["cv_id"] in gold_cvs for r in rows):
         raise SystemExit("a training page belongs to a gold CV: stop")
     done = set()
@@ -63,19 +64,25 @@ def main() -> None:
     t0 = time.time()
     with args.out.open("a") as f:
         for i in range(0, len(rows), args.batch):
-            b = rows[i:i + args.batch]
+            b = rows[i : i + args.batch]
             images = [Image.open(ROOT / "data" / r["image"]).convert("RGB") for r in b]
-            inputs = processor(text=[prompt] * len(b), images=[[im] for im in images], padding=True,
-                               return_tensors="pt").to("cuda")
+            inputs = processor(
+                text=[prompt] * len(b), images=[[im] for im in images], padding=True, return_tensors="pt"
+            ).to("cuda")
             with torch.no_grad():
                 out = model.generate(**inputs, max_new_tokens=args.max_new_tokens, do_sample=False, use_cache=True)
-            for r, ids in zip(b, out[:, inputs["input_ids"].shape[1]:]):
+            for r, ids in zip(b, out[:, inputs["input_ids"].shape[1] :]):
                 ids = ids.tolist()
                 n = ids.index(end_id) if end_id in ids else len(ids)
                 doctags = processor.tokenizer.decode(ids[:n], skip_special_tokens=False)
-                f.write(json.dumps({k: r[k] for k in ("cv_id", "page", "num_pages", "image")} |
-                                   {"transcript": to_text(doctags), "tokens": n, "hit_limit": n >= args.max_new_tokens},
-                                   ensure_ascii=False) + "\n")
+                f.write(
+                    json.dumps(
+                        {k: r[k] for k in ("cv_id", "page", "num_pages", "image")}
+                        | {"transcript": to_text(doctags), "tokens": n, "hit_limit": n >= args.max_new_tokens},
+                        ensure_ascii=False,
+                    )
+                    + "\n"
+                )
             f.flush()
             print(f"{i + len(b)}/{len(rows)} pages, {time.time() - t0:.0f} s", flush=True)
 

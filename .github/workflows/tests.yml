@@ -1,6 +1,12 @@
 name: tests
 on: [push, pull_request]
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+      - run: ruff format --check
   tests:
     runs-on: ubuntu-latest
     steps:
@@ -11,6 +17,6 @@ jobs:
       - name: Install (CPU torch)
         run: |
           pip install torch --index-url https://download.pytorch.org/whl/cpu
-          pip install -r requirements.txt pytest
+          pip install -e ".[train,dev]"
       - name: Run tests
         run: pytest -v

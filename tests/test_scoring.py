@@ -1,13 +1,10 @@
-"""The scores every decision rests on (src/rescore.py). Each test states the rule the protocol fixes:
+"""The scores every decision rests on (tiny_resume_parser/metrics.py). Each test states the rule the protocol fixes:
 lenient forgives case, spacing and punctuation but never a letter or digit; content forgives split, merged or
-re-placed text within a section; repair keeps only complete values. Run: pytest, or .venv/bin/python tests/test_scoring.py"""
-import sys
-from collections import Counter
-from pathlib import Path
+re-placed text within a section; repair keeps only complete values. Run: pytest, or python tests/test_scoring.py"""
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
-from evaluate import pairs  # noqa: E402
-from rescore import content, f1, lenient, repair  # noqa: E402
+from collections import Counter
+
+from tiny_resume_parser.metrics import content, f1, lenient, pairs, repair
 
 
 def matched(pred: Counter, gold: Counter) -> int:

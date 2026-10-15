@@ -1,36 +1,67 @@
-"""Rescore saved answers (pages.jsonl from evaluate.py) with strict and lenient field F1, overall and per section.
+"""Field-level scores of a model answer against a label; every number in the README comes from here.
 
-    .venv/bin/python src/rescore.py [--canon] [--repair] runs/lora_v6/eval_gold_free [more eval dirs ...]
-
-strict  = evaluate.pairs: (path, value) must match exactly.
-lenient = same pairs after casefolding and removing everything that is not a letter or digit, so
-          "Nvidia"/"NVIDIA" or "Sfax, Tunisie"/"Sfax Tunisie" match, but "09.25"/"09.20" or "Tunisie"/"Tunasie" do not.
-          Accents are kept: "Électrique" vs "Electrique" still counts as an error.
-content = the words of all values in one top-level section, compared per page as a multiset (casefolded, split
-          on everything that is not a letter or digit). How text is split into values, and which field of the same
-          section holds it, does not matter; a word with any letter or digit difference is a miss (user, 2026-10-14).
-The gold record for each page is looked up by (cv_id, page) in the gold, then the training label file.
---repair: answers that are not valid JSON are repaired before scoring (invalid backslash escapes doubled; an
-          answer cut off at the token limit, or broken by a syntax error, keeps its complete values up to the break
-          and gets its brackets closed; then exact duplicate list items are dropped, which removes repetition loops).
-          Valid answers are not touched. Written to rescore_repair.json, so the default scores stay comparable.
+A record is flattened into (path, value) pairs, list positions ignored (Donut-style field F1, arXiv 2111.15664):
+    {"skills": [{"name": "SQL"}]}  ->  ("skills.name", "SQL")
+strict   the pair must match exactly.
+lenient  pairs compared after casefolding and dropping everything that is not a letter or digit, so "NVIDIA" =
+         "Nvidia" and "Sfax, Tunisie" = "Sfax Tunisie", but "09.25" != "09.20". Accents are kept (e != é).
+content  the words of all values in one top-level section, compared as a multiset: how text is split into values
+         and which field of the section holds it do not matter; a word with any letter or digit difference is a miss.
+repair   (optional, before scoring) a broken answer keeps its complete values up to the break and duplicate list
+         items are dropped; valid answers are not changed.
 """
+
 from __future__ import annotations
 
 import json
 import re
-import sys
 import unicodedata
 from collections import Counter
 from pathlib import Path
 
-from evaluate import GOLD, pairs
-from canon import canon
-from schema import to_record
-from train_lora import LABELS
+from .canon import canon
+from .models import STUDENT_SKIP
+from .schema import _drop_empty, to_record
+
+
+def pairs(record: dict) -> Counter:
+    """Multiset of (path, value) leaves, list positions ignored, empty values and STUDENT_SKIP keys left out."""
+    out = Counter()
+
+    def walk(x, path):
+        if isinstance(x, dict):
+            for k, v in x.items():
+                walk(v, f"{path}.{k}" if path else k)
+        elif isinstance(x, list):
+            for v in x:
+                walk(v, path)
+        else:
+            out[(path, str(x).strip())] += 1
+
+    walk(_drop_empty({k: v for k, v in record.items() if k not in STUDENT_SKIP}), "")
+    return out
+
+
+def score(answer: str, gold: dict) -> dict:
+    """status: valid (passes the schema), schema_error (JSON but not the schema; still scored), unparsed (scored as 0)."""
+    try:
+        pred = json.loads(answer)
+    except json.JSONDecodeError:
+        pred, status = {}, "unparsed"
+    else:
+        try:
+            pred, status = to_record(pred), "valid"
+        except Exception:
+            status = "schema_error"
+        if not isinstance(pred, dict):
+            pred, status = {}, "unparsed"
+    p, g = pairs(pred), pairs(to_record(gold))
+    hit = sum((p & g).values())
+    return {"status": status, "pred": sum(p.values()), "gold": sum(g.values()), "hit": hit}
 
 
 def lenient(c: Counter) -> Counter:
+    """Pairs with values casefolded and reduced to letters and digits."""
     out = Counter()
     for (path, value), n in c.items():
         v = "".join(ch for ch in unicodedata.normalize("NFKC", value).casefold() if ch.isalnum())
@@ -56,7 +87,7 @@ def dedup(x):
 def repair(answer: str):
     """Best-effort JSON from a broken answer: fix invalid escapes; else keep the complete values before the cut-off end
     or, failing that, before the first syntax error, and close the brackets. Duplicate list items are dropped."""
-    a = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', answer)
+    a = re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", answer)
     try:
         return dedup(json.loads(a))
     except json.JSONDecodeError as e:
@@ -96,6 +127,7 @@ def salvage(a: str):
 
 
 def content(c: Counter) -> Counter:
+    """(top-level section, word) multiset: the words a section contains, wherever they were placed."""
     out = Counter()
     for (path, value), n in c.items():
         for w in re.split(r"[^\w]|_", unicodedata.normalize("NFKC", value).casefold()):
@@ -105,6 +137,7 @@ def content(c: Counter) -> Counter:
 
 
 def parse(answer: str, fix: bool = False) -> dict:
+    """Answer text -> record dict ({} if it does not parse); with fix, broken answers are repaired first."""
     try:
         pred = json.loads(answer)
     except json.JSONDecodeError:
@@ -118,11 +151,14 @@ def parse(answer: str, fix: bool = False) -> dict:
 
 
 def f1(h: int, p: int, g: int) -> tuple[float, float, float]:
+    """Precision, recall, F1 from hits, predicted and gold counts."""
     P, R = h / max(p, 1), h / max(g, 1)
     return P, R, 2 * P * R / max(P + R, 1e-9)
 
 
 def rescore(eval_dir: Path, labels: dict, use_canon: bool = False, fix: bool = False) -> dict:
+    """Strict, lenient and content P/R/F1 of every answer in eval_dir/pages.jsonl, overall and per section.
+    labels: (cv_id, page) -> record (data.label_index). use_canon: apply canon.py to both sides first."""
     tot = {"strict": Counter(), "lenient": Counter(), "content": Counter()}
     sec = {"strict": Counter(), "lenient": Counter(), "content": Counter()}
     for line in (eval_dir / "pages.jsonl").read_text().splitlines():
@@ -135,8 +171,11 @@ def rescore(eval_dir: Path, labels: dict, use_canon: bool = False, fix: bool = F
             except (AttributeError, TypeError):  # schema-error answer with odd structure: scored as written
                 pass
         g, p = pairs(g), pairs(p)
-        for name, (pp, gg) in {"strict": (p, g), "lenient": (lenient(p), lenient(g)),
-                               "content": (content(p), content(g))}.items():
+        for name, (pp, gg) in {
+            "strict": (p, g),
+            "lenient": (lenient(p), lenient(g)),
+            "content": (content(p), content(g)),
+        }.items():
             hit = pp & gg
             tot[name].update({"hit": sum(hit.values()), "pred": sum(pp.values()), "gold": sum(gg.values())})
             for c, key in ((hit, "hit"), (pp, "pred"), (gg, "gold")):
@@ -147,27 +186,11 @@ def rescore(eval_dir: Path, labels: dict, use_canon: bool = False, fix: bool = F
         P, R, F = f1(tot[name]["hit"], tot[name]["pred"], tot[name]["gold"])
         out[name] = {"P": round(P, 4), "R": round(R, 4), "F1": round(F, 4)}
     sections = sorted({s for s, _ in sec["strict"]})
-    out["sections"] = {s: {name: round(f1(sec[name][(s, "hit")], sec[name][(s, "pred")], sec[name][(s, "gold")])[2], 3)
-                           for name in sec} | {"gold": sec["strict"][(s, "gold")]} for s in sections}
+    out["sections"] = {
+        s: {
+            name: round(f1(sec[name][(s, "hit")], sec[name][(s, "pred")], sec[name][(s, "gold")])[2], 3) for name in sec
+        }
+        | {"gold": sec["strict"][(s, "gold")]}
+        for s in sections
+    }
     return out
-
-
-def main(argv: list[str]) -> None:
-    labels = {}
-    for path in (LABELS, GOLD):  # gold last: a page in both is scored against the reviewed label
-        for line in path.read_text().splitlines():
-            r = json.loads(line)
-            labels[(r["cv_id"], r["page"])] = r["record"]
-    use_canon = "--canon" in argv  # same canon.py rules on answers and gold; written to rescore_canon.json
-    fix = "--repair" in argv
-    suffix = "_canon" * use_canon + "_repair" * fix
-    for d in [a for a in argv if a not in ("--canon", "--repair")]:
-        res = rescore(Path(d), labels, use_canon, fix)
-        (Path(d) / f"rescore{suffix}.json").write_text(json.dumps(res, indent=1))
-        print(f"{d}: strict F1 {res['strict']['F1']:.3f} (P {res['strict']['P']:.3f} R {res['strict']['R']:.3f}) | "
-              f"lenient F1 {res['lenient']['F1']:.3f} (P {res['lenient']['P']:.3f} R {res['lenient']['R']:.3f}) | "
-              f"content F1 {res['content']['F1']:.3f} (P {res['content']['P']:.3f} R {res['content']['R']:.3f})")
-
-
-if __name__ == "__main__":
-    main(sys.argv[1:])
