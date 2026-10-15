@@ -1,6 +1,6 @@
 #!/bin/bash
 # Transcribe training pages with granite-docling-258M (experiments/transcribe.py), one shard per job.
-#   sbatch -J NAME truba/transcribe.slurm OUT_FILE "transcribe args"     (paths relative to cv_parser/)
+#   sbatch -J NAME experiments/transcribe.slurm OUT_FILE "transcribe args"     (paths relative to cv_parser/)
 #SBATCH --partition=kolyoz-cuda
 #SBATCH --account=romer
 #SBATCH --nodes=1

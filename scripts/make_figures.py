@@ -19,7 +19,7 @@ from PIL import Image  # noqa: E402
 
 ASSETS = Path(__file__).resolve().parent.parent / "docs" / "assets"
 
-# Lenient and content field F1 on the 204 held-out test pages, raw answers (truba/test.slurm, 2026-10-15).
+# Lenient and content field F1 on the 204 held-out test pages, raw answers (slurm/test.slurm, 2026-10-15).
 RESULTS = [  # (student, parameters, lenient F1, content F1)
     ("InternVL3-1B", "0.94B", 0.745, 0.844),
     ("SmolVLM-500M", "0.51B", 0.677, 0.788),

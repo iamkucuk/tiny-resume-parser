@@ -1,6 +1,6 @@
 #!/bin/bash
 # Preference training (experiments/train_dpo.py) from an adapter, then score the result and its checkpoints on the dev pages.
-#   sbatch -J NAME --gres=gpu:1 --cpus-per-task=16 truba/dpo.slurm NAME ADAPTER PAGES "dpo args" "eval args"
+#   sbatch -J NAME --gres=gpu:1 --cpus-per-task=16 experiments/dpo.slurm NAME ADAPTER PAGES "dpo args" "eval args"
 #SBATCH --partition=kolyoz-cuda
 #SBATCH --account=romer
 #SBATCH --nodes=1

@@ -1,10 +1,10 @@
-# Research record
+# Research log
 
-This folder records the research as it happened: every hypothesis, the reason it was tried, the run, the result,
-and what came next — including the ideas that did not work. The record was written during the work, not after it.
-File paths and script names inside entries are the ones used at the time; on 2026-10-15 the code moved into the
-`tiny_resume_parser` package (`src/train_lora.py` became `tiny_resume_parser.train`, `src/auto_label.py`
-`tiny_resume_parser.label`, other scripts kept their names).
+This folder is the unedited record of the work, written while it happened: every hypothesis, why it was tried,
+the run, the result and what came next. Run names and hypothesis numbers (H15, `S_soup10_vision`) are the ones used
+at the time. The curated summary is [../findings.md](../findings.md). File paths inside older entries predate the
+2026-10-15 restructure: `src/train_lora.py` became `tiny_resume_parser.train`, `src/auto_label.py` became
+`tiny_resume_parser.label`, and `truba/` became `slurm/`.
 
 ## Where to look
 
@@ -15,9 +15,9 @@ File paths and script names inside entries are the ones used at the time; on 202
 | [DESIGN_NOTES.md](DESIGN_NOTES.md) | Result tables and the design choices behind the schema, labels and training. | compare runs side by side |
 | [PLAN.md](PLAN.md) | The original plan (2026-10-11) and its decisions: schema, teacher, data split. | see where the project started |
 | [DATASET_RESEARCH.md](DATASET_RESEARCH.md) | The page data: sources, licences, how pages were grouped into CVs. | check what the models were trained on |
-| [FINETUNING_RECIPE.md](FINETUNING_RECIPE.md) | The first LoRA recipe for InternVL3-1B (later replaced by full fine-tuning). | see the starting recipe |
+| [FINETUNING_RECIPE.md](FINETUNING_RECIPE.md) | The first LoRA recipe for InternVL3-1B, replaced by full fine-tuning on 2026-10-13. | see the starting recipe |
 | [literature/](literature/) | Three literature reviews (2026-10-11, -12, -14) with sources and what was checked. | see which published work each idea came from |
-| [results_2026-10-15.html](results_2026-10-15.html) | Results page: best model per student, what changed, where errors remain. | read a summary with charts |
+| [results_2026-10-15.html](results_2026-10-15.html) | Results page of 2026-10-15 (before the test-set scores): best model per student, what changed, where errors remain. | see the state on that date |
 
 ## How a change is accepted
 
@@ -29,12 +29,11 @@ File paths and script names inside entries are the ones used at the time; on 202
 
 The 204-page test set is scored only at milestones, so the final number is not chosen on the pages it reports.
 
-## Findings
+## Experiments by phase
 
-Scores are lenient field F1, gold development pages / validation pages, at the validation-chosen epoch. "Confounded"
-means two things were changed in the same run, so the gain cannot be split between them.
-
-### How the recipe was built, phase by phase
+An index into the log, with the numbers of each step. Scores are lenient field F1, gold development pages /
+validation pages, at the validation-chosen epoch. "Confounded" means two things were changed in the same run, so
+the gain cannot be split between them. Scores of the first LoRA runs (phase 2) used the exact-match F1 of that time.
 
 **1. Data and labels (2026-10-09 to 10-11)**
 
@@ -101,49 +100,6 @@ seed spread: in ~350 steps it fitted the training pages, not reading in general.
 | Averages of 13–19 models | up to 0.745 / 0.724 (better gold, lower val) | not chosen |
 | Answer repair (fix escapes, keep values up to a break, drop duplicate list items) | 0.728 → 0.746 gold; never lowers a page by more than 0.001 | adopted as output step |
 | 993 extra pages from a second dataset (hadikp, licence unknown) | 6-seed mean +0.011 / +0.013 | small and uncertain; cannot be released |
-
-### Summary: what worked
-
-| Change | Effect (lenient gold / val) |
-|---|---|
-| Dropping `corrections` + token perturbation (confounded) | 0/10 → 21/50 valid answers; the answer loops ended |
-| Full fine-tune instead of LoRA | +0.03 |
-| Image noise during training | +0.035 / +0.007, 3 seeds |
-| Training the vision encoder too | +0.011 / +0.022, 3 seeds |
-| Averaging the weights of 10 fine-tuned seeds (model soup, arXiv 2203.05482) | +0.024 / +0.024 over the 4-seed mean |
-| Answer repair | up to +0.018, never below −0.001 |
-| SmolVLM: lr 6e-5 and 10 epochs instead of the InternVL recipe | 0.596 / 0.627 vs 0.370 / 0.460 |
-| SmolVLM: 30 image tiles (3,072 px longest edge) instead of 12 | +0.043 / +0.032, 2-seed means (20 tiles scored the same) |
-| SmolVLM: averaging the weights of 3 seeds | 0.644 / 0.676, +0.025 / +0.022 over the 3-seed mean |
-| granite-docling: 10 epochs; lr 1e-4 instead of 6e-5 | 0.542 → 0.574 gold; +0.024 / +0.031, 2-seed means |
-| granite-docling: averaging the weights of 4 seeds | 0.660 / 0.649, +0.044 / +0.033 over the seed mean (6 seeds: lower val) |
-
-### Summary: what did not work
-
-| Tried | Result |
-|---|---|
-| Preference training (DPO) on the model's own answers | 0.650 → 0.539 gold |
-| Reinforcement learning (GRPO) with field F1 as reward, 4 variants | 0.705–0.718 / 0.704–0.718 from 0.705 / 0.719: within the spread |
-| Repetition penalty 1.02 / 1.05 against looping answers | InternVL no gain; SmolVLM lower (0.342 / 0.430 vs 0.370 / 0.460) |
-| n-gram repetition ban | breaks normal JSON |
-| Schema-constrained decoding | 0.694 vs 0.693 free, 5.4× slower |
-| 24 image tiles instead of 12 (InternVL) | −0.05 gold |
-| Training on canonicalised labels | −0.01 |
-| 2 pages per step; batch-32 scoring | −0.02; scores change, no speed gain |
-| A second model pass that fixes teacher labels | made ~8 correct values wrong per 14 fixes |
-| SmolVLM: 48 image tiles; granite-docling: 30 or 48 tiles | no gain (SmolVLM) / lower (granite-docling) |
-| SmolVLM: a first training stage on page transcripts (Pix2Struct-style) | +0.005 / −0.023 — rejected |
-| SmolVLM: 993 extra training pages (2,386 instead of 1,393) | +0.006 / −0.011 (1 seed) — rejected |
-| NEFTune noise on text embeddings (arXiv 2310.05914) | SmolVLM −0.003 / −0.005 (1 seed); granite +0.003 / +0.007 (3 paired seeds) |
-| 10× lower learning rate for the vision encoder (discriminative fine-tuning) | granite −0.062 / −0.019 and −0.025 / −0.038 (2 seeds); InternVL +0.026 / −0.038 |
-| Averaging 5 SmolVLM seeds instead of 3 | 0.657 / 0.673 vs 0.644 / 0.676 — not better on val |
-
-### Open questions
-
-- Token perturbation alone, and LoRA rank vs 12 tiles: each was changed together with something else.
-- Why 2 pages per step scored ~0.02 lower; why granite-docling loses accuracy above 12 tiles.
-- SmolVLM 20 vs 30 tiles: equal accuracy; 3 seeds at 20 tiles are running to decide on CPU speed.
-- Not tried yet: merging the pages of one CV, quantised CPU inference.
 
 ### Key-by-key generation (tested 2026-10-15, not adopted)
 

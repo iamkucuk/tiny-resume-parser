@@ -1,49 +1,38 @@
 <h1 align="center">tiny-resume-parser</h1>
 
-<p align="center"><b>Small vision-language models (0.26B–0.94B) that read a CV page image the way a recruiter does and write ATS-ready JSON — on a laptop CPU.</b></p>
+<p align="center">Small vision-language models (0.26B–0.94B parameters) that read a CV page image and write its content as JSON. They run on a laptop CPU.</p>
 
 <p align="center">
   <a href="LICENSE.md"><img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-blue">
   <a href="https://github.com/iamkucuk/tiny-resume-parser/actions/workflows/tests.yml"><img alt="tests" src="https://github.com/iamkucuk/tiny-resume-parser/actions/workflows/tests.yml/badge.svg"></a>
-  <img alt="code style: ruff" src="https://img.shields.io/badge/code%20style-ruff-261230">
 </p>
 
 <p align="center"><img src="docs/assets/example.png" alt="Left: a two-column designer CV page with a photo. Right: the JSON the 0.94B model wrote for it, with name, contact details, work, education and skills in separate fields." width="900"></p>
-<p align="center"><sub>A validation page the model never trained on, and an excerpt of the JSON the 0.94B student wrote for it (strict field F1 0.82 against the teacher label).</sub></p>
+<p align="center"><sub>A validation page the model never trained on, and part of the JSON the 0.94B model wrote for it.</sub></p>
 
-> **Status: research in progress.** Model weights are not published yet.
+Most resume parsers read the text layer of a PDF. That layer can differ from what a recruiter sees: hidden text is
+extracted like visible text, two-column layouts come out interleaved, scanned pages have no text layer at all, and
+some PDFs store text without a usable character mapping. These models read the rendered page instead, so every CV
+is handled the same way, whether it is a born-digital PDF, a scan or a photo.
 
-## Why read the page image instead of the PDF text
-
-Most resume parsers read the PDF's text layer. That layer is not what a recruiter sees:
-
-| Problem with the PDF text layer | Reading the rendered page |
-|---|---|
-| **Hidden text** — white, tiny or off-page text (keyword stuffing, instructions aimed at an AI screener) is extracted like any other text | text that is not visible is not in the image |
-| **Reading order** — two columns, sidebars and tables come out interleaved | the model sees the layout |
-| **Scans and photos** — no text layer at all; OCR adds its own errors | same input as a born-digital PDF: one image |
-| **Broken PDFs** — fonts without Unicode mapping, text drawn as curves | whatever renders correctly can be read |
-
-One model handles every CV the same way, whatever produced it. Not solved: an instruction written in **visible**
-text is read by the model as it is by a person; robustness to that has not been tested yet.
+> Research in progress. Model weights are not published yet.
 
 ## Results
 
 <img alt="Bar charts of lenient field F1 and content F1 on the 204 held-out test pages: InternVL3-1B 0.745 and 0.844, SmolVLM-500M 0.677 and 0.788, granite-docling-258M 0.633 and 0.752; the teacher reaches 0.912 and 0.967 on the reviewed pages." src="docs/assets/results.svg" width="900">
 
-| Student | Params | **Test** lenient F1 | Test content F1 | Dev lenient F1 gold / val | CPU s/page |
-|---|---|---|---|---|---|
-| InternVL3-1B (average of 10 fine-tunes) | 0.94B | **0.745** | **0.844** | 0.728 / 0.732 | 62 |
-| SmolVLM-500M (average of 3) | 0.51B | 0.677 | 0.788 | 0.644 / 0.676 | 59 |
-| granite-docling-258M (average of 4) | 0.26B | 0.633 | 0.752 | 0.660 / 0.649 | 30 |
-| *Teacher: GLM-5.3-Flash vs human-reviewed labels* | *~300B* | *0.912* | *0.967* | | |
+| Model | Parameters | Field F1 | Content F1 | CPU seconds per page |
+|---|---|---|---|---|
+| InternVL3-1B | 0.94B | **0.745** | **0.844** | 62 |
+| SmolVLM-500M | 0.51B | 0.677 | 0.788 | 59 |
+| granite-docling-258M | 0.26B | 0.633 | 0.752 | 30 |
 
-*Lenient* field F1 ignores case, spacing and punctuation; any letter or digit difference is an error. *Content* F1
-also accepts correct words placed under another field of the same section. Test = 204 human-reviewed pages never
-used for any decision, scored once; dev = 50 reviewed gold pages / 79 teacher-labelled validation pages, used to
-choose every setting; CPU = Apple M2 Max, float32. The teacher's own 0.912 is the ceiling for students
-trained on its labels. Definitions, examples and commands: [docs/evaluation.md](docs/evaluation.md).
+Scores are on 204 human-reviewed test pages that were not used for any decision. Field F1 counts a value as correct
+when it matches the reviewed label apart from case, spacing and punctuation. Content F1 also accepts correct text
+placed under another field of the same section. The labelling model itself scores 0.912 field F1 on the same pages, which is the
+practical ceiling for models trained on its labels. Definitions and development scores are in
+[docs/evaluation.md](docs/evaluation.md); CPU times are for an Apple M2 Max in float32.
 
 ## Quickstart
 
@@ -53,112 +42,76 @@ tiny-resume-parser parse cv.pdf --model PATH_TO_MODEL
 ```
 
 ```json
-[{"file": "cv.pdf", "page": 1, "valid": true, "record": {"basics": {"name": "Josephine Meyers", "emails": ["josephine.meyers@me.com"], ...}, "work": [...]}}]
+[{"file": "cv.pdf", "page": 1, "valid": true, "record": {"basics": {"name": "Josephine Meyers", "emails": ["josephine.meyers@me.com"]}, "work": [...]}}]
 ```
 
-PDF pages are rendered at 120 dpi; images (PNG, JPEG) are read as they are. Until the weights are published,
-`--model` takes a model you trained ([docs/training.md](docs/training.md)).
+PDF pages are rendered at 120 dpi; PNG and JPEG files are read as they are. Until weights are published, `--model`
+takes a model trained with [docs/training.md](docs/training.md).
 
 ## How it works
 
 ```mermaid
 flowchart LR
-    A[CV page images<br/>Roboflow, CC BY 4.0] --> B[Teacher labels<br/>GLM-5.3-Flash]
-    B --> C[254 pages reviewed<br/>by hand: gold]
+    A[CV page images] --> B[Large model writes<br/>a JSON label per page]
+    B --> C[254 labels corrected<br/>by hand]
     B --> D[1,393 training pages]
-    D --> E[Fine-tune a student<br/>several seeds]
+    D --> E[Fine-tune a small model,<br/>several seeds]
     E --> F[Average the weights]
-    F --> G[Score on gold + val]
-    C --> G
+    C --> G[Score]
+    F --> G
 ```
 
-A large teacher labels each page once; small students learn to write the same JSON from the image alone; several
-fine-tuned copies of each student are averaged into one model of the same size. Details:
-[docs/how-it-works.md](docs/how-it-works.md).
+A large model (GLM-5.3-Flash) labels each page once. Each small model is then fully fine-tuned to write the same
+JSON from the page image alone, several times with different seeds, and the fine-tuned weights are averaged into
+one model of the same size. [docs/how-it-works.md](docs/how-it-works.md) describes each step.
 
-## Research highlights
+## Findings
 
-Every change was tested against a named baseline over several seeds, and kept only if it beat the seed-to-seed
-spread on both development sets. The full record, including everything that did not work, is in
-[docs/research/](docs/research/README.md).
+For the 0.94B model, three changes raised the score most: fine-tuning all weights instead of LoRA adapters, adding image noise while
+also training the vision encoder, and averaging the weights of several fine-tuned models. Preference training
+(DPO), reinforcement learning on the F1 score (GRPO), generating one JSON key at a time and constrained decoding
+did not improve it. The largest group of remaining errors is values the model leaves out; misread characters are one of the smallest.
+[docs/findings.md](docs/findings.md) gives the measured effect of each change.
 
-| Kept | Effect (lenient F1, gold / val) |
-|---|---|
-| Teacher's spelling-fix list left out of the target + token perturbation (Nougat), one run | answers stopped looping: 0/10 → 21/50 valid |
-| Full fine-tune instead of LoRA | +0.03 |
-| Image noise during training | +0.035 / +0.007 (3 seeds) |
-| Training the vision encoder too | +0.011 / +0.022 (3 seeds) |
-| Averaging the weights of 10 fine-tuned seeds | +0.024 / +0.024 over the seed mean |
-| Answer repair (keep the complete values of a cut-off answer) | +0.018 gold |
-| SmolVLM: 30 image tiles instead of 12 | +0.043 / +0.032 (2 seeds) |
-
-| Tried and rejected | Result |
-|---|---|
-| Preference training (DPO) on the model's own wrong answers | 0.650 → 0.539 gold |
-| Reinforcement learning (GRPO), reward = field F1, 4 variants | 0.705–0.718 from 0.705 gold; training reward rose, new pages did not |
-| Key-by-key generation (one call per JSON key) | equal on gold, −0.022 on val, 29× the calls |
-| Schema-constrained decoding, repetition penalty | no gain; constrained is 5.4× slower |
-| 24 tiles (InternVL), canonical labels, 2 pages per step | −0.05, −0.01, −0.02 |
-| NEFTune embedding noise; lower vision-encoder learning rate | no gain / lower |
-
-The phase-by-phase record, from the first LoRA run to the test-set milestone, is in
-[docs/research/README.md](docs/research/README.md#how-the-recipe-was-built-phase-by-phase).
-
-Where errors remain: values the model **leaves out** are the largest loss (10.6 % of gold values); misread
-characters are among the smallest (2.9 %).
-
-## Repository layout
+## Repository
 
 ```
-src/tiny_resume_parser/   the package — schema, data, models, train, generate, evaluate, metrics, soup, label, parse
-configs/                  one training recipe per student (TOML)
-scripts/                  data preparation and figure scripts
-experiments/              code for methods that were tried and not adopted
-truba/                    SLURM jobs used on the TRUBA cluster
-tests/                    scoring rules, PDF input, configs, key-by-key round trip
-notebooks/                Colab notebooks (first LoRA run, CPU/GPU speed test)
-docs/                     how it works, evaluation, training, model card, research record
+src/tiny_resume_parser/   the package: schema, data, models, train, generate, evaluate, metrics, soup, label, parse
+configs/                  training settings for each model
+scripts/                  data preparation and figures
+experiments/              methods that were tried and not adopted
+slurm/                    cluster jobs: train and score, average, test
+tests/                    scoring rules, PDF input, configs
+notebooks/                Colab notebooks: first LoRA run, CPU and GPU speed
+docs/                     method, evaluation, training, findings, model card, research log
 ```
 
 ## Limitations
 
-- One page at a time: pages of a multi-page CV are returned separately, not merged.
-- Trained on mostly French and English CVs from one dataset; other languages and layouts are untested.
-- Robustness to injected instructions on the page has not been measured.
-- Labels come from one teacher model (0.912 agreement with human review).
+- Each page is returned separately; pages of one CV are not merged.
+- The training CVs are mostly French and English and come from one dataset.
+- Instructions written in visible text on the page are read like any other text; this has not been tested.
+- All labels come from one labelling model.
 
 ## Citation
 
 ```bibtex
 @software{kucuk2026tinyresumeparser,
   author = {Kucuk, Furkan},
-  title  = {tiny-resume-parser: small vision-language models that read CV page images into ATS JSON},
+  title  = {tiny-resume-parser: small vision-language models that read CV page images into JSON},
   year   = {2026},
   url    = {https://github.com/iamkucuk/tiny-resume-parser}
 }
 ```
 
-Please also cite the page images:
+The page images come from the [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu)
+(invoiceModelisation, Roboflow Universe, 2024, [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)). They
+were deduplicated and grouped into CVs; the dataset's bounding boxes were not used.
 
-```bibtex
-@misc{cv-parsing-ksgbu_dataset,
-  title        = {Cv Parsing Dataset},
-  author       = {invoiceModelisation},
-  howpublished = {\url{https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu}},
-  publisher    = {Roboflow},
-  year         = {2024}
-}
-```
+## Licence
 
-## Licence and data
-
-- Code: [PolyForm Noncommercial 1.0.0](LICENSE.md) — free for personal, research, educational and nonprofit use;
-  commercial use is not permitted. This is a source-available licence, not an OSI open-source licence.
-- Model weights and documentation (when released): CC BY-NC 4.0.
-- CV page images: [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu) by
-  invoiceModelisation (Roboflow Universe, 2024), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
-  Changes made here: the original uploads were deduplicated and grouped into CVs, the object-detection boxes were
-  not used, and every page was given a JSON label by GLM-5.3-Flash (254 of them reviewed by hand).
-- Base models: [InternVL3-1B-hf](https://huggingface.co/OpenGVLab/InternVL3-1B-hf),
-  [SmolVLM-500M-Instruct](https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct),
-  [granite-docling-258M](https://huggingface.co/ibm-granite/granite-docling-258M), each under its own licence.
+Code: [PolyForm Noncommercial 1.0.0](LICENSE.md), free for personal, research, educational and nonprofit use, not for
+commercial use. Weights and documentation, once released: CC BY-NC 4.0. Each base model
+([InternVL3-1B-hf](https://huggingface.co/OpenGVLab/InternVL3-1B-hf),
+[SmolVLM-500M-Instruct](https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct),
+[granite-docling-258M](https://huggingface.co/ibm-granite/granite-docling-258M)) keeps its own licence.

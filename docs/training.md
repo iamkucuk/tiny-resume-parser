@@ -52,15 +52,15 @@ All three: full fine-tune with the vision encoder, image noise p = 0.5, effectiv
 tiny-resume-parser soup --out runs/internvl_avg/model runs/internvl_s42/checkpoint-440 runs/internvl_s1/model ...
 ```
 
-The released InternVL model averages 10 seeds, SmolVLM 3, granite-docling 4.
+The InternVL model averages 10 runs, SmolVLM 3 and granite-docling 4.
 
 ## On a SLURM cluster
 
-[`truba/`](../truba) holds the jobs used on the TRUBA cluster: `exp.slurm` trains, scores every epoch from epoch 3
-on, and keeps only the validation-chosen checkpoint; `soup.slurm` averages and scores; `test.slurm` scores the test
-set. Paths in them are specific to that cluster.
+[`slurm/`](../slurm) holds the jobs used for the reported runs: `exp.slurm` trains, scores every epoch from epoch 3
+on and keeps only the checkpoint chosen on the validation pages; `soup.slurm` averages and scores; `test.slurm`
+scores the test pages. Paths, partition and account in them belong to the TRUBA cluster and need changing elsewhere.
 
 ## Experiments not in the recipe
 
-[`experiments/`](../experiments) keeps code for methods that were tried and not adopted (preference training, GRPO, a
-reading-stage warm-up). Each result is in the [research record](research/README.md).
+[`experiments/`](../experiments) keeps the code of methods that were tried and not adopted: preference training,
+reinforcement learning and a first training stage on page transcripts. Their results are in [findings.md](findings.md).

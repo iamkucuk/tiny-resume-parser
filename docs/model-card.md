@@ -1,12 +1,12 @@
-# Model card — tiny-resume-parser students
+# Model card
 
-Weights are not published yet; this card describes the models that will be released.
+The weights are not published yet. This card describes the three models that will be released.
 
-| | InternVL3-1B student | SmolVLM-500M student | granite-docling-258M student |
+| | InternVL3-1B | SmolVLM-500M | granite-docling-258M |
 |---|---|---|---|
 | Base model | OpenGVLab/InternVL3-1B-hf | HuggingFaceTB/SmolVLM-500M-Instruct | ibm-granite/granite-docling-258M |
 | Parameters | 0.94B | 0.51B | 0.26B |
-| Training | full fine-tune, 10 seeds averaged | full fine-tune, 3 seeds averaged | full fine-tune, 4 seeds averaged |
+| Training | full fine-tune, average of 10 runs | full fine-tune, average of 3 runs | full fine-tune, average of 4 runs |
 | Lenient F1, 204 test pages | 0.745 | 0.677 | 0.633 |
 | Lenient F1 (gold dev / val) | 0.728 / 0.732 | 0.644 / 0.676 | 0.660 / 0.649 |
 | CPU time per page (M2 Max, fp32) | ~62 s | ~59 s | ~30 s |

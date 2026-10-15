@@ -1,6 +1,6 @@
 #!/bin/bash
 # One experiment = train, then score every saved epoch from MIN_EPOCH on the dev pages (gold 1-50 + validation split).
-#   sbatch --gres=gpu:N --cpus-per-task=16N truba/exp.slurm NAME "train args" "eval args" [MIN_EPOCH]
+#   sbatch --gres=gpu:N --cpus-per-task=16N slurm/exp.slurm NAME "train args" "eval args" [MIN_EPOCH]
 # eval args must repeat what changes the input (--max-patches) and, for another base model, --model.
 #SBATCH --partition=kolyoz-cuda
 #SBATCH --account=romer

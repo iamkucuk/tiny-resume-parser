@@ -1,6 +1,6 @@
 #!/bin/bash
 # Score one model ONCE on the held-out test pages (reviewed gold pages 51-254), raw and repaired. Milestones only.
-#   sbatch -J NAME truba/test.slurm NAME weights_dir "eval args"   (weights_dir relative to cv_parser/)
+#   sbatch -J NAME slurm/test.slurm NAME weights_dir "eval args"   (weights_dir relative to cv_parser/)
 #SBATCH --partition=kolyoz-cuda
 #SBATCH --account=romer
 #SBATCH --nodes=1

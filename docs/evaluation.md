@@ -1,67 +1,61 @@
 # Evaluation
 
-Every number in this repository comes from [`metrics.py`](../src/tiny_resume_parser/metrics.py), and each metric
-below has a test in [`tests/test_scoring.py`](../tests/test_scoring.py).
+This page defines the scores, the page sets they are computed on, and the results of the released models. Every
+score comes from [`metrics.py`](../src/tiny_resume_parser/metrics.py), and each rule below has a test in
+[`tests/test_scoring.py`](../tests/test_scoring.py).
 
 ## Field F1
 
-A record is flattened into (path, value) pairs, list positions ignored (Donut-style field F1, arXiv 2111.15664):
+A record is flattened into (path, value) pairs, ignoring list positions (field F1 as in Donut, arXiv 2111.15664):
 
 ```
 {"work": [{"name": "BuzzCreators", "startDate": "2019-07"}]}  ->  ("work.name", "BuzzCreators"), ("work.startDate", "2019-07")
 ```
 
-Precision = matched pairs / predicted pairs; recall = matched pairs / gold pairs; pooled over all pages. A page whose
-answer is not JSON counts as zero predicted pairs.
+Precision is matched pairs over predicted pairs, recall is matched pairs over label pairs, both pooled over all pages.
+A page whose answer is not valid JSON contributes no predicted pairs. Three matching rules are reported:
 
-| Metric | A pair matches when … | Same | Different |
+| Score | A pair matches when | Match | No match |
 |---|---|---|---|
-| **strict** | path and value are identical | `Sfax, Tunisie` = `Sfax, Tunisie` | `NVIDIA` ≠ `Nvidia` |
-| **lenient** (headline) | path matches; values match after casefolding and dropping everything that is not a letter or digit | `NVIDIA` = `Nvidia`; `+33 6 12-34` = `+33612 34` | `2021-04` ≠ `2021-04-21`; `Picard` ≠ `Picart`; `é` ≠ `e` |
-| **content** | the same words appear in the same top-level section, wherever they were placed | `skills.name: "Python, SQL"` = `skills.name: "Python"` + `skills.keywords: ["SQL"]` | `Python` under `interests` ≠ under `skills` |
+| strict | path and value are identical | `Sfax, Tunisie` = `Sfax, Tunisie` | `NVIDIA` ≠ `Nvidia` |
+| lenient (headline) | the path is the same and the values are the same after lowercasing and removing everything that is not a letter or digit | `NVIDIA` = `Nvidia`; `+33 6 12-34` = `+33612 34` | `2021-04` ≠ `2021-04-21`; `Picard` ≠ `Picart`; `é` ≠ `e` |
+| content | the same words appear in the same top-level section, under any field | `skills.name: "Python, SQL"` = `skills.name: "Python"` + `skills.keywords: ["SQL"]` | `Python` under `interests` ≠ under `skills` |
 
-Lenient F1 is the headline number: case, spacing and punctuation are not errors for an applicant-tracking import,
-but any letter or digit difference is. Content F1 measures reading separately from field placement: the teacher
-itself splits and places text inconsistently, so a student is penalised for choices the teacher makes at random.
+Lenient F1 is the headline score because case, spacing and punctuation do not matter when a CV is imported, while
+any letter or digit difference does. Content F1 separates reading from field placement: the labelling model itself
+splits text into fields inconsistently, so a small model trained on its labels is partly penalised for choices
+that were arbitrary in the labels.
 
-**Repair** (reported next to raw, never instead): a broken answer keeps its complete values up to the break and
-duplicate list items are dropped. This is what `tiny-resume-parser parse` returns.
+Repaired scores are reported next to raw ones, never instead of them. Repair keeps the complete values of a
+broken answer up to the error and drops repeated list items; the `parse` command applies it.
 
-## Protocol
+## Page sets
 
-- **Development sets** for every decision: 50 reviewed gold pages + 79 validation pages (5% of training CVs, chosen
-  by a hash of the CV id, teacher labels).
-- **Test set**: 204 reviewed gold pages, scored once per milestone so the reported number is not chosen on the pages
-  it reports.
-- **Epoch choice**: on the validation pages; gold is reported at that epoch.
-- **A change is adopted** only if it beats the seed-to-seed spread (~0.01–0.02 F1, up to 0.058 for the smaller
-  students) on both development sets. Single-seed results of the smaller students are checked with paired seeds.
+The 50 reviewed gold pages and 79 validation pages (5 % of the training CVs, chosen by a hash of the CV id, with
+model-written labels) are the development sets used for every decision. For each training run, the epoch is chosen
+on the validation pages and the gold score is reported at that epoch. A change is kept only if it beats the
+seed-to-seed spread (about 0.01 to 0.02 F1, larger for the two smaller models) on both sets. The remaining 204
+reviewed pages are the test set, scored once per milestone so that no setting is chosen on them.
 
 ## Results
 
-| Student | Dev lenient gold / val | Dev content gold / val | Test lenient (repaired) | Test strict | Test content | Test pages unparsed |
+| Model | Development lenient, gold / val | Development content, gold / val | Test lenient (repaired) | Test strict | Test content | Test pages not parsed |
 |---|---|---|---|---|---|---|
-| InternVL3-1B (average of 10) | 0.728 / 0.732 | 0.839 / 0.852 | **0.745** (0.746) | 0.732 | 0.844 | 3 / 204 |
-| SmolVLM-500M (average of 3) | 0.644 / 0.676 | 0.813 / 0.797 | 0.677 (0.683) | 0.667 | 0.788 | 4 / 204 |
-| granite-docling-258M (average of 4) | 0.660 / 0.649 | 0.798 / 0.780 | 0.633 (0.647) | 0.623 | 0.752 | 16 / 204 |
-| *Teacher vs reviewed gold* | *0.912* | *0.967* | | | | |
+| InternVL3-1B, average of 10 runs | 0.728 / 0.732 | 0.839 / 0.852 | **0.745** (0.746) | 0.732 | 0.844 | 3 of 204 |
+| SmolVLM-500M, average of 3 runs | 0.644 / 0.676 | 0.813 / 0.797 | 0.677 (0.683) | 0.667 | 0.788 | 4 of 204 |
+| granite-docling-258M, average of 4 runs | 0.660 / 0.649 | 0.798 / 0.780 | 0.633 (0.647) | 0.623 | 0.752 | 16 of 204 |
+| Labelling model against the corrected labels | 0.912 | 0.967 | | | | |
 
-The test pages were scored once, on 2026-10-15, after every setting had been chosen on the development pages. On
-them SmolVLM is ahead of granite-docling, the reverse of the 50 gold development pages: with 50 pages a difference of
-0.02 is within page-to-page noise.
+The test pages were scored on 2026-10-15, after every setting had been chosen. SmolVLM scores above granite-docling
+on the test pages and below it on the 50 gold development pages; with 50 pages, a difference of 0.02 is within the
+variation between pages.
 
-Reproduce a row:
+## Reproducing a score
 
 ```bash
 tiny-resume-parser evaluate --model runs/NAME/model --set gold --limit 50 --max-patches 12 --out runs/NAME/eval_gold
 tiny-resume-parser rescore runs/NAME/eval_gold
 ```
 
-Test pages: `--set gold --start 50`. SmolVLM: `--max-patches 30 --max-new-tokens 3000`.
-
-## Where the remaining errors are
-
-<img alt="Bar chart of gold values the best InternVL model loses: left out 10.6 %, page not parsed 6.7 %, joined with other text 4.6 %, written in part 3.1 %, misread characters 2.9 %, under another field 1.8 %." src="assets/lost-values.svg" width="700">
-
-Values the model leaves out are the largest loss; misread characters are among the smallest. Three of the 50 gold
-pages produce no parseable answer and carry 6.7 % of all gold values.
+Use `--set val` for the validation pages and `--set gold --start 50` for the test pages. SmolVLM needs
+`--max-patches 30 --max-new-tokens 3000`. Add `--repair` to `rescore` for repaired scores.

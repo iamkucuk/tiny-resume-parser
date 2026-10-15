@@ -1,6 +1,6 @@
 #!/bin/bash
 # GRPO after supervised fine-tuning, then score the final model on the dev pages (gold 1-50 + validation split).
-#   sbatch -J NAME truba/grpo.slurm NAME "grpo args (--model CHECKPOINT ...)" "eval args"
+#   sbatch -J NAME experiments/grpo.slurm NAME "grpo args (--model CHECKPOINT ...)" "eval args"
 # TRL is in $D/venv/trl_pkgs: not on the shared venv path (PYTHONPATH only), pinned to its torch/transformers. It must
 # sit under the venv prefix: dill pickles modules outside sys.prefix by value, which breaks datasets fingerprinting.
 #SBATCH --partition=kolyoz-cuda
