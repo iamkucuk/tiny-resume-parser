@@ -79,11 +79,9 @@ did not improve it; for GRPO, the training pages left little room above the answ
 ```
 src/tiny_resume_parser/   the package: schema, data, models, train, generate, evaluate, metrics, soup, label, parse
 configs/                  training settings for each model
-scripts/                  data preparation and figures
-experiments/              methods that were tried and not adopted
 slurm/                    cluster jobs: train and score, average, test
 tests/                    scoring rules, PDF input, configs
-docs/                     method, evaluation, training, findings, model card, research log
+docs/                     method, evaluation, training, findings, model card; research/ = the lab log
 ```
 
 ## Limitations

@@ -1362,3 +1362,7 @@ GD_perturb0.9_s42 / _s1 (1606605–06) vs GD lr 1e-4 seeds 42 / 1 (0.609 / 0.596
 SV_perturb0.9_s42 (1606607) vs SV_lr6e-5_tiles30 seed 42 (0.645 / 0.656). Also compare unparsed pages and limit hits.
 Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the other direction.
 - 20:50 queued GD_perturb0.9_s2 and SV_perturb0.9_s1 (paired seeds; baselines GD lr1e-4 seed 2, SV_lr6e-5_tiles30_seed1).
+
+## 2026-10-15 22:00 — Repository made minimal (log files renamed: RESEARCH_JOURNAL.md -> journal.md, DEVLOG.md -> runs.md)
+- main keeps only the adopted recipe. Removed from main, kept in tag archive-2026-10-15: LoRA, key-by-key, canonical labels, NEFTune, vision-lr, constrained decoding, repetition penalty, DPO / GRPO / probe code, data-prep scripts, notebooks, PLAN / DESIGN_NOTES / FINETUNING_RECIPE / DATASET_RESEARCH / literature / results page.
+- Checked: training batches identical to the old code (3 pages, seeded noise + perturbation); answers identical on 2 CPU pages; portable job scripts reproduce GD_soup4 0.660 / 0.649.

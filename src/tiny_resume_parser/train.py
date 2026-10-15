@@ -2,11 +2,11 @@
 
     python -m tiny_resume_parser.train --config configs/internvl3-1b.toml --out runs/NAME   # adopted recipe
     python -m tiny_resume_parser.train --config configs/granite-docling-258m.toml --seed 1 --out runs/NAME
-    python -m tiny_resume_parser.train --limit 20 --epochs 1 --out runs/smoke                # quick check
+    python -m tiny_resume_parser.train --limit 20 --epochs 1 --out runs/smoke                     # quick check
 
-Reads the training labels (data.LABELS or --train-file) minus the 5% validation split; writes out/model (full
-fine-tune) or out/adapter (LoRA), out/checkpoint-<step> per epoch with --save-every-epoch, and out/log_history.json.
-A config file sets the defaults; any flag on the command line overrides it.
+Every weight is trained, the vision encoder included. Reads the training labels (data.LABELS or --train-file) minus
+the 5% validation split; writes out/model, out/checkpoint-<step> per epoch with --save-every-epoch, and
+out/log_history.json. A config file sets the defaults; any flag on the command line overrides it.
 Loss is on the answer tokens only: image, prompt and the assistant header are masked (-100), and a check on the first
 batch stops the run if any image token is learnt.
 """
@@ -14,51 +14,23 @@ batch stops the run if any image token is learnt.
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import random
-import time
 import tomllib
 from pathlib import Path
 
 import torch
-from peft import LoraConfig, get_peft_model
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageFilter
 from transformers import AutoModelForImageTextToText, Trainer, TrainingArguments
 
-from . import keywise
 from .data import LABELS, is_validation, page_image
-from .models import MAX_PATCHES, MODEL_ID, READ_PROMPT, family, load_processor, messages, student_target
-from .schema import to_record
-
-LM_LINEAR = r"model\.language_model\..*\.(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)"
-
-
-class VisionLrTrainer(Trainer):
-    """Trainer whose optimizer gives the vision encoder its own learning rate (set vision_lr, vision_prefix)."""
-
-    def create_optimizer(self):
-        opt = super().create_optimizer()
-        vision = {id(p) for n, p in self.model.named_parameters() if n.startswith(self.vision_prefix)}
-        groups = []
-        for g in opt.param_groups:  # Trainer's groups split by weight decay; split each again by vision / rest
-            for is_vision in (False, True):
-                ps = [p for p in g["params"] if (id(p) in vision) == is_vision]
-                if ps:
-                    groups.append({**g, "params": ps, "lr": self.vision_lr if is_vision else g["lr"]})
-        if not any(g["lr"] == self.vision_lr for g in groups):
-            raise SystemExit(f"--vision-lr: no trainable parameter starts with {self.vision_prefix!r}")
-        opt.param_groups[:] = groups
-        print("optimizer groups (params, lr):", [(sum(p.numel() for p in g["params"]), g["lr"]) for g in groups])
-        return opt
+from .models import MAX_PATCHES, MODEL_ID, family, load_processor, messages, student_target
 
 
 def augment_page(im: Image.Image) -> Image.Image:
     """Photometric/geometric noise that keeps every character readable, so the label stays true:
     lower resolution (resize down and back), small rotation, JPEG artefacts, contrast/brightness, slight blur."""
-    import io
-
-    from PIL import ImageEnhance, ImageFilter
-
     w, h = im.size
     s = random.uniform(0.55, 1.0)
     im = im.resize((max(1, int(w * s)), max(1, int(h * s))), Image.BICUBIC).resize((w, h), Image.BICUBIC)
@@ -84,10 +56,8 @@ class Collator:
         perturb: float = 0.0,
         max_patches: int = MAX_PATCHES,
         augment: float = 0.0,
-        keywise: bool = False,
     ):
         self.processor = processor
-        self.keywise = keywise
         self.perturb = perturb
         self.augment = augment
         self.size = family(processor)["size"](max_patches)
@@ -99,18 +69,8 @@ class Collator:
         self.end_id = tok.convert_tokens_to_ids(family(processor)["end"])
 
     def __call__(self, rows: list[dict]) -> dict:
-        if self.keywise:
-            return self.keywise_batch(rows)
-        # experiments/train_dpo.py sets row["answer"] (a model-written answer, scored as a DPO rejected) and row["truncated"]
-        # a row with "transcript" is a reading-stage example: prompt READ_PROMPT, answer the page's plain text
         texts = [
-            self.processor.apply_chat_template(
-                messages(r["transcript"], READ_PROMPT)
-                if "transcript" in r
-                else messages(r["answer"] if "answer" in r else student_target(r["record"])),
-                tokenize=False,
-            )
-            for r in rows
+            self.processor.apply_chat_template(messages(student_target(r["record"])), tokenize=False) for r in rows
         ]
         images = [page_image(r) for r in rows]
         images = [augment_page(im) if random.random() < self.augment else im for im in images]
@@ -125,10 +85,6 @@ class Collator:
                 )
             first = starts[0] + h
             last = ids.index(self.end_id, first)  # the answer's closing <|im_end|> is learnt, so the model stops
-            if rows[i].get(
-                "truncated"
-            ):  # the model never wrote this <|im_end|> (the chat template added it): not part of the answer
-                last -= 1
             labels[i, first : last + 1] = batch["input_ids"][i, first : last + 1]
             while random.random() < self.perturb:  # after labels are copied, so labels stay correct
                 new_id = random.randint(0, self.n_text_tokens - 1)
@@ -138,169 +94,37 @@ class Collator:
         batch["labels"] = labels
         return batch
 
-    def keywise_batch(self, rows: list[dict]) -> dict:
-        """One random key per row (keywise.py). The prompt part is tokenized exactly as tiny_resume_parser.evaluate --keywise
-        tokenizes it (chat template + generation prompt + prefix, through the processor); the value's ids and the end
-        token are appended after, so a BPE merge across the prefix/value boundary (e.g. ':"') never occurs in
-        training when it cannot occur at inference. Sets self.last_values (the values learnt) for the mask check."""
-        if len(rows) != 1:
-            raise SystemExit(
-                "--keywise trains with --batch 1 (the value ids are appended after the processor's padding)"
-            )
-        r = rows[0]
-        vals = keywise.values(r["record"])
-        i = random.randrange(len(keywise.KEYS))
-        text = self.processor.apply_chat_template(messages(None), tokenize=False, add_generation_prompt=True)
-        image = page_image(r)
-        if random.random() < self.augment:
-            image = augment_page(image)
-        batch = self.processor(text=[text + keywise.prefix(vals, i)], images=[image], return_tensors="pt", **self.size)
-        value = self.processor.tokenizer(vals[i], add_special_tokens=False).input_ids + [self.end_id]
-        first = batch["input_ids"].shape[1]
-        batch["input_ids"] = torch.cat([batch["input_ids"], torch.tensor([value])], 1)
-        batch["attention_mask"] = torch.cat(
-            [batch["attention_mask"], torch.ones(1, len(value), dtype=batch["attention_mask"].dtype)], 1
-        )
-        labels = torch.full_like(batch["input_ids"], -100)
-        labels[0, first:] = batch["input_ids"][0, first:]
-        while random.random() < self.perturb:  # inside the value only, end token excluded; labels stay correct
-            if len(value) < 2:
-                break
-            new_id = random.randint(0, self.n_text_tokens - 1)
-            while new_id in self.special_ids:
-                new_id = random.randint(0, self.n_text_tokens - 1)
-            batch["input_ids"][0, random.randint(first, first + len(value) - 2)] = new_id
-        batch["labels"] = labels
-        self.last_values = [vals[i]]
-        return batch
-
-
-def check_generation(
-    model,
-    processor,
-    rows: list[dict],
-    out: Path,
-    max_new_tokens: int = 2500,
-    max_patches: int = MAX_PATCHES,
-    **gen_kwargs,
-) -> None:
-    """Generate for each row, report validity, and save every answer to out/generations.jsonl.
-    gen_kwargs go to model.generate (e.g. no_repeat_ngram_size)."""
-    model.eval()
-    answers, valid = [], 0
-    saved = (out / "generations.jsonl").open("w")
-    for r in rows:
-        text = processor.apply_chat_template(messages(None), tokenize=False, add_generation_prompt=True)
-        image = page_image(r)
-        inputs = processor(
-            text=[text], images=[image], return_tensors="pt", **family(processor)["size"](max_patches)
-        ).to(model.device)
-        t0 = time.time()
-        with torch.no_grad():
-            out = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False, use_cache=True, **gen_kwargs)
-        answer = processor.tokenizer.decode(out[0, inputs["input_ids"].shape[1] :], skip_special_tokens=True)
-        answers.append(answer)
-        try:
-            to_record(json.loads(answer))
-            ok = "valid"
-            valid += 1
-        except Exception as e:  # report every failure; nothing is repaired
-            ok = f"INVALID ({type(e).__name__}: {str(e)[:80]}; starts {answer[:60]!r})"
-        print(f"  {r['cv_id']} p{r['page']}: {ok}, {len(answer)} chars, {time.time() - t0:.0f} s")
-        saved.write(
-            json.dumps({"cv_id": r["cv_id"], "page": r["page"], "result": ok, "answer": answer}, ensure_ascii=False)
-            + "\n"
-        )
-    saved.close()
-    print(f"generation check: {valid}/{len(rows)} valid, {len(set(answers))} distinct answers")
-
 
 def build_parser() -> argparse.ArgumentParser:
+    """Defaults are the InternVL3-1B recipe; configs/*.toml set each model's recipe."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--out", type=Path, required=True)
-    ap.add_argument("--limit", type=int, help="train on the first N training pages only (smoke test)")
-    ap.add_argument("--epochs", type=float, default=2)
-    ap.add_argument("--lr", type=float, default=1e-4)
-    ap.add_argument("--batch", type=int, default=1, help="per-device batch size")
-    ap.add_argument(
-        "--accum", type=int, default=16, help="gradient accumulation steps (effective batch = batch x accum)"
-    )
-    ap.add_argument("--rank", type=int, default=16)
-    ap.add_argument(
-        "--max-patches",
-        type=int,
-        default=MAX_PATCHES,
-        help="tile cap per page (+1 thumbnail); 12 lets tall pages use up to 13 tiles. Score with the same value",
-    )
-    ap.add_argument("--check-pages", type=int, default=10)
-    ap.add_argument("--logging-steps", type=int, default=1)
-    ap.add_argument("--perturb", type=float, default=0.1, help="Nougat token-perturbation probability (0 = off)")
-    ap.add_argument(
-        "--augment",
-        type=float,
-        default=0.0,
-        help="probability that a training page image gets random resolution/rotation/JPEG/contrast/blur noise (0 = off)",
-    )
-    ap.add_argument(
-        "--train-projector",
-        action="store_true",
-        help="also fully train the image-to-text projector (4.5 M params; saved in the adapter)",
-    )
-    ap.add_argument(
-        "--no-grad-ckpt",
-        action="store_true",
-        help="turn off gradient checkpointing: ~1/3 less compute per step, more GPU memory",
-    )
-    ap.add_argument(
-        "--save-every-epoch",
-        action="store_true",
-        help="save the adapter (no optimizer state) to out/checkpoint-<step> after every epoch",
-    )
-    ap.add_argument(
-        "--max-new-tokens", type=int, default=2500, help="generation limit for the check (small = quick CPU smoke)"
-    )
-    ap.add_argument("--model", default=MODEL_ID, help="base model id or path (default InternVL3-1B-hf)")
-    ap.add_argument(
-        "--full-ft",
-        action="store_true",
-        help="train all language-model and projector weights instead of LoRA; vision encoder frozen",
-    )
-    ap.add_argument("--train-vision", action="store_true", help="with --full-ft: train the vision encoder too")
-    ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument(
-        "--vision-lr",
-        type=float,
-        default=0,
-        help="learning rate of the vision encoder with --train-vision (discriminative fine-tuning, Howard & Ruder 2018; 0 = same as --lr)",
-    )
-    ap.add_argument(
-        "--neftune",
-        type=float,
-        default=0,
-        help="NEFTune noise alpha on input embeddings during training (Jain et al. 2023; 0 = off)",
-    )
-    ap.add_argument("--workers", type=int, default=0, help="DataLoader worker processes (image loading + processing)")
-    ap.add_argument(
-        "--train-file",
-        type=Path,
-        default=LABELS,
-        help="training label JSONL (validation split by cv_id is still removed)",
-    )
-    ap.add_argument(
-        "--keywise",
-        type=int,
-        default=0,
-        help="key-by-key mode (keywise.py): N samples per page per "
-        "epoch, each one random key of 29; the model learns only that key's value (0 = whole-page mode)",
-    )
     ap.add_argument(
         "--config", type=Path, help="TOML file of defaults (configs/*.toml); command-line flags override it"
     )
+    ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--model", default=MODEL_ID, help="base model id or path")
+    ap.add_argument("--train-file", type=Path, default=LABELS, help="label JSONL; the validation split is removed")
+    ap.add_argument("--limit", type=int, help="train on the first N training pages only (quick check)")
+    ap.add_argument("--epochs", type=float, default=6)
+    ap.add_argument("--lr", type=float, default=1e-5)
+    ap.add_argument("--batch", type=int, default=1, help="pages per device per step")
+    ap.add_argument(
+        "--accum", type=int, default=16, help="gradient accumulation steps (effective batch = batch x accum)"
+    )
+    ap.add_argument(
+        "--max-patches", type=int, default=MAX_PATCHES, help="image tiles per page; score with the same value"
+    )
+    ap.add_argument("--augment", type=float, default=0.5, help="share of pages that get image noise (0 = off)")
+    ap.add_argument("--perturb", type=float, default=0.1, help="token perturbation probability (0 = off)")
+    ap.add_argument("--no-grad-ckpt", action="store_true", help="no gradient checkpointing: faster, more GPU memory")
+    ap.add_argument("--save-every-epoch", action="store_true", help="save out/checkpoint-<step> after every epoch")
+    ap.add_argument("--workers", type=int, default=0, help="DataLoader worker processes")
+    ap.add_argument("--logging-steps", type=int, default=1)
+    ap.add_argument("--seed", type=int, default=42)
     return ap
 
 
-def main(argv: list[str] | None = None, callbacks: list | None = None) -> int:
-    """callbacks: extra TrainerCallbacks; if given, they replace the default progress bar."""
+def main(argv: list[str] | None = None) -> int:
     ap = build_parser()
     first, _ = ap.parse_known_args(argv)
     if first.config:
@@ -319,58 +143,29 @@ def main(argv: list[str] | None = None, callbacks: list | None = None) -> int:
     print(f"train {len(train)} pages, validation {len(val)} pages ({len({r['cv_id'] for r in val})} CVs)")
 
     processor = load_processor(args.model)
-    collator = Collator(processor, args.perturb, args.max_patches, args.augment, keywise=bool(args.keywise))
-    probe_collator = Collator(processor, max_patches=args.max_patches, keywise=bool(args.keywise))
-    probe = probe_collator(train[:1])  # gate check: loss only on the answer
+    collator = Collator(processor, args.perturb, args.max_patches, args.augment)
+    probe = Collator(processor, max_patches=args.max_patches)(train[:1])  # gate check: loss only on the answer
     is_img = probe["input_ids"] == processor.image_token_id
     n_img, n_tiles = int(is_img.sum()), probe["pixel_values"].shape[:-3].numel()
     per_tile = getattr(processor, "image_seq_length", None) or processor.image_seq_len  # InternVL 256, SmolVLM 64
     if n_img != n_tiles * per_tile or (probe["labels"][is_img] != -100).any():
         raise SystemExit(f"label mask check failed: {n_img} image tokens for {n_tiles} tiles")
-    if args.keywise:  # the learnt tokens must be exactly the value + end token
-        learnt = processor.tokenizer.decode(probe["labels"][probe["labels"] != -100])
-        want = probe_collator.last_values[0] + family(processor)["end"]
-        if learnt != want:
-            raise SystemExit(f"keywise mask check failed: learnt {learnt[:200]!r}, expected {want[:200]!r}")
-        print(f"keywise check ok: learnt {learnt[:120]!r}; {len(train)} pages x {args.keywise} samples per epoch")
-        train = train * args.keywise  # Collator draws the key; Trainer shuffles
     print(f"mask check ok: {n_img} image tokens masked, {int((probe['labels'] != -100).sum())} answer tokens learnt")
 
-    # bf16 on CUDA/MPS; float32 on CPU, where bf16 math without hardware support stalled a Colab
-    # CPU smoke run at step 0 for 30+ min.
-    accel = torch.cuda.is_available() or torch.backends.mps.is_available()
+    # bf16 on CUDA/MPS; float32 on CPU, where bf16 math without hardware support stalled a run at step 0.
+    cuda = torch.cuda.is_available()
+    accel = cuda or torch.backends.mps.is_available()
     model = AutoModelForImageTextToText.from_pretrained(args.model, dtype=torch.bfloat16 if accel else torch.float32)
     model.enable_input_require_grads()
-    if args.full_ft:
-        for name, p in model.named_parameters():
-            p.requires_grad = args.train_vision or not name.startswith(family(processor)["vision"])
-        n = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        print(
-            f"full fine-tune: {n / 1e6:.1f} M trainable parameters (vision encoder {'trained' if args.train_vision else 'frozen'})"
-        )
-    else:
-        model = get_peft_model(
-            model,
-            LoraConfig(
-                r=args.rank,
-                lora_alpha=2 * args.rank,
-                lora_dropout=0.05,
-                target_modules=LM_LINEAR,
-                modules_to_save=["multi_modal_projector"] if args.train_projector else None,
-            ),
-        )
-        model.print_trainable_parameters()
-    cuda = torch.cuda.is_available()
+    print(f"full fine-tune: {sum(p.numel() for p in model.parameters()) / 1e6:.1f} M parameters")
     if cuda:
-        # Mixed precision: LoRA weights in float32, matmuls in bf16 autocast. The pure-bf16 MPS
-        # smoke runs had grad-norm spikes up to ~1e14 (clipped). T4 has no bf16: stop, pick A100/L4.
+        # Mixed precision: weights in float32, matmuls in bf16 autocast (pure bf16 gave grad-norm spikes).
         if not torch.cuda.is_bf16_supported():
-            raise SystemExit(f"{torch.cuda.get_device_name()} has no bf16; use an A100 or L4 runtime")
+            raise SystemExit(f"{torch.cuda.get_device_name()} has no bf16; use an A100, L4 or newer GPU")
         for p in model.parameters():
-            if p.requires_grad:
-                p.data = p.data.float()
+            p.data = p.data.float()
 
-    trainer = (VisionLrTrainer if args.vision_lr else Trainer)(
+    trainer = Trainer(
         model=model,
         args=TrainingArguments(
             output_dir=str(args.out),
@@ -390,34 +185,17 @@ def main(argv: list[str] | None = None, callbacks: list | None = None) -> int:
             remove_unused_columns=False,
             dataloader_num_workers=args.workers,
             seed=args.seed,
-            neftune_noise_alpha=args.neftune or None,
             ddp_find_unused_parameters=False,
             report_to=[],
         ),
         train_dataset=train,
         data_collator=collator,
-        callbacks=callbacks,
     )
-    if args.vision_lr:
-        trainer.vision_lr, trainer.vision_prefix = args.vision_lr, family(processor)["vision"]
-    if callbacks:
-        for cb in list(trainer.callback_handler.callbacks):  # ProgressCallback or NotebookProgressCallback
-            if type(cb).__name__.endswith("ProgressCallback"):
-                trainer.remove_callback(cb)
     trainer.train()
-    if not trainer.is_world_process_zero():  # torchrun: only rank 0 saves and checks
-        return 0
-    model.save_pretrained(args.out / ("model" if args.full_ft else "adapter"))
-    if args.full_ft:
+    if trainer.is_world_process_zero():  # torchrun: only rank 0 saves
+        model.save_pretrained(args.out / "model")
         processor.save_pretrained(args.out / "model")
-    (args.out / "log_history.json").write_text(json.dumps(trainer.state.log_history, indent=1))
-
-    if args.keywise:
-        print(
-            "generation check skipped: whole-page generation does not apply to --keywise (score with tiny_resume_parser.evaluate --keywise)"
-        )
-    elif args.check_pages:
-        check_generation(model, processor, train[: args.check_pages], args.out, args.max_new_tokens, args.max_patches)
+        (args.out / "log_history.json").write_text(json.dumps(trainer.state.log_history, indent=1))
     return 0
 
 

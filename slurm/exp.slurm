@@ -14,15 +14,15 @@ nvidia-smi --query-gpu=name --format=csv,noheader
 NG=$(echo "$CUDA_VISIBLE_DEVICES" | tr , "\n" | grep -c .)  # nvidia-smi -L can list one GPU twice
 echo "== $NAME on $NG GPU(s): train $TRAIN_ARGS | eval $EVAL_ARGS"
 if [ ! -e $OUT/log_history.json ]; then
-  if [ "$NG" -gt 1 ]; then python -m torch.distributed.run --standalone --nproc_per_node=$NG -m tiny_resume_parser.train --out $OUT --check-pages 0 $TRAIN_ARGS
-  else python -u -m tiny_resume_parser.train --out $OUT --check-pages 0 $TRAIN_ARGS; fi
+  if [ "$NG" -gt 1 ]; then python -m torch.distributed.run --standalone --nproc_per_node=$NG -m tiny_resume_parser.train --out $OUT $TRAIN_ARGS
+  else python -u -m tiny_resume_parser.train --out $OUT $TRAIN_ARGS; fi
 fi
 STEPS=$(python -c "import json;h=json.load(open('$OUT/log_history.json'));print(max(x.get('step',0) for x in h))")
 EPOCHS=$(python -c "import json;h=json.load(open('$OUT/log_history.json'));print(round(max(x.get('epoch',0) for x in h)))")
 for CK in $(ls -d $OUT/checkpoint-* 2>/dev/null | sort -t- -k2 -n); do
   EP=$(( ${CK##*-} * EPOCHS / STEPS ))
   [ $EP -ge $MIN_EPOCH ] || { rm -rf $CK; continue; }  # never scored; 3.5 GB each for a full fine-tune
-  if [ -d $CK/../model ] || [ -e $CK/config.json ]; then W="--model $CK"; else W="--adapter $CK"; fi
+  W="--model $CK"
   for SET in "gold --limit 50" "val"; do
     S=${SET%% *}; E=$OUT/eval_ep${EP}_${S}
     [ -e $E/summary.json ] || python -u -m tiny_resume_parser.evaluate $W --set $SET --batch 8 --out $E $EVAL_ARGS > $E.log 2>&1 || echo "eval failed: $E"

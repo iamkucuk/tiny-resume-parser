@@ -1,8 +1,8 @@
 """Draw the README figures into docs/assets/.
 
-    python scripts/make_figures.py
+    python docs/assets/make_figures.py
 
-Numbers come from the research record (docs/research/RESEARCH_JOURNAL.md, 2026-10-15) and are written out below so a
+Numbers come from the research record (docs/research/journal.md, 2026-10-15) and are written out below so a
 change is one edit here. The example figure uses docs/assets/example_page.jpg and the best InternVL model's answer
 for that page (docs/assets/example_answer.json).
 """
@@ -17,7 +17,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 from PIL import Image  # noqa: E402
 
-ASSETS = Path(__file__).resolve().parent.parent / "docs" / "assets"
+ASSETS = Path(__file__).resolve().parent
 
 # Lenient and content field F1 on the 204 held-out test pages, raw answers (slurm/test.slurm, 2026-10-15).
 RESULTS = [  # (student, parameters, lenient F1, content F1)

@@ -7,7 +7,7 @@ git clone https://github.com/iamkucuk/tiny-resume-parser && cd tiny-resume-parse
 pip install -e ".[train,dev]"
 ```
 
-Python ≥ 3.11. Reported runs used torch 2.6.0 (CUDA), transformers 4.57.6, peft 0.21.2 on one H100 or H200.
+Python ≥ 3.11. Reported runs used torch 2.6.0 (CUDA) and transformers 4.57.6 on one H100 or H200.
 
 ## Data
 
@@ -24,8 +24,8 @@ Label files are JSONL, one page per line:
 
 The page images come from the [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu)
 by invoiceModelisation (Roboflow Universe, CC BY 4.0); the labels are written by
-[`tiny_resume_parser.label`](../src/tiny_resume_parser/label.py). Data preparation scripts are in
-[`scripts/`](../scripts). Data and labels are not in the repository yet. The package looks for them in `data/` at the
+[`tiny_resume_parser.label`](../src/tiny_resume_parser/label.py). The one-off scripts that grouped the pages into
+CVs and built the gold set are in the [`archive-2026-10-15`](https://github.com/iamkucuk/tiny-resume-parser/tree/archive-2026-10-15/scripts) tag. Data and labels are not in the repository yet. The package looks for them in `data/` at the
 repository root, or in the folder named by `TINY_RESUME_PARSER_DATA`.
 
 Labelling new pages needs an OpenAI-compatible endpoint that serves a vision model. Set `LABEL_BASE_URL` and
@@ -64,8 +64,3 @@ The InternVL model averages 10 runs, SmolVLM 3 and granite-docling 4.
 on and keeps only the checkpoint chosen on the validation pages; `soup.slurm` averages and scores; `test.slurm`
 scores the test pages. Cluster settings go on the `sbatch` command line and in `slurm/site.sh`
 ([slurm/README.md](../slurm/README.md)).
-
-## Experiments not in the recipe
-
-[`experiments/`](../experiments) keeps the code of methods that were tried and not adopted: preference training,
-reinforcement learning and a first training stage on page transcripts. Their results are in [findings.md](findings.md).

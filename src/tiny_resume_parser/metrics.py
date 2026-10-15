@@ -19,7 +19,6 @@ import unicodedata
 from collections import Counter
 from pathlib import Path
 
-from .canon import canon
 from .models import STUDENT_SKIP
 from .schema import _drop_empty, to_record
 
@@ -156,20 +155,14 @@ def f1(h: int, p: int, g: int) -> tuple[float, float, float]:
     return P, R, 2 * P * R / max(P + R, 1e-9)
 
 
-def rescore(eval_dir: Path, labels: dict, use_canon: bool = False, fix: bool = False) -> dict:
+def rescore(eval_dir: Path, labels: dict, fix: bool = False) -> dict:
     """Strict, lenient and content P/R/F1 of every answer in eval_dir/pages.jsonl, overall and per section.
-    labels: (cv_id, page) -> record (data.label_index). use_canon: apply canon.py to both sides first."""
+    labels: (cv_id, page) -> record (data.label_index). fix: repair broken answers first."""
     tot = {"strict": Counter(), "lenient": Counter(), "content": Counter()}
     sec = {"strict": Counter(), "lenient": Counter(), "content": Counter()}
     for line in (eval_dir / "pages.jsonl").read_text().splitlines():
         r = json.loads(line)
         g, p = to_record(labels[(r["cv_id"], r["page"])]), parse(r["answer"], fix)
-        if use_canon:
-            g = canon(g)
-            try:
-                p = canon(p)
-            except (AttributeError, TypeError):  # schema-error answer with odd structure: scored as written
-                pass
         g, p = pairs(g), pairs(p)
         for name, (pp, gg) in {
             "strict": (p, g),

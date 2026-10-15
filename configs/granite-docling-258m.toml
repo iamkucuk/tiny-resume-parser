@@ -1,8 +1,6 @@
 # granite-docling-258M: the recipe behind the best granite model (weight average of 4 seeds, 0.660 / 0.649 lenient F1).
 # python -m tiny_resume_parser.train --config configs/granite-docling-258m.toml --seed 42 --out runs/NAME
 model = "ibm-granite/granite-docling-258M"
-full_ft = true
-train_vision = true
 augment = 0.5
 lr = 1e-4               # +0.024 / +0.031 over 6e-5 (2-seed means)
 epochs = 10

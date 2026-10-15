@@ -4,7 +4,8 @@ This page summarises what changed the score and what did not, in the order the w
 compared with a named baseline run, usually over three training seeds, and was kept only if it beat the
 seed-to-seed spread (about 0.012 F1) on both development sets: 50 reviewed gold pages and 79 validation pages.
 Scores below are lenient field F1 on those two sets, written as gold / validation. The full record of every run,
-including the reasoning before each one, is in the [research log](research/README.md).
+including the reasoning before each one, is in the [research log](research/journal.md); the code of the methods
+that were not adopted is kept in the [`archive-2026-10-15`](https://github.com/iamkucuk/tiny-resume-parser/tree/archive-2026-10-15) tag.
 
 ## How the recipe developed
 
@@ -59,7 +60,7 @@ Smaller changes that did not help either: training on labels rewritten into a ca
 for InternVL (−0.05 on gold), 2 pages per step (−0.02), other learning rates and epoch counts, NEFTune noise on text
 embeddings, a 10× lower learning rate for the vision encoder, a first training stage on page transcripts, and a
 second model that checks and fixes the labels (it fixed 14 real errors on 30 pages and introduced about 8 new ones).
-Their numbers are in the [research log](research/README.md#experiments-by-phase).
+Their numbers are in the [research log](research/journal.md).
 
 ## Why reinforcement learning did not help
 
@@ -67,7 +68,7 @@ GRPO started from the fully fine-tuned InternVL model (0.705 / 0.719). For each 
 temperature 1 and rewarded each with its field F1 against the label, for about 350 steps of 4 pages. Four settings
 (learning rate 1e-6 and 3e-6, temperature 0.7, a KL penalty) all ended within the seed spread. The training logs, the
 answers before and after, and 8 new samples per page from the starting model show why
-([`grpo_probe.py`](../experiments/grpo_probe.py)).
+([`grpo_probe.py`](https://github.com/iamkucuk/tiny-resume-parser/tree/archive-2026-10-15/experiments/grpo_probe.py)).
 
 **The answers changed, but not in one direction.** After GRPO, 39 to 46 of the 50 gold answers differ from before,
 about as many as after one more epoch of supervised training. On pages that stay valid JSON, the values gained and

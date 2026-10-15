@@ -7,8 +7,6 @@ Sets: gold = reviewed pages (1-50 development, --start 50 for the 204 test pages
 training labels; train = training pages. Writes out/pages.jsonl (one line per page: status, counts, answer) and
 out/summary.json. Lenient, content and repaired scores: run rescore.py on the same folder.
 Status per page: valid (passes the schema), schema_error (JSON but not the schema; still scored), unparsed (scored 0).
---constrained: lm-format-enforcer allows only tokens that keep the answer valid JSON for schema.CVRecord.
---keywise: one generation per key (29 per page), for a model trained with train.py --keywise.
 """
 
 from __future__ import annotations
@@ -20,88 +18,50 @@ from collections import Counter
 from pathlib import Path
 
 from .data import load_rows, page_image
-from .generate import generate_keywise, generate_pages, load_model
+from .generate import generate_pages, load_model
 from .metrics import score
 from .models import MAX_PATCHES, MODEL_ID
-from .schema import CVRecord
 
 
 def main(argv: list[str] | None = None) -> dict:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--adapter", type=Path, help="LoRA adapter directory; omit to score the base model")
+    ap.add_argument("--model", default=MODEL_ID, help="base model id or a fine-tuned model / checkpoint folder")
     ap.add_argument("--set", choices=["gold", "val", "train"], default="gold")
+    ap.add_argument("--start", type=int, default=0, help="skip the first N pages of the set (test pages: --start 50)")
     ap.add_argument("--limit", type=int)
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--max-patches", type=int, default=MAX_PATCHES, help="image tiles per page, as in training")
     ap.add_argument("--max-new-tokens", type=int, default=2500)
-    ap.add_argument("--constrained", action="store_true")
+    ap.add_argument("--batch", type=int, default=1, help="pages generated together (left-padded)")
     ap.add_argument("--device", choices=["cuda", "mps", "cpu"], help="default: cuda, else mps, else cpu")
-    ap.add_argument(
-        "--max-patches",
-        type=int,
-        default=MAX_PATCHES,
-        help="tile cap per page; use the value the adapter was trained with",
-    )
-    ap.add_argument("--model", default=MODEL_ID, help="base model id or path (a full fine-tune's out/model dir)")
-    ap.add_argument(
-        "--start", type=int, default=0, help="skip the first N rows of the set (e.g. gold test pages = --start 50)"
-    )
-    ap.add_argument("--batch", type=int, default=1, help="pages generated together (left-padded); 1 = one at a time")
-    ap.add_argument(
-        "--repetition-penalty",
-        type=float,
-        default=1.0,
-        help=">1 lowers the odds of tokens already generated (loop control)",
-    )
-    ap.add_argument(
-        "--keywise", action="store_true", help="key-by-key generation (model trained with train.py --keywise)"
-    )
     args = ap.parse_args(argv)
 
     rows = load_rows(args.set)[args.start :]
     rows = rows[: args.limit] if args.limit else rows
-    model, processor, device = load_model(args.model, args.adapter, args.device)
+    model, processor, device = load_model(args.model, args.device)
     args.out.mkdir(parents=True, exist_ok=True)
-    print(f"{device}, {args.set} {len(rows)} pages, adapter {args.adapter}, constrained {args.constrained}")
+    print(f"{device}, {args.set} {len(rows)} pages")
 
     total = Counter()
     with (args.out / "pages.jsonl").open("w") as f:
         for start in range(0, len(rows), args.batch):
             batch = rows[start : start + args.batch]
-            images = [page_image(r) for r in batch]
-            extra = {}
-            if args.constrained:  # a fresh enforcer per batch: it keeps state per prompt
-                from lmformatenforcer import JsonSchemaParser
-                from lmformatenforcer.integrations.transformers import build_transformers_prefix_allowed_tokens_fn
-
-                extra = {
-                    "prefix_allowed_tokens_fn": build_transformers_prefix_allowed_tokens_fn(
-                        processor.tokenizer, JsonSchemaParser(CVRecord.model_json_schema())
-                    )
-                }
             t0 = time.time()
-            if args.keywise:
-                done = generate_keywise(
-                    model, processor, images, args.max_patches, args.max_new_tokens, args.repetition_penalty
-                )
-            else:
-                done = generate_pages(
-                    model, processor, images, args.max_patches, args.max_new_tokens, args.repetition_penalty, **extra
-                )
+            done = generate_pages(
+                model, processor, [page_image(r) for r in batch], args.max_patches, args.max_new_tokens
+            )
             seconds = round((time.time() - t0) / len(batch))
-            for r, result in zip(batch, done):
-                answer, n_new = result[0], result[1]
+            for r, (answer, n_new) in zip(batch, done):
                 s = score(answer, r["record"]) | {
                     "cv_id": r["cv_id"],
                     "page": r["page"],
                     "tokens": n_new,
-                    "hit_limit": (result[3] > 0) if args.keywise else n_new >= args.max_new_tokens,
+                    "hit_limit": n_new >= args.max_new_tokens,
                     "seconds": seconds,
                 }
-                keys = ["pred", "gold", "hit"]
-                if args.keywise:
-                    s |= {"value_errors": len(result[2]), "bad_values": result[2], "value_hit_limit": result[3]}
-                    keys += ["value_errors", "value_hit_limit"]
-                total.update({k: s[k] for k in keys} | {s["status"]: 1, "hit_limit": int(s["hit_limit"])})
+                total.update(
+                    {k: s[k] for k in ("pred", "gold", "hit")} | {s["status"]: 1, "hit_limit": int(s["hit_limit"])}
+                )
                 f.write(json.dumps(s | {"answer": answer}, ensure_ascii=False) + "\n")
                 f.flush()
                 f1 = 2 * s["hit"] / max(s["pred"] + s["gold"], 1)
@@ -116,8 +76,6 @@ def main(argv: list[str] | None = None) -> dict:
         "start": args.start,
         "pages": len(rows),
         "model": args.model,
-        "adapter": str(args.adapter),
-        "constrained": args.constrained,
         "batch": args.batch,
         "max_patches": args.max_patches,
         "valid": total["valid"],
@@ -128,8 +86,6 @@ def main(argv: list[str] | None = None) -> dict:
         "field_recall": round(rc, 4),
         "field_f1": round(2 * p * rc / max(p + rc, 1e-9), 4),
     }
-    if args.keywise:
-        summary |= {"keywise": True, "value_errors": total["value_errors"], "value_hit_limit": total["value_hit_limit"]}
     (args.out / "summary.json").write_text(json.dumps(summary, indent=1))
     print(json.dumps(summary))
     return summary

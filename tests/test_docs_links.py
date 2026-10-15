@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-DOCS = [ROOT / "README.md", ROOT / "CHANGELOG.md", ROOT / "CONTRIBUTING.md", ROOT / "docs/research/README.md"]
+DOCS = [ROOT / "README.md", ROOT / "CONTRIBUTING.md"]
 DOCS += sorted((ROOT / "docs").glob("*.md")) + sorted(ROOT.glob("*/README.md"))
 LINK = re.compile(r'\]\(([^)#\s]+)(?:#[^)]*)?\)|src="([^"]+)"')
 

@@ -1,7 +1,7 @@
 """The three student model families and how each one is prompted.
 
-Every family needs four facts: the text that opens the assistant's answer, the token that ends it, the parameter
-prefix of its vision encoder, and how --max-patches becomes processor settings. InternVL caps the number of 448 px
+Every family needs three facts: the text that opens the assistant's answer, the token that ends it, and how
+--max-patches becomes processor settings. InternVL caps the number of 448 px
 tiles directly; SmolVLM and granite-docling (both Idefics3) cut the page into 512 px tiles with the longest side at
 most longest_edge, so --max-patches 12 / 20 / 30 / 48 select 2048 / 2560 / 3072 / 4096 px (3x4 to 6x8 tiles on A4).
 """
@@ -21,8 +21,7 @@ SMOLVLM_ID = "HuggingFaceTB/SmolVLM-500M-Instruct"
 GRANITE_ID = "ibm-granite/granite-docling-258M"  # also Idefics3; told apart from SmolVLM by its chat template
 MODEL_ID = INTERNVL_ID
 PROMPT = "Extract this CV page as JSON."
-READ_PROMPT = "Write out all text on this page."  # reading-stage experiment (experiments/transcribe.py)
-MAX_PATCHES = 6  # InternVL default: every page <= 7 tiles = 1,792 image tokens; the adopted recipes use 12 or 30
+MAX_PATCHES = 12  # InternVL3-1B recipe; SmolVLM uses 30 (configs/*.toml)
 # Tile cap each released recipe was trained with; inference must use the same value (configs/*.toml).
 TRAINED_PATCHES = {"InternVLProcessor": 12, "Idefics3Processor": 30, "GraniteDocling": 12}
 IDEFICS3_EDGE = {12: 2048, 20: 2560, 30: 3072, 48: 4096}  # tiles on an A4 page -> longest_edge in px
@@ -31,13 +30,11 @@ FAMILY = {
     "InternVLProcessor": dict(
         header="<|im_start|>assistant\n",
         end="<|im_end|>",
-        vision="model.vision_tower",
         size=lambda n: {"max_patches": n},
     ),
     "Idefics3Processor": dict(
         header="\nAssistant:",
         end="<end_of_utterance>",
-        vision="model.vision_model",
         size=lambda n: (
             {"size": {"longest_edge": IDEFICS3_EDGE[n]}}
             if n in IDEFICS3_EDGE

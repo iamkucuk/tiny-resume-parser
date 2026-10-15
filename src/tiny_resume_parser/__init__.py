@@ -6,7 +6,7 @@ Modules, in the order data flows through them:
     train     fine-tuning                                soup      weight averaging of fine-tuned models
     generate  model loading and answer generation        evaluate  answers + strict F1 on labelled pages
     metrics   strict / lenient / content F1, repair      rescore   all metrics on saved answers
-    parse     CV files (images, PDFs) -> JSON            canon     canonical label form; keywise: key-by-key mode (not adopted)
+    parse     CV files (images, PDFs) -> JSON
 """
 
 __version__ = "0.1.0"
