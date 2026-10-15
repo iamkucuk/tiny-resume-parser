@@ -1,13 +1,33 @@
-# pipit — Page Image → Parsed Information, Tiny
+# tiny-resume-parser — read CVs the way a person does, with a small vision-language model
 
-CV page image → structured JSON with a sub-1B vision-language model that runs on a laptop CPU.
+tiny-resume-parser fine-tunes small vision-language models (VLMs, under 1B parameters) to read a CV page **as an image**
+and write its content as JSON (name, contact details, work history, education, skills, languages, projects, …) in a
+fixed schema that an applicant-tracking system (ATS) can import. The models run on a laptop CPU.
 
-cv_parser reads a photo or scan of a CV page and writes the page's content as JSON (name, contact details, work history,
-education, skills, languages, projects, …) in a fixed schema that an applicant-tracking system can import.
+## Why read the page image instead of parsing the PDF
 
-The model is small on purpose. The labels come from GLM-5.3-Flash, a ~300B-parameter model that needs data-center
-hardware. The fine-tuned students are 0.26B–0.94B parameters and run on a laptop CPU in 30–60 s per page, so a CV
-never has to leave the machine that reads it.
+Most resume parsers extract the PDF's text layer and pass it to rules or a language model. That text layer is not what
+a recruiter sees:
+
+| Problem with the PDF text layer | What happens | Reading the rendered page |
+|---|---|---|
+| Hidden text | White, tiny or off-page text (keyword stuffing, or instructions aimed at an AI screener — prompt injection) is extracted like any other text | Text that is not visible on the page is not in the image |
+| Reading order | Two-column layouts, sidebars and tables come out interleaved or out of order | The model sees the layout and reads it as one page |
+| Scans and photos | No text layer at all; OCR is needed first and adds its own errors | Same input as a born-digital PDF: one image |
+| Broken or unusual PDFs | Fonts without Unicode mapping, text drawn as curves, designer templates | Whatever renders correctly can be read |
+
+So one model handles every CV the same way, whether it started as a born-digital PDF, a scan or a phone photo, and
+whether or not current PDF parsers can handle it. It sees what a human reviewer sees.
+
+What this does not solve: an instruction written in **visible** text on the page is still seen by the model, as it
+is by a human reader. The training target is fixed-schema JSON (no free-text answers), which limits what such text can
+change, but robustness to injected text has **not been tested yet**.
+
+## Why small
+
+The training labels come from GLM-5.3-Flash, a ~300B-parameter model that needs data-center hardware. The fine-tuned
+students are 0.26B–0.94B parameters and read a page in 30–60 s on a laptop CPU, so a CV never has to leave the machine
+that reads it.
 
 > **Status: research in progress.** Every score below is on the development sets. The held-out test set
 > (204 reviewed pages) has not been scored yet; it is scored once, at the end.
@@ -143,6 +163,9 @@ points are correct text placed under a different field or split differently, not
 - Some training runs used an extra set of pages (`hadikp/resume-data-pdf`) whose licence could not be checked; a
   public release will be trained without them.
 - 2B, 8B and 14B models were tried early on; they are outside this project's sub-1B limit and are not reported here.
+- Input is one page image. PDF pages must be rendered to images first (for example with `pdftoppm`); a built-in PDF
+  step and the merging of multi-page CVs into one record are not implemented yet.
+- Robustness to prompt injection (hidden or visible instructions on the page) has not been measured.
 
 ## Repository layout
 

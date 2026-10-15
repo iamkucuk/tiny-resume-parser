@@ -413,3 +413,6 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 ## SV_lr6e-5_tiles30_seed3 (2026-10-15, job 1605969)
 - SmolVLM-500M, 30 tiles, lr 6e-5, 10 epochs, seed 3. Val-chosen ep9 0.644 / 0.655 lenient. 5-seed mean (42/1/2/3/4)
   at val-chosen epochs: 0.627 / 0.656. Submitted SV_soup5_tiles30 (average of the 5 seeds at their val-chosen epochs).
+
+## SV_soup5_tiles30 (2026-10-15, job 1606302)
+- Weight average of 5 SmolVLM 30-tile seeds: 0.657 / 0.673 vs SV_soup3_tiles30 0.644 / 0.676. Not adopted.

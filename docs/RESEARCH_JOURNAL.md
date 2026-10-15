@@ -1245,3 +1245,8 @@ Not yet measured: bf16 / quantised CPU inference, batching, a GPU figure on the 
   pretraining are not enough as they are. Seed 1 (running, half done) kept as a check; seed 2 cancelled.
 - InternVL runs kept (different encoder, different pretraining), but seed 42 moved to now so its result decides
   whether seeds 1/2 run tonight.
+
+## 2026-10-15 ~16:20 — SmolVLM 5-seed weight average: not better than 3 seeds on val
+- SV_soup5_tiles30 (1606302) = average of SmolVLM 30-tile seeds 42/1/2/3/4 at their val-chosen epochs: 0.657 / 0.673
+  (lenient gold / val) vs SV_soup3_tiles30 0.644 / 0.676: +0.013 / −0.003. 5-seed mean 0.627 / 0.656.
+- Same pattern as granite (6 > 4 seeds on gold, not on val). SV_soup3_tiles30 stays the SmolVLM best (chosen on val).
