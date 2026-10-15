@@ -21,12 +21,13 @@ from transformers import AutoModelForImageTextToText, AutoProcessor
 from trl import GRPOConfig, GRPOTrainer
 
 from tiny_resume_parser.data import LABELS, ROOT, is_validation
-from tiny_resume_parser.metrics import lenient, pairs
+from tiny_resume_parser.metrics import content, lenient, pairs
 from tiny_resume_parser.models import MODEL_ID, PROMPT
 from tiny_resume_parser.schema import to_record
 
 
-def answer_reward(answer: str, label: dict) -> float:
+def answer_reward(answer: str, label: dict, match=lenient) -> float:
+    """F1 of the answer's (path, value) pairs against the label, under `match` (metrics.lenient or metrics.content)."""
     try:
         pred = json.loads(answer)
     except json.JSONDecodeError:
@@ -38,15 +39,19 @@ def answer_reward(answer: str, label: dict) -> float:
         pred = to_record(pred)
     except Exception:
         penalty = 0.1  # scored on its raw JSON, as rescore.parse does, but valid output is preferred
-    p, g = lenient(pairs(pred)), lenient(pairs(to_record(label)))
+    p, g = match(pairs(pred)), match(pairs(to_record(label)))
     hit, n_p, n_g = sum((p & g).values()), sum(p.values()), sum(g.values())
     f1 = 2 * hit / (n_p + n_g) if n_p + n_g else 1.0
     return f1 - penalty
 
 
+MATCH = {"lenient": lenient, "content": content}
+REWARD = "lenient"  # set from --reward in main()
+
+
 def reward_f1(prompts, completions, label, **kwargs) -> list[float]:
     return [
-        answer_reward(c[0]["content"] if isinstance(c, list) else c, json.loads(lab))
+        answer_reward(c[0]["content"] if isinstance(c, list) else c, json.loads(lab), MATCH[REWARD])
         for c, lab in zip(completions, label)
     ]
 
@@ -68,10 +73,18 @@ def main(argv: list[str] | None = None) -> None:
     ap.add_argument("--save-steps", type=int, default=50)
     ap.add_argument("--train-vision", action="store_true", help="also update the vision encoder")
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument(
+        "--reward",
+        choices=sorted(MATCH),
+        default="lenient",
+        help="content: correct words in the right section count wherever placed",
+    )
     args = ap.parse_args(argv)
+    global REWARD
+    REWARD = args.reward
 
     rows = [json.loads(line) for line in args.train_file.read_text().splitlines()]
-    rows = [r for r in rows if not is_validation(r["cv_id"])]
+    rows = [r for r in rows if not is_validation(r["cv_id"]) and r.get("record")]  # labelling failures have no record
     if args.limit:
         rows = rows[: args.limit]
     messages = [{"role": "user", "content": [{"type": "image"}, {"type": "text", "text": PROMPT}]}]

@@ -1346,3 +1346,18 @@ input repeated per sample. Check: sample mean reward on training pages 0.811 vs 
   "the model never samples the missed values" wrong (73.5 % / 56.4 % appear); "little room on training pages"
   supported (greedy 0.910 vs best of 8 0.925); "reward follows teacher splits" supported (24 % order flips).
 - Next if GRPO is reopened: unseen pages, keep groups where a sample beats greedy, reward content F1 or recall.
+
+## 2026-10-15 20:15 — Night queue: GRPO on unseen pages; stronger token perturbation for the loop-prone students
+**GRPO on pages the supervised model has not seen** (from part 3: on training pages greedy 0.910 vs best of 8 0.925,
+on unseen gold pages 0.703 vs 0.768). Start Z_aug_vision checkpoint-528 (0.705 / 0.719), lr 3e-6, 4 samples, pages =
+974 hadikp pages with a teacher label (`labels_hadikp_974.jsonl`; never in Z's training; licence unknown, research
+only). G4_grpo_unseen: lenient reward (1606603). G5_grpo_unseen_content: content reward, new `--reward content` in
+`experiments/train_grpo.py` (1606604; part 3: lenient and content order samples differently in 24 % of pairs).
+Compare with G1 lr 3e-6 on training pages (0.718 / 0.704) and the start; adopt only if both dev sets beat the spread.
+
+**Token perturbation at Nougat-like strength** (Nougat, arXiv 2308.13418, aimed at repetition loops). The current
+0.1 swaps one token on ~10 % of pages; `--perturb 0.9` swaps ~9 tokens per page on average (geometric count,
+mean p / (1 − p)). Tried where loops cost most: granite-docling (12 of 204 test pages hit the token limit)
+GD_perturb0.9_s42 / _s1 (1606605–06) vs GD lr 1e-4 seeds 42 / 1 (0.609 / 0.596, 0.622 / 0.635); SmolVLM 30 tiles
+SV_perturb0.9_s42 (1606607) vs SV_lr6e-5_tiles30 seed 42 (0.645 / 0.656). Also compare unparsed pages and limit hits.
+Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the other direction.
