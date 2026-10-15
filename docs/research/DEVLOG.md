@@ -431,3 +431,6 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 - Val-chosen: seed 42 ep8 0.613 / 0.658; seed 1 ep8 0.617 / 0.648; seed 2 ep9 0.602 / 0.655 → **mean 0.611 / 0.654**.
 - 30-tile reference, 3-seed mean 0.619 / 0.654: equal within spread. Next: SV_soup3_tiles20 (1606478, average of the
   three val-chosen checkpoints) vs SV_soup3_tiles30 0.644 / 0.676, then CPU time per page if they tie.
+- SV_soup3_tiles20 (1606478, 8 min): **0.660 / 0.676** vs SV_soup3_tiles30 0.644 / 0.676 — tie (gold +0.016 within
+  spread, val equal). Decision by CPU time on the same 10 val pages (both averages, M2 Max, float32, batch 1).
+  Note: the README's SmolVLM CPU figure (59 s/page) was measured at 12 tiles, not the released 30; this timing replaces it.
