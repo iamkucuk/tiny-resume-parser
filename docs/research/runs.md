@@ -446,3 +446,7 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 - Epoch 6, gold + val, all 3 seeds: unparsed 15 vs 19, token-limit hits 8 vs 8. **No measurable effect**; the
   lora_v1 → v2 loop fix came from removing `corrections`. Perturb 0.1 stays in the recipe (no reason to change
   trained models); stronger perturbation (0.9) is tested separately on granite / SmolVLM. Weights deleted.
+
+## GD_perturb0.9_s42 / _s1 / _s2 (2026-10-15, jobs 1606605/06/1606651, ~2 h 05 min each)
+- granite-docling recipe with `--perturb 0.9` (~9 swapped input tokens per page). Val-chosen: s42 ep9 0.544 / 0.591,
+  s1 ep9 0.615 / 0.605, s2 ep8 0.591 / 0.629; mean 0.583 / 0.608 vs lr1e-4 seeds 0.617 / 0.611. Not adopted; weights deleted.

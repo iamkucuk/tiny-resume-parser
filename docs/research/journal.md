@@ -1367,3 +1367,23 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - main keeps only the adopted recipe. Removed from main, kept in tag archive-2026-10-15: LoRA, key-by-key, canonical labels, NEFTune, vision-lr, constrained decoding, repetition penalty, DPO / GRPO / probe code, data-prep scripts, notebooks, PLAN / DESIGN_NOTES / FINETUNING_RECIPE / DATASET_RESEARCH / literature / results page.
 - Checked: training batches identical to the old code (3 pages, seeded noise + perturbation); answers identical on 2 CPU pages; portable job scripts reproduce GD_soup4 0.660 / 0.649.
 - 22:25 queued SV_perturb0.9_s2 (third paired seed; baseline SV_lr6e-5_tiles30_seed2).
+
+## 2026-10-15 22:10 — granite-docling perturbation 0.9: first two seeds lower; SmolVLM soup scaling queued
+- GD_perturb0.9_s42 (val-chosen ep9): 0.544 / 0.591 vs GD lr1e-4 seed 42 0.609 / 0.596 (−0.065 / −0.005).
+- GD_perturb0.9_s1 (val-chosen ep9): 0.615 / 0.605 vs seed 1 0.622 / 0.635 (−0.007 / −0.030).
+- Both seeds lower on both dev sets; seed 2 still running. Verdict after seed 2 and the limit-hit counts.
+- Found while testing the example notebook on a Mac: train.py trained pure-bf16 weights on Apple MPS (the float32
+  upcast ran only on CUDA). Six example pages, 8 epochs: final loss 0.26–0.44 in bf16, 0.02–0.06 in float32. CUDA runs
+  already upcast, so no reported result changes; train.py now loads float32 on every device (commit bde403f).
+- Queued SV_lr6e-5_tiles30_seed3 / _seed4 (1606944–45) by mistake: the 5-seed SmolVLM average was already tested
+  (runs.md: SV_soup5_tiles30 0.657 / 0.673, not adopted). Both jobs found the old log_history.json and ended at once.
+- Queued GD_noperturb_s42 / _s1 (perturbation off, one change vs GD lr1e-4 seeds 42 / 1 0.609 / 0.596, 0.622 / 0.635): the
+  other direction of the 0.9 runs; on InternVL turning it off made no difference (ZP_noperturb).
+- Candidate, not queued: greedy soup (Wortsman et al. 2022, §2: add members by validation score, keep only if val does not
+  drop) for InternVL, where uniform 13–19-member averages did not beat 10. Only 4 InternVL member weights remain on disk,
+  so it needs retrained members (~21 GB each, ~110 GiB free).
+- 22:30 GD_perturb0.9_s2 (val-chosen ep8): 0.591 / 0.629 vs GD lr1e-4 seed 2 0.621 / 0.601 (−0.030 / +0.028).
+  3-seed means: perturbation 0.9 0.583 / 0.608 vs 0.1 0.617 / 0.611 (−0.034 / −0.003). **Not adopted** for granite-docling:
+  lower on gold, equal on val. Weights of the three runs deleted; eval folders kept.
+- Queued GD_noperturb_s2 (third paired seed; baseline seed 2 0.621 / 0.601).
+- SV_perturb0.9_s42 (val-chosen ep8): 0.616 / 0.665 vs SV_lr6e-5_tiles30 seed 42 0.645 / 0.656 (−0.029 / +0.009); seeds 1, 2 running.
