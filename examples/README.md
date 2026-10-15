@@ -9,8 +9,8 @@ label files ([docs/training.md](../docs/training.md#data)), so every command run
 - `pages/`: the page images, at the resolution used in training.
 
 The labels were written by the teacher model and were not reviewed by hand, so they contain the teacher's errors.
-Six pages are enough to see the whole pipeline run and the model memorise them (field F1 0.89 on those pages), but
-not to read new CVs (0.00 on the two unseen pages): [quickstart.ipynb](quickstart.ipynb) shows both.
+Six pages are enough to see the whole pipeline run and the model memorise them (field F1 1.00 on those pages in a Colab
+test run), but not to read new CVs (0.01 on the two unseen pages): [quickstart.ipynb](quickstart.ipynb) shows both.
 
 ## Quickstart
 

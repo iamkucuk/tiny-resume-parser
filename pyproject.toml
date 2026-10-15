@@ -24,6 +24,7 @@ dependencies = [
 [project.optional-dependencies]
 train = ["requests"]                            # teacher labelling
 dev = ["pytest", "ruff", "pre-commit", "matplotlib"]
+notebook = ["jupyter", "ipywidgets", "matplotlib"]   # examples/quickstart.ipynb
 
 [project.scripts]
 tiny-resume-parser = "tiny_resume_parser.cli:main"

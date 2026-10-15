@@ -1392,3 +1392,6 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   Z_aug_vision ckpt-528 0.705 / 0.719, G1 lr 3e-6 on training pages 0.718 / 0.704. Both within spread (val lower): **not
   adopted**. Unseen pages and the content reward did not change the outcome. Weights deleted. Still untested: keep only
   groups where a sample beats greedy. findings.md updated.
+- SV_perturb0.9_s2 (val-chosen ep7): 0.636 / 0.668 vs SV_lr6e-5_tiles30_seed2 0.625 / 0.656. 3-seed means 0.628 / 0.665 vs
+  0.619 / 0.654 (+0.009 / +0.011): val higher on all three seeds, both within spread. Released SmolVLM is a 3-seed average,
+  so queued SV_soup3_perturb0.9 (s42 ckpt-704, s1 ckpt-704, s2 ckpt-616) vs SV_soup3_tiles30 0.644 / 0.676.
