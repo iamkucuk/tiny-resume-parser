@@ -1286,3 +1286,34 @@ Not yet measured: bf16 / quantised CPU inference, batching, a GPU figure on the 
   start 20:00). Baseline: the default recipe (perturb 0.1), 9-seed mean 0.705 / 0.708, paired seeds 42 / 1 / 2.
 - Reading: a 3-seed mean more than ≈ 0.014 below on both sets = perturbation helps; within = no measurable effect
   (then the docs say so). Also compare unparsed pages and token-limit hits (perturbation targets loops).
+
+## 2026-10-15 18:10 — Why GRPO (H15) did not raise dev F1: measurements, part 1 (from the saved logs and answers)
+Two of the explanations written on 2026-10-13 are contradicted by the GRPO training logs (`log_history.json`):
+
+| run | steps | reward first 50 → last 50 steps | reward std within a group | groups with all-equal rewards | entropy first → last |
+|---|---|---|---|---|---|
+| lr 1e-6 | 348 | 0.744 → 0.766 | 0.248 → 0.235 | 1 % | 0.075 → 0.078 |
+| lr 3e-6 | 348 | 0.768 → 0.795 | 0.225 → 0.210 | 1 % | 0.068 → 0.077 |
+| temperature 0.7 | 348 | 0.862 → 0.858 | 0.129 → 0.137 | 1–2 % | 0.022 → 0.023 |
+| KL 0.04 | 348 | 0.757 → 0.771 | 0.223 → 0.220 | 0–1 % | 0.067 → 0.078 (KL to start 0.0003) |
+
+- Not true: "the samples of a page score about the same, so there was little to learn from" — the 4 samples of a page
+  differ by 0.22–0.25 F1 (std), and only ~1 % of groups give no signal.
+- Not true: "the reward rose because sampling became less random" — entropy did not fall at temperature 1.
+- The training reward itself rose only +0.02–0.03 in 348 steps.
+
+Dev answers, start model (Z_aug_vision ep6) vs after GRPO, gold pages 1–50, lenient gold values (of 4,612):
+
+| compared with ep6 | identical answers | values gained / lost, pages that stay parsed | values gained / lost, pages that switch parsed ↔ unparsed |
+|---|---|---|---|
+| supervised ep5 (one epoch earlier) | 8 / 50 | +126 / −106 | +88 / −127 |
+| GRPO lr 1e-6 | 10 / 50 | +79 / −75 | +175 / −65 |
+| GRPO lr 3e-6 | 4 / 50 | +116 / −147 | +180 / −127 |
+
+- GRPO changed the greedy answers about as much as one more supervised epoch does; on pages that stay parsed, gains
+  and losses cancel. The net dev change comes from a few pages switching between parsed and unparsed (each carries
+  ~100 values), which is why gold and val moved in opposite directions.
+- Part 2 (queued, job P_grpo_probe 1606436, starts 20:00): `experiments/grpo_probe.py` samples 8 answers per page as
+  GRPO did (temperature 1) from the start model, on 40 training pages and gold 1–50, and measures where the reward
+  spread comes from (broken answers vs content), best-of-8 vs greedy, the share of greedy-missed values found in any
+  sample, and how often the teacher-label reward orders two samples differently from the reviewed-label reward.
