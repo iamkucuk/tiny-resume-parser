@@ -5,7 +5,7 @@ alone; a few fine-tuned copies of each student are averaged into the released mo
 
 ```mermaid
 flowchart LR
-    A[CV page images<br/>2,451 pages, Roboflow CC BY 4.0] --> B[Teacher labels<br/>GLM-5.3-Flash writes JSON<br/>per page, schema-checked]
+    A[CV page images<br/>2,451 pages, Cv Parsing Dataset<br/>Roboflow, CC BY 4.0] --> B[Teacher labels<br/>GLM-5.3-Flash writes JSON<br/>per page, schema-checked]
     B --> C[254 pages reviewed by hand<br/>gold: 50 dev + 204 test]
     B --> D[1,393 training pages<br/>+ 79 validation pages]
     D --> E[Fine-tune each student<br/>several seeds]

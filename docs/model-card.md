@@ -23,7 +23,8 @@ values, about 11 % of values on the dev pages) must not decide anything about a 
 
 ## Training data
 
-1,393 CV page images from a public Roboflow Universe dataset (CC BY 4.0), labelled by GLM-5.3-Flash. Mostly French
+1,393 CV page images from the [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu)
+(invoiceModelisation, Roboflow Universe, CC BY 4.0), labelled by GLM-5.3-Flash. Mostly French
 and English CVs, single pages. Some development runs added pages from `hadikp/resume-data-pdf`, whose licence could
 not be verified; released weights will be trained without them.
 

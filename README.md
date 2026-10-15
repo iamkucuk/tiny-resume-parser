@@ -63,7 +63,7 @@ PDF pages are rendered at 120 dpi; images (PNG, JPEG) are read as they are. Unti
 
 ```mermaid
 flowchart LR
-    A[CV page images] --> B[Teacher labels<br/>GLM-5.3-Flash]
+    A[CV page images<br/>Roboflow, CC BY 4.0] --> B[Teacher labels<br/>GLM-5.3-Flash]
     B --> C[254 pages reviewed<br/>by hand: gold]
     B --> D[1,393 training pages]
     D --> E[Fine-tune a student<br/>several seeds]
@@ -130,12 +130,27 @@ docs/                     how it works, evaluation, training, model card, resear
 }
 ```
 
+Please also cite the page images:
+
+```bibtex
+@misc{cv-parsing-ksgbu_dataset,
+  title        = {Cv Parsing Dataset},
+  author       = {invoiceModelisation},
+  howpublished = {\url{https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu}},
+  publisher    = {Roboflow},
+  year         = {2024}
+}
+```
+
 ## Licence and data
 
 - Code: [PolyForm Noncommercial 1.0.0](LICENSE.md) — free for personal, research, educational and nonprofit use;
   commercial use is not permitted. This is a source-available licence, not an OSI open-source licence.
 - Model weights and documentation (when released): CC BY-NC 4.0.
-- CV page images: Roboflow Universe CV dataset, CC BY 4.0. **Source link and author credit: to be added before release.**
+- CV page images: [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu) by
+  invoiceModelisation (Roboflow Universe, 2024), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+  Changes made here: the original uploads were deduplicated and grouped into CVs, the object-detection boxes were
+  not used, and every page was given a JSON label by GLM-5.3-Flash (254 of them reviewed by hand).
 - Base models: [InternVL3-1B-hf](https://huggingface.co/OpenGVLab/InternVL3-1B-hf),
   [SmolVLM-500M-Instruct](https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct),
   [granite-docling-258M](https://huggingface.co/ibm-granite/granite-docling-258M), each under its own licence.

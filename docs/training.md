@@ -22,7 +22,8 @@ Label files are JSONL, one page per line:
 | `labels_train_v6.jsonl` | 1,472 | training (1,393) and validation (79, chosen by `data.is_validation`) |
 | `labels_gold_v6_verified.jsonl` | 254 | reviewed gold: pages 1–50 development, 51–254 test |
 
-The page images come from a public Roboflow Universe dataset (CC BY 4.0); the labels are written by
+The page images come from the [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu)
+by invoiceModelisation (Roboflow Universe, CC BY 4.0); the labels are written by
 [`tiny_resume_parser.label`](../src/tiny_resume_parser/label.py). Data preparation scripts are in
 [`scripts/`](../scripts). Data and labels are not in the repository yet.
 
