@@ -82,19 +82,27 @@ Every change was tested against a named baseline over several seeds, and kept on
 spread on both development sets. The full record, including everything that did not work, is in
 [docs/research/](docs/research/README.md).
 
-| Kept | Lenient F1 gain (gold / val) |
+| Kept | Effect (lenient F1, gold / val) |
 |---|---|
-| Averaging the weights of 10 fine-tuned seeds | +0.024 / +0.024 over the seed mean |
+| Teacher's spelling-fix list left out of the target + token perturbation (Nougat), one run | answers stopped looping: 0/10 → 21/50 valid |
+| Full fine-tune instead of LoRA | +0.03 |
 | Image noise during training | +0.035 / +0.007 (3 seeds) |
 | Training the vision encoder too | +0.011 / +0.022 (3 seeds) |
+| Averaging the weights of 10 fine-tuned seeds | +0.024 / +0.024 over the seed mean |
+| Answer repair (keep the complete values of a cut-off answer) | +0.018 gold |
 | SmolVLM: 30 image tiles instead of 12 | +0.043 / +0.032 (2 seeds) |
 
 | Tried and rejected | Result |
 |---|---|
-| Preference training (DPO), reinforcement learning (GRPO) on field F1 | lower / no change |
+| Preference training (DPO) on the model's own wrong answers | 0.650 → 0.539 gold |
+| Reinforcement learning (GRPO), reward = field F1, 4 variants | 0.705–0.718 from 0.705 gold; training reward rose, new pages did not |
 | Key-by-key generation (one call per JSON key) | equal on gold, −0.022 on val, 29× the calls |
-| Schema-constrained decoding, repetition penalty | no gain |
+| Schema-constrained decoding, repetition penalty | no gain; constrained is 5.4× slower |
+| 24 tiles (InternVL), canonical labels, 2 pages per step | −0.05, −0.01, −0.02 |
 | NEFTune embedding noise; lower vision-encoder learning rate | no gain / lower |
+
+The phase-by-phase record, from the first LoRA run to the test-set milestone, is in
+[docs/research/README.md](docs/research/README.md#how-the-recipe-was-built-phase-by-phase).
 
 Where errors remain: values the model **leaves out** are the largest loss (10.6 % of gold values); misread
 characters are among the smallest (2.9 %).
