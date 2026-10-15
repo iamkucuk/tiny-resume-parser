@@ -154,7 +154,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Weights always in float32: in pure bf16 many small updates round away (and gave grad-norm spikes). On a GPU
     # with bf16 (A100, L4, H100) the matmuls run in bf16 autocast; on a T4, Apple MPS or a CPU, in float32.
-    bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+    bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported(including_emulation=False)
     model = AutoModelForImageTextToText.from_pretrained(args.model, dtype=torch.float32)
     model.enable_input_require_grads()
     print(f"full fine-tune: {sum(p.numel() for p in model.parameters()) / 1e6:.1f} M parameters, bf16 {bf16}")

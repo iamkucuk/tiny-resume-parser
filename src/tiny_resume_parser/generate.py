@@ -23,7 +23,7 @@ def load_model(model: str, device: str | None = None):
     device = pick_device(device)
     processor = load_processor(model)
     processor.tokenizer.padding_side = "left"
-    bf16 = device == "mps" or (device == "cuda" and torch.cuda.is_bf16_supported())
+    bf16 = device == "mps" or (device == "cuda" and torch.cuda.is_bf16_supported(including_emulation=False))
     m = AutoModelForImageTextToText.from_pretrained(model, dtype=torch.bfloat16 if bf16 else torch.float32)
     return m.to(device).eval(), processor, device
 
