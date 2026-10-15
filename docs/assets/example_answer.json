@@ -1,0 +1,128 @@
+{
+ "source": "best InternVL3-1B model (weight average of 10 fine-tunes), validation page creative-resume-template-with-photo-back p1",
+ "field_f1_strict": 0.823,
+ "answer": {
+  "basics": {
+   "name": "Josephine Meyers",
+   "emails": [
+    "josephine.meyers@me.com"
+   ],
+   "phones": [
+    "+44 3245 2345 2345"
+   ],
+   "location": {
+    "address": "23 Bermondy Road, E3 4RF London, United Kingdom"
+   },
+   "profiles": [
+    {
+     "network": "Facebook",
+     "username": "josephine.meyers",
+     "url": "josephine.meyers"
+    },
+    {
+     "network": "Twitter",
+     "username": "jmeyersweets",
+     "url": "jmeyersweets"
+    },
+    {
+     "network": "Instagram",
+     "username": "jmeyers",
+     "url": "jmeyers"
+    }
+   ],
+   "hasPhoto": true
+  },
+  "work": [
+   {
+    "name": "BuzzCreators",
+    "position": "Online Marketing Intern",
+    "type": "internship",
+    "location": "United Kingdom",
+    "startDate": "2019-07",
+    "endDate": "present",
+    "highlights": [
+     "Assisted in account management activities",
+     "Optimised the Facebook Ad campaigns for a client in the home care sector, reducing costs by 20% while preserving impact",
+     "Created an automated process for Social Media monitoring for our clients"
+    ]
+   }
+  ],
+  "volunteer": [
+   {
+    "organization": "AISEC",
+    "position": "Social Media Coordinator",
+    "startDate": "2018",
+    "endDate": "present",
+    "summary": "AISEC is a student-run organisation that provides others with leadership development, cross-cultural internships, and volunteer exchange experiences",
+    "highlights": [
+     "Increased the number of Instagram followers four-fold to over 12.000",
+     "Organised dozens of promotional email campaigns, consistently upping the conversion rate to over 16%",
+     "Brought in 5 new corporate sponsors"
+    ]
+   }
+  ],
+  "education": [
+   {
+    "institution": "London City University",
+    "area": "Economics",
+    "studyType": "BA",
+    "location": "United Kingdom",
+    "startDate": "2018-09",
+    "endDate": "2021-05",
+    "summary": "Specialisation in Online Marketing, key elective: \"Brand management In A Digital Era\""
+   }
+  ],
+  "skills": [
+   {
+    "name": "SEO-Tools",
+    "type": "technical",
+    "keywords": [
+     "Ahrefs",
+     "Semrush",
+     "Google Search Console"
+    ]
+   },
+   {
+    "name": "EmailMarketing",
+    "type": "technical",
+    "keywords": [
+     "MailChimp",
+     "Limusn for university projects"
+    ]
+   },
+   {
+    "name": "Microsoft Office Suite",
+    "type": "technical",
+    "level": "~4/5",
+    "keywords": [
+     "Microsoft Word",
+     "Excel",
+     "PowerPoint"
+    ]
+   },
+   {
+    "name": "Performance Marketing",
+    "type": "technical",
+    "level": "~4/5",
+    "keywords": [
+     "Google Ads",
+     "Facebook Ads for a personal blog"
+    ]
+   }
+  ],
+  "languages": [
+   {
+    "language": "English",
+    "fluency": "Native tongue"
+   },
+   {
+    "language": "German",
+    "fluency": "Grew up in a bilingual household"
+   },
+   {
+    "language": "Spanish",
+    "fluency": "Had 6 years of Spanish in high school"
+   }
+  ]
+ }
+}
