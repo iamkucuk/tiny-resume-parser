@@ -27,8 +27,9 @@ The schema is defined and validated with pydantic in [`schema.py`](../src/tiny_r
 
 GLM-5.3-Flash reads each page image and writes its record ([`label.py`](../src/tiny_resume_parser/label.py)). An
 answer that does not fit the schema is sent back with the validation errors, and the model corrects it. The prompt
-asks for text to be copied as written, including spelling mistakes, because the small models must learn to read
-the page, not to correct it. Of the dataset's 2,451 pages, the 725 stored at 640 × 640 pixels were dropped: their
+asks for text to be copied as written, except for spelling mistakes in ordinary words: those are fixed and each fix
+is listed in a `corrections` field. Names, abbreviations, emails, URLs and codes are always copied letter by letter.
+The small models are not trained on `corrections`, because its content is not visible on the page. Of the dataset's 2,451 pages, the 725 stored at 640 × 640 pixels were dropped: their
 labels had 6.8 % wrong values, against about 1 % on larger pages.
 
 The labels vary between runs, and this limits what the small models can learn. Run a second time on 50 pages

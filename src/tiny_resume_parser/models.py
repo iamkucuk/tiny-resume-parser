@@ -46,8 +46,8 @@ FAMILY["GraniteDocling"] = FAMILY["Idefics3Processor"] | dict(
     header="<|start_of_role|>assistant<|end_of_role|>", end="<|end_of_text|>"
 )
 
-# Left out of the student target. corrections records the teacher's spelling fixes; the student sees only
-# the page, and lora_v1 (with it) repeated correction entries until the token limit on 8 of 10 test pages.
+# Left out of the student target. corrections records the teacher's spelling fixes, which the student cannot see on
+# the page; a first model trained with it repeated correction entries until the token limit on 8 of 10 pages.
 STUDENT_SKIP = ("corrections",)
 
 

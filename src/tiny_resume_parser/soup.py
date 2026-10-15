@@ -1,6 +1,6 @@
 """Average the weights of several full fine-tunes of the same base model (a uniform "model soup", arXiv 2203.05482).
 
-    python -m tiny_resume_parser.soup --out runs/S_soup4 runs/Z_aug_vision/checkpoint-528 runs/Z1_aug_vision_seed1/model ...
+    python -m tiny_resume_parser.soup --out runs/avg/model runs/seed42/checkpoint-528 runs/seed1/model ...
 
 Each input folder holds config.json + model.safetensors (a Trainer checkpoint or a saved model/). The output folder
 gets the averaged model.safetensors and the first input's config files, so evaluate.py --model <out> loads it.

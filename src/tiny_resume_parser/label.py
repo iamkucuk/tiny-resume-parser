@@ -1,8 +1,7 @@
 """Teacher labeling: one CV page image -> one CVRecord (schema.py) via a teacher VLM.
 
-Default teacher: ``glm-5.3-flash`` through any OpenAI-compatible chat endpoint (decision 2026-10-09,
-docs/research/PLAN.md).
-One request per page; multi-page CVs are merged later by code (docs/research/PLAN.md "Multi-page").
+In distillation terms the large model is the teacher and the small fine-tuned models are students.
+Default teacher: ``glm-5.3-flash`` through any OpenAI-compatible chat endpoint. One request per page.
 
 Transport findings (verified on the endpoint used for the labels):
   - The image part MUST come BEFORE the text part in the content array, or the proxy
@@ -119,15 +118,14 @@ def _extract_json(raw: str) -> dict | None:
 
 
 def _is_empty(record: dict) -> bool:
-    """Valid JSON with nothing extracted: in the flat-17 pilot this meant the image was dropped."""
+    """Valid JSON with nothing extracted: in practice this means the endpoint dropped the image."""
     rec = {**record, "basics": {**record["basics"], "hasPhoto": None}}
     return json.dumps(rec) == _EMPTY
 
 
 def _image_part(path: Path) -> tuple[dict, int]:
     """Return (content part, upscale factor). Small pages are sent upscaled 2x: on a
-    648x912 page GLM read "Decathlon" as "Debenhams" twice at 1x, correctly at 2x and 3x
-    (2026-10-09, one page)."""
+    648x912 page the teacher read "Decathlon" as "Debenhams" at 1x and correctly at 2x."""
     with Image.open(path) as im:
         if max(im.size) >= SMALL_PAGE_PX:
             mime = "image/png" if path.suffix.lower() == ".png" else "image/jpeg"

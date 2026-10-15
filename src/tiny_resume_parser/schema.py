@@ -1,11 +1,11 @@
 """CV record schema: the fixed JSON template the teacher labels and the student emits.
 
-Base: JSON Resume (https://jsonresume.org/schema). Additions come from the field survey of
-this dataset (OCR of all 2,451 pages, 2026-10-09; see docs/research/PLAN.md "Decisions 2026-10-09"):
-personal attributes, job type, per-entry technologies, project type, education honors,
-skill type, language test scores, and `extra` for anything no other key holds.
-`corrections` lists every spelling or grammar fix the labeler made to ordinary words; names,
-abbreviations, emails, URLs and codes are never fixed (user decision 2026-10-09).
+Base: JSON Resume (https://jsonresume.org/schema). The additions are fields that CVs in this dataset contain and
+JSON Resume lacks: personal attributes, job type, per-entry technologies, project type, education honors, skill
+type, language test scores, and `extra` for anything no other key holds.
+`corrections` lists every spelling or grammar fix the teacher made to ordinary words (names, abbreviations, emails,
+URLs and codes are never fixed). Students are not trained on it: its content is not visible on the page
+(models.STUDENT_SKIP).
 
 Missing-value policy: every key is always present, so every record has the same template.
 A missing single value is `null`, a missing list is `[]`. Never "N/A" or "" — those could
@@ -13,8 +13,6 @@ be real text on a CV.
 
 Dates are ISO 8601 as precise as the CV allows: "2022", "2022-07", "2022-07-15".
 An ongoing entry has endDate "present".
-
-The previous flat-17-field / DocTags schema was removed (in git history before 2026-10-15).
 """
 
 from __future__ import annotations
@@ -40,9 +38,8 @@ _QUOTES = str.maketrans({"\u2019": "'", "\u2018": "'", "\u201c": '"', "\u201d": 
 
 
 def clean_text(s: str) -> str:
-    """Remove differences that carry no information (pilot 2026-10-09: 42 of 160 teacher
-    "errors" were only these): curly quotes, the ellipsis character, runs of whitespace,
-    space before punctuation, trailing separators."""
+    """Remove differences that carry no information: curly quotes, the ellipsis character, runs of whitespace,
+    space before punctuation, trailing separators. In an early check, 42 of 160 teacher "errors" were only these."""
     s = re.sub(r"\s+", " ", s.translate(_QUOTES)).strip()
     s = re.sub(r" ([,;:.])", r"\1", s)
     return re.sub(r"[\s,;:.]+$", "", s)
@@ -89,7 +86,7 @@ class Basics(_Strict):
     summary: Str = None
     location: Location = Location()
     profiles: list[Profile] = []
-    # Personal attributes (included by user decision, 2026-10-09)
+    # Personal attributes
     birthDate: Date = None
     placeOfBirth: Str = None
     age: Str = None  # only when written as an age; never computed from birthDate
@@ -225,7 +222,7 @@ class CVRecord(_Strict):
     references: list[Reference] = []
     projects: list[Project] = []
     extra: list[Extra] = []
-    corrections: list[Correction] = []  # user decision 2026-10-09: fix spelling/grammar, record each fix
+    corrections: list[Correction] = []  # every spelling or grammar fix the teacher made
 
 
 def template() -> dict:
@@ -262,7 +259,7 @@ def _drop_empty(x):
 def to_target(record: dict) -> str:
     """The training target string: compact JSON in fixed key order, with null / [] / {} keys left out.
 
-    ~26% fewer tokens than the full record (decision 2026-10-11); to_record() refills the left-out keys.
+    ~26% fewer tokens than the full record; to_record() refills the left-out keys.
     """
     return json.dumps(_drop_empty(to_record(record)), ensure_ascii=False, separators=(",", ":"))
 
