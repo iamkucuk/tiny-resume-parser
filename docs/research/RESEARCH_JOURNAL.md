@@ -1361,3 +1361,4 @@ mean p / (1 − p)). Tried where loops cost most: granite-docling (12 of 204 tes
 GD_perturb0.9_s42 / _s1 (1606605–06) vs GD lr 1e-4 seeds 42 / 1 (0.609 / 0.596, 0.622 / 0.635); SmolVLM 30 tiles
 SV_perturb0.9_s42 (1606607) vs SV_lr6e-5_tiles30 seed 42 (0.645 / 0.656). Also compare unparsed pages and limit hits.
 Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the other direction.
+- 20:50 queued GD_perturb0.9_s2 and SV_perturb0.9_s1 (paired seeds; baselines GD lr1e-4 seed 2, SV_lr6e-5_tiles30_seed1).
