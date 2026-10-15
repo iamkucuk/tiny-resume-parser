@@ -113,7 +113,8 @@ With enough training it matches whole-page accuracy but has not beaten it, and i
 instead of 1. The 6-epoch run from the best InternVL weights equalled them on gold and lost 0.022 on val, so it is not adopted.
 
 The full record — every hypothesis, why it was tried, what ran and what came out — is in
-[RESEARCH_JOURNAL.md](RESEARCH_JOURNAL.md); one entry per training run is in [DEVLOG.md](DEVLOG.md).
+[docs/RESEARCH_JOURNAL.md](docs/RESEARCH_JOURNAL.md); one entry per training run is in [docs/DEVLOG.md](docs/DEVLOG.md).
+[docs/README.md](docs/README.md) explains how a change is accepted and gives a dated timeline.
 
 ## Where the remaining errors are
 
@@ -144,18 +145,30 @@ points are correct text placed under a different field or split differently, not
 ## Repository layout
 
 ```
-src/schema.py        output schema (pydantic) and the JSON form the model is trained on
-src/auto_label.py    teacher labelling with GLM-5.3-Flash
-src/train_lora.py    full fine-tune or LoRA (--full-ft, --train-vision, --augment, --model, --max-patches)
-src/soup.py          weight averaging of fine-tuned models
-src/evaluate.py      generate answers on gold / val / train pages; field F1
-src/rescore.py       strict / lenient / canonical / content / repaired scoring
-src/canon.py         canonical label form (list splitting, normalisation)
-truba/*.slurm        cluster jobs: train → score each epoch on dev → keep the val-chosen checkpoint
-colab_speed_test.ipynb  CPU/GPU speed test of the three students
+src/                 the pipeline, run as scripts (python src/NAME.py)
+  schema.py          output schema (pydantic) and the JSON form the model is trained on
+  auto_label.py      teacher labelling with GLM-5.3-Flash
+  train_lora.py      full fine-tune or LoRA (--full-ft, --train-vision, --augment, --model, --max-patches, --keywise)
+  soup.py            weight averaging of fine-tuned models
+  evaluate.py        generate answers on gold / val / train pages; field F1
+  rescore.py         strict / lenient / canonical / content / repaired scoring
+  canon.py           canonical label form (list splitting, normalisation)
+  keywise.py         key-by-key generation (tested, not adopted)
+  train_dpo.py, train_grpo.py, transcribe.py, ...   experiments recorded in docs/ (not adopted)
+scripts/             one-off data and analysis scripts (gold-set building, error analysis)
+truba/               SLURM jobs for the TRUBA cluster: train → score each epoch → keep the val-chosen checkpoint
+tests/               scoring rules and key-by-key round trip (pytest)
+notebooks/           Colab notebooks: first LoRA run, CPU/GPU speed test
+docs/                research record: journal, run log, design notes, literature reviews, results page
 ```
 
+Data (`data/`) and model weights (`runs/`) are not in the repository.
+
 ## Commands
+
+```bash
+pip install -r requirements.txt
+```
 
 ```bash
 python src/evaluate.py --model PATH_TO_MODEL --set val --device cpu --batch 1 --max-patches 12 --out runs/NAME/eval_val
@@ -169,7 +182,11 @@ python src/rescore.py --repair runs/NAME/eval_val
 python src/train_lora.py --full-ft --train-vision --augment 0.5 --max-patches 12
 ```
 
-Tested with transformers 4.57.6, torch 2.6.0, peft 0.21.2, pydantic 2.13.
+```bash
+pytest
+```
+
+Tested with transformers 4.57.6, torch 2.6.0 (CUDA) and 2.14.1 (CPU), peft 0.21.2, pydantic 2.13.
 
 ## Data and licence
 
@@ -177,7 +194,10 @@ Tested with transformers 4.57.6, torch 2.6.0, peft 0.21.2, pydantic 2.13.
 - Base models: [InternVL3-1B-hf](https://huggingface.co/OpenGVLab/InternVL3-1B-hf),
   [SmolVLM-500M-Instruct](https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct),
   [granite-docling-258M](https://huggingface.co/ibm-granite/granite-docling-258M) — each under its own licence.
-- Code licence: not chosen yet.
+- Code: [PolyForm Noncommercial 1.0.0](LICENSE.md) — free to use, change and share for any noncommercial purpose
+  (personal, research, education, nonprofit); commercial use is not permitted. This is a source-available licence,
+  not an OSI open-source licence, because those must allow commercial use.
+- Model weights and documentation (when released): CC BY-NC 4.0.
 
 ## Next steps
 
