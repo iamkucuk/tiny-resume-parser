@@ -60,8 +60,42 @@ embeddings, a 10× lower learning rate for the vision encoder, a first training 
 second model that checks and fixes the labels (it fixed 14 real errors on 30 pages and introduced about 8 new ones).
 Their numbers are in the [research log](research/README.md#experiments-by-phase).
 
-Reinforcement learning raised its training reward but not the development scores. Its training logs and answers
-show why in more detail; that analysis is in the research log entry of 2026-10-15.
+## Why reinforcement learning did not help
+
+GRPO started from the fully fine-tuned InternVL model (0.705 / 0.719). For each training page it sampled 4 answers at
+temperature 1 and rewarded each with its field F1 against the label, for about 350 steps of 4 pages. Four settings
+(learning rate 1e-6 and 3e-6, temperature 0.7, a KL penalty) all ended within the seed spread. The training logs, the
+answers before and after, and 8 new samples per page from the starting model show why
+([`grpo_probe.py`](../experiments/grpo_probe.py)).
+
+**The answers changed, but not in one direction.** After GRPO, 39 to 46 of the 50 gold answers differ from before,
+about as many as after one more epoch of supervised training. On pages that stay valid JSON, the values gained and
+lost cancel out (+79 and −75 at learning rate 1e-6). The net change comes from a few pages switching between valid
+and invalid JSON, each holding about 100 values, which is why gold and validation moved in opposite directions.
+
+**There was a learning signal, but little room on the training pages.** The 4 samples of a page differed by about
+0.23 F1, and only 1 % of groups gave no signal. The room above the greedy answer, however, was small on the pages
+GRPO trained on, because supervised training had already fitted them:
+
+| Starting model, 8 samples per page | Greedy answer | Mean sample | Best sample | Pages where a sample beats greedy by > 0.02 |
+|---|---|---|---|---|
+| 40 training pages | 0.910 | 0.811 | 0.925 | 8 of 40 |
+| 50 gold pages (not trained on) | 0.703 | 0.571 | 0.768 | 27 of 50 |
+
+**Much of the reward measured whether a sample was valid JSON.** At temperature 1, 4 % of samples on training pages
+are not JSON (14 % on gold pages). Leaving those out cuts the reward variance within a page to a third. Greedy
+decoding rarely produces such answers, so learning to avoid them raised the training reward without changing the
+greedy answer.
+
+**The reward also follows the labels' arbitrary splits.** For 24 % of sample pairs, field F1 and content F1 rank the
+two samples in opposite order: field F1 prefers the sample that splits text into fields the way the label does,
+even when the other sample has more correct content.
+
+One expected cause turned out to be wrong: the model does produce many of the values it misses. Of the values the
+greedy answer misses, 74 % on training pages and 56 % on gold pages appear in at least one of the 8 samples. The
+reward simply did not concentrate on them. Untested next steps follow from this: train on pages the supervised stage
+has not seen, keep only pages where a sample beats the greedy answer, and reward content F1 or recall instead of
+field F1.
 
 ## Where the errors are
 

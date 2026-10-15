@@ -1328,3 +1328,21 @@ Dev answers, start model (Z_aug_vision ep6) vs after GRPO, gold pages 1–50, le
   GLM run on the 50 dev gold pages scored against the reviewed labels (H0 above); run 1 vs reviewed is 0.997, and
   review changed 27 of 4,612 lenient values on those pages. README, how-it-works, findings, evaluation, model card
   and the results chart now say this.
+
+## 2026-10-15 20:00 — GRPO analysis part 3: sampling probe (P_grpo_probe2, 1606457, 26 min) — H15 explained
+Start model Z_aug_vision checkpoint-528, 8 samples per page (temperature 1, top_p 1, top_k 0, 2,500 tokens), whole
+input repeated per sample. Check: sample mean reward on training pages 0.811 vs ~0.74 in GRPO's log at its start
+(different page subset) — same range, so the samples are valid.
+
+| set | greedy | mean sample | best of 8 | pages best > greedy + 0.02 | not JSON | reward std in page (JSON only) | greedy-missed values in ≥ 1 sample |
+|---|---|---|---|---|---|---|---|
+| 40 train pages | 0.910 | 0.811 | 0.925 | 8 / 40 | 13 / 320 | 0.124 (0.070) | 252 / 343 (73.5 %) |
+| 50 gold pages | 0.703 | 0.571 | 0.768 | 27 / 50 | 55 / 400 | 0.193 (0.082) | 705 / 1,251 (56.4 %) |
+
+- Lenient vs content order of two JSON samples: opposite in 222 / 915 train pairs (24.3 %) and 232 / 973 gold pairs.
+- Teacher-label vs reviewed-label reward order: 0 / 973 opposite — review changed only 27 of 4,612 lenient values on
+  these pages, so this cannot show label error; the relevant noise is the teacher's run-to-run variation (H0).
+- Verdict on the 2026-10-13 explanations: "no signal" wrong (part 1); "samples became less random" wrong (part 1);
+  "the model never samples the missed values" wrong (73.5 % / 56.4 % appear); "little room on training pages"
+  supported (greedy 0.910 vs best of 8 0.925); "reward follows teacher splits" supported (24 % order flips).
+- Next if GRPO is reopened: unseen pages, keep groups where a sample beats greedy, reward content F1 or recall.

@@ -71,7 +71,7 @@ one model of the same size. [docs/how-it-works.md](docs/how-it-works.md) describ
 For the 0.94B model, three changes raised the score most: fine-tuning all weights instead of LoRA adapters, adding image noise while
 also training the vision encoder, and averaging the weights of several fine-tuned models. Preference training
 (DPO), reinforcement learning on the F1 score (GRPO), generating one JSON key at a time and constrained decoding
-did not improve it. The largest group of remaining errors is values the model leaves out; misread characters are one of the smallest.
+did not improve it; for GRPO, the training pages left little room above the answer the model already gave. The largest group of remaining errors is values the model leaves out; misread characters are one of the smallest.
 [docs/findings.md](docs/findings.md) gives the measured effect of each change.
 
 ## Repository
