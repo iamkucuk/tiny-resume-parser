@@ -51,16 +51,14 @@ average reached 0.660 / 0.649, +0.044 / +0.033 over a single model.
 | Preference training (DPO) on the model's own wrong answers | gold fell at every checkpoint, from 0.650 to 0.539 |
 | Reinforcement learning (GRPO) with field F1 as the reward, 4 settings | 0.705–0.718 / 0.704–0.718, starting from 0.705 / 0.719 |
 | Generating one JSON key per call (29 calls per page) | at best 0.728 / 0.710 against 0.728 / 0.732 |
-| Decoding constrained to the schema | 0.694 against 0.693, 5.4× slower; useful only to guarantee valid JSON |
-| Repetition penalty 1.02 or 1.05 | no gain on InternVL; lower on SmolVLM (0.342 / 0.430 against 0.370 / 0.460) |
-| Banning repeated word sequences (n-gram ban) | broke normal JSON: 3 of 10 answers valid at best |
-| Training on labels rewritten into a canonical form | −0.01 |
-| 24 image tiles for InternVL | −0.05 on gold |
-| 2 pages per step instead of 1; other learning rates; 8 epochs | no gain or lower |
-| NEFTune noise on text embeddings (arXiv 2310.05914) | +0.003 / +0.007 on granite over 3 paired seeds; −0.003 / −0.005 on SmolVLM |
-| A 10× lower learning rate for the vision encoder | lower on granite-docling (2 seeds); +0.026 / −0.038 on InternVL |
-| A first training stage on page transcripts (SmolVLM) | +0.005 / −0.023 |
-| A second model checking and fixing the labels (30 pages) | fixed 14 real errors, introduced about 8 new ones |
+| Decoding constrained to the schema | 0.694 against 0.693 and 5.4× slower; useful only to guarantee valid JSON |
+| Stopping loops at generation time (repetition penalty, banning repeated word sequences) | no gain on InternVL, lower on SmolVLM; the ban also broke normal JSON |
+
+Smaller changes that did not help either: training on labels rewritten into a canonical form (−0.01), 24 image tiles
+for InternVL (−0.05 on gold), 2 pages per step (−0.02), other learning rates and epoch counts, NEFTune noise on text
+embeddings, a 10× lower learning rate for the vision encoder, a first training stage on page transcripts, and a
+second model that checks and fixes the labels (it fixed 14 real errors on 30 pages and introduced about 8 new ones).
+Their numbers are in the [research log](research/README.md#experiments-by-phase).
 
 Reinforcement learning raised its training reward but not the development scores. Its training logs and answers
 show why in more detail; that analysis is in the research log entry of 2026-10-15.
