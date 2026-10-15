@@ -96,9 +96,12 @@ even when the other sample has more correct content.
 
 One expected cause turned out to be wrong: the model does produce many of the values it misses. Of the values the
 greedy answer misses, 74 % on training pages and 56 % on gold pages appear in at least one of the 8 samples. The
-reward simply did not concentrate on them. Untested next steps follow from this: train on pages the supervised stage
-has not seen, keep only pages where a sample beats the greedy answer, and reward content F1 or recall instead of
-field F1.
+reward simply did not concentrate on them.
+
+Two follow-ups were then tested. GRPO on 974 pages the supervised model had never seen (on unseen gold pages a sample
+beat the greedy answer on 27 of 50, against 8 of 40 training pages) gave 0.708 / 0.714 with the field F1 reward and 0.718 / 0.712 with the content F1
+reward, against 0.705 / 0.719 for the starting model: again within the seed spread. Keeping only pages where a sample
+beats the greedy answer remains untested.
 
 ## Where the errors are
 
