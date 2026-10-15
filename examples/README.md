@@ -1,5 +1,7 @@
 # Example pages
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/quickstart.ipynb)
+
 Eight labelled CV pages for trying the code without the full dataset. The files use the same format as the full
 label files ([docs/training.md](../docs/training.md#data)), so every command runs on them when
 `TINY_RESUME_PARSER_DATA=examples` is set.
