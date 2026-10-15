@@ -1277,3 +1277,12 @@ Not yet measured: bf16 / quantised CPU inference, batching, a GPU figure on the 
   compare with SV_soup3_tiles30 (0.644 / 0.676 dev, 0.677 test) and a CPU timing of both.
 - Adopt for release if the 20-tile average is within the seed spread of the 30-tile average on both dev sets and
   faster per page on CPU. First jobs submitted with the package layout (PYTHONPATH=src).
+
+## 2026-10-15 17:45 — Token perturbation on its own (ZP_noperturb) — queued
+- Why: token perturbation (Nougat, arXiv 2308.13418) entered in lora_v2 together with removing `corrections`, so its
+  own effect was never measured. The code swaps one input answer token on ~10 % of pages (~0.11 tokens per page),
+  much less than Nougat's per-token rate, so no effect is the expected result.
+- Ran: ZP_noperturb_s42 / _s1 / _s2 = configs/internvl3-1b.toml with `--perturb 0` (jobs 1606401–03; seeds 1 and 2
+  start 20:00). Baseline: the default recipe (perturb 0.1), 9-seed mean 0.705 / 0.708, paired seeds 42 / 1 / 2.
+- Reading: a 3-seed mean more than ≈ 0.014 below on both sets = perturbation helps; within = no measurable effect
+  (then the docs say so). Also compare unparsed pages and token-limit hits (perturbation targets loops).
