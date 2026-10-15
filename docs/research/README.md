@@ -53,7 +53,7 @@ means two things were changed in the same run, so the gain cannot be split betwe
 |---|---|---|---|
 | lora_v1 | LoRA rank 16, 2 epochs | 0/10 answers valid; all hit the 2,500-token limit; 8/10 repeat one `corrections` entry | baseline |
 | lora_v1 + n-gram ban | `no_repeat_ngram_size` 20 / 10 | 3/10 valid with syntax errors / 0/10 | rejected |
-| lora_v2 | `corrections` removed **and** token perturbation (Nougat, arXiv 2308.13418: 10 % of input answer tokens replaced, labels unchanged) | 21/50 valid, F1 0.43; the `corrections` loops are gone | adopted, confounded |
+| lora_v2 | `corrections` removed **and** token perturbation (Nougat, arXiv 2308.13418: one random input answer token swapped on ~10 % of pages, ~0.11 tokens per page on average; labels unchanged) | 21/50 valid, F1 0.43; the `corrections` loops are gone | adopted, confounded |
 | lora_v2, constrained decoding | output forced to follow the schema | 44/50 valid, F1 0.42 | valid JSON, no F1 gain |
 | lora_v3 | 4 epochs **and** the image-to-text projector trained | 35/50 valid, F1 0.58 | adopted, confounded |
 | lora_v4 | 8 epochs, one adapter saved per epoch | epoch 6 best (0.64); epoch 8 lower (0.60) | best epoch 6 |

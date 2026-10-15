@@ -62,7 +62,7 @@ flowchart LR
   stops the run if any image token would be learnt.
 - **Image noise** on half of the pages: lower resolution, rotation up to 1.5°, contrast, blur, JPEG artefacts. Every
   character stays readable, so the label stays true.
-- **Token perturbation** (Nougat, arXiv 2308.13418): a few answer tokens in the input are replaced by random tokens
+- **Token perturbation** (Nougat, arXiv 2308.13418): on about 1 page in 10, one answer token in the input is replaced by a random token
   while the label keeps the correct one, so the model learns to continue correctly after an error instead of
   repeating itself.
 - Settings per student are in [`configs/`](../configs); commands in [training.md](training.md).
