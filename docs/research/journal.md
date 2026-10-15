@@ -1366,3 +1366,4 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 ## 2026-10-15 22:00 — Repository made minimal (log files renamed: RESEARCH_JOURNAL.md -> journal.md, DEVLOG.md -> runs.md)
 - main keeps only the adopted recipe. Removed from main, kept in tag archive-2026-10-15: LoRA, key-by-key, canonical labels, NEFTune, vision-lr, constrained decoding, repetition penalty, DPO / GRPO / probe code, data-prep scripts, notebooks, PLAN / DESIGN_NOTES / FINETUNING_RECIPE / DATASET_RESEARCH / literature / results page.
 - Checked: training batches identical to the old code (3 pages, seeded noise + perturbation); answers identical on 2 CPU pages; portable job scripts reproduce GD_soup4 0.660 / 0.649.
+- 22:25 queued SV_perturb0.9_s2 (third paired seed; baseline SV_lr6e-5_tiles30_seed2).
