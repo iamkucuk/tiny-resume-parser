@@ -14,9 +14,10 @@ of 10 answers was valid JSON: every answer repeated one entry of the label's `co
 2,500-token limit. That list recorded spelling fixes the labelling model had made, so its content was not visible
 on the page. Removing it from the target, together with token perturbation (on about one page in ten, one input
 token of the answer is replaced by a random token while the target stays correct; Nougat, arXiv 2308.13418),
-raised valid answers to 21 of 50. The two changes were made in the same run, so their separate effects are unknown;
-a test of token perturbation alone is running. The lesson that stayed: training loss did not show the loops; only
-generating answers did.
+raised valid answers to 21 of 50. A later test with the final recipe turned token perturbation off over 3 seeds:
+0.716 / 0.711 against 0.706 / 0.708 with it, and no fewer loops (8 answers hit the token limit either way), so the
+loops ended because the `corrections` list was removed. The lesson that stayed: training loss did not show the
+loops; only generating answers did.
 
 **LoRA, then full fine-tuning.** More epochs, a trainable image-to-text projector and 12 image tiles instead of 6
 brought LoRA to about 0.65 on the gold pages, where it stopped improving. The 12 tiles helped tall pages (+0.094 on
@@ -113,6 +114,5 @@ InternVL3-2B reached 0.754 / 0.716 and InternVL3-8B 0.824 / 0.812.
 
 ## Open questions
 
-- The separate effects of removing the `corrections` list and of token perturbation (a test of the second is running).
 - Why granite-docling loses accuracy above 12 tiles, and why 2 pages per step scored lower.
 - Merging the pages of one CV, and faster CPU inference through quantisation.

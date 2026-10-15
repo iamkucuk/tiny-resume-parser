@@ -439,3 +439,10 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
   20 tiles is 9 % faster per token but writes 5 % more tokens: 4 % less time overall. **Decision: keep the 30-tile
   average** (dev tie, speed within 4 %, and it is the model scored on the test pages). README / model card SmolVLM
   CPU figure corrected 59 s → 68 s (59 s was a 12-tile model from 2026-10-14).
+
+### ZP_noperturb_s42 / _s1 / _s2 (TRUBA 1606401, 1606540–41, ~65 min each) — InternVL default recipe with --perturb 0
+- Val-chosen: s42 ep6 0.718 / 0.711; s1 ep6 0.721 / 0.706; s2 ep6 0.708 / 0.715 → **mean 0.716 / 0.711**.
+- Paired default seeds (perturb 0.1): 0.699 / 0.720, 0.722 / 0.711, 0.697 / 0.693 → mean 0.706 / 0.708.
+- Epoch 6, gold + val, all 3 seeds: unparsed 15 vs 19, token-limit hits 8 vs 8. **No measurable effect**; the
+  lora_v1 → v2 loop fix came from removing `corrections`. Perturb 0.1 stays in the recipe (no reason to change
+  trained models); stronger perturbation (0.9) is tested separately on granite / SmolVLM. Weights deleted.
