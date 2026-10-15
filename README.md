@@ -1,4 +1,6 @@
-# cv_parser — CV page image → structured JSON with a sub-1B model that runs on a laptop CPU
+# pipit — Page Image → Parsed Information, Tiny
+
+CV page image → structured JSON with a sub-1B vision-language model that runs on a laptop CPU.
 
 cv_parser reads a photo or scan of a CV page and writes the page's content as JSON (name, contact details, work history,
 education, skills, languages, projects, …) in a fixed schema that an applicant-tracking system can import.
