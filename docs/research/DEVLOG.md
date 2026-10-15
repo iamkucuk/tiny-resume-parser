@@ -425,3 +425,4 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 
 ## Test set, milestone 1 (2026-10-15, jobs 1606330/31/32)
 - Lenient F1 on 204 test pages: S_soup10_vision 0.745, SV_soup3_tiles30 0.677, GD_soup4_lr1e-4 0.633 (repaired 0.746 / 0.683 / 0.647).
+- 2026-10-15 18:20 — deleted weights of SV_soup5_tiles30 (rejected) and its only-member seeds SV_lr6e-5_tiles30_seed3 / _seed4 (6 GB); eval folders kept. Group disk 1,890 of 2,000 GiB, mostly other projects.
