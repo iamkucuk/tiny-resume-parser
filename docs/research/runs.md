@@ -450,3 +450,7 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 ## GD_perturb0.9_s42 / _s1 / _s2 (2026-10-15, jobs 1606605/06/1606651, ~2 h 05 min each)
 - granite-docling recipe with `--perturb 0.9` (~9 swapped input tokens per page). Val-chosen: s42 ep9 0.544 / 0.591,
   s1 ep9 0.615 / 0.605, s2 ep8 0.591 / 0.629; mean 0.583 / 0.608 vs lr1e-4 seeds 0.617 / 0.611. Not adopted; weights deleted.
+
+## G4_grpo_unseen / G5_grpo_unseen_content (2026-10-15, jobs 1606603/04, ~2 h 49 min each)
+- GRPO from Z_aug_vision checkpoint-528 (0.705 / 0.719), lr 3e-6, 4 samples, 974 unseen hadikp pages. Lenient reward
+  0.708 / 0.714; content reward 0.718 / 0.712. Not adopted; weights deleted.

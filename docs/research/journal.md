@@ -1387,3 +1387,8 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   lower on gold, equal on val. Weights of the three runs deleted; eval folders kept.
 - Queued GD_noperturb_s2 (third paired seed; baseline seed 2 0.621 / 0.601).
 - SV_perturb0.9_s42 (val-chosen ep8): 0.616 / 0.665 vs SV_lr6e-5_tiles30 seed 42 0.645 / 0.656 (−0.029 / +0.009); seeds 1, 2 running.
+- SV_perturb0.9_s1 (val-chosen ep8): 0.631 / 0.663 vs SV_lr6e-5_tiles30_seed1 0.587 / 0.651 (+0.044 / +0.012). 2-seed means 0.624 / 0.664 vs 0.616 / 0.654 (+0.008 / +0.010, within spread); seed 2 decides.
+- G4_grpo_unseen (lenient reward): 0.708 / 0.714; G5_grpo_unseen_content (content reward): 0.718 / 0.712; start
+  Z_aug_vision ckpt-528 0.705 / 0.719, G1 lr 3e-6 on training pages 0.718 / 0.704. Both within spread (val lower): **not
+  adopted**. Unseen pages and the content reward did not change the outcome. Weights deleted. Still untested: keep only
+  groups where a sample beats greedy. findings.md updated.
