@@ -1,0 +1,12 @@
+[project]
+name = "cv-parser"
+version = "0.1.0"
+description = "CV page image to applicant-tracking JSON with a sub-1B vision-language model that runs on a laptop CPU"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE.md" }
+authors = [{ name = "Furkan Kucuk" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

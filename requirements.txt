@@ -1,0 +1,15 @@
+# Core: training (src/train_lora.py), scoring (src/evaluate.py, src/rescore.py), labelling (src/auto_label.py).
+# Tested on TRUBA with torch 2.6.0 (CUDA) and on macOS with torch 2.14.1 (CPU).
+torch>=2.6
+transformers==4.57.6
+accelerate>=1.0
+peft==0.21.2
+pydantic>=2.13
+pillow
+numpy
+safetensors
+requests
+
+# Optional, only for the experiments that use them:
+#   lm-format-enforcer==0.11.3   schema-constrained decoding (evaluate.py --constrained)
+#   trl                           preference / RL training (src/train_dpo.py, src/train_grpo.py)
