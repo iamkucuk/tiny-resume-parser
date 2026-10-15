@@ -7,6 +7,7 @@ Weights are not published yet; this card describes the models that will be relea
 | Base model | OpenGVLab/InternVL3-1B-hf | HuggingFaceTB/SmolVLM-500M-Instruct | ibm-granite/granite-docling-258M |
 | Parameters | 0.94B | 0.51B | 0.26B |
 | Training | full fine-tune, 10 seeds averaged | full fine-tune, 3 seeds averaged | full fine-tune, 4 seeds averaged |
+| Lenient F1, 204 test pages | 0.745 | 0.677 | 0.633 |
 | Lenient F1 (gold dev / val) | 0.728 / 0.732 | 0.644 / 0.676 | 0.660 / 0.649 |
 | CPU time per page (M2 Max, fp32) | ~62 s | ~59 s | ~30 s |
 
@@ -28,7 +29,7 @@ not be verified; released weights will be trained without them.
 
 ## Evaluation
 
-Field F1 on 50 human-reviewed pages and 79 validation pages ([evaluation.md](evaluation.md)). The teacher reaches
+Field F1 on 204 held-out human-reviewed test pages (scored once), after choosing on 50 reviewed and 79 validation pages ([evaluation.md](evaluation.md)). The teacher reaches
 0.912 lenient F1 on the reviewed pages, which bounds what students trained on its labels can reach.
 
 ## Limitations
@@ -36,7 +37,7 @@ Field F1 on 50 human-reviewed pages and 79 validation pages ([evaluation.md](eva
 - One page at a time; multi-page CVs are returned page by page.
 - Other languages, scripts and very unusual layouts are untested.
 - Text written visibly on the page is read like any other text; robustness to injected instructions is not measured.
-- About 6 % of development pages produce no parseable answer for the best model.
+- Pages with no parseable answer on the test set: 3 of 204 (InternVL), 4 (SmolVLM), 16 (granite-docling, which also hits the token limit on 12 pages).
 
 ## Licence
 

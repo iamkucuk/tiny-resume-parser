@@ -19,11 +19,11 @@ from PIL import Image  # noqa: E402
 
 ASSETS = Path(__file__).resolve().parent.parent / "docs" / "assets"
 
-# Lenient and content field F1 on the 50 reviewed gold pages (validation-chosen models; journal "Tracks" table).
+# Lenient and content field F1 on the 204 held-out test pages, raw answers (truba/test.slurm, 2026-10-15).
 RESULTS = [  # (student, parameters, lenient F1, content F1)
-    ("InternVL3-1B", "0.94B", 0.728, 0.839),
-    ("granite-docling-258M", "0.26B", 0.660, 0.798),
-    ("SmolVLM-500M", "0.51B", 0.644, 0.813),
+    ("InternVL3-1B", "0.94B", 0.745, 0.844),
+    ("SmolVLM-500M", "0.51B", 0.677, 0.788),
+    ("granite-docling-258M", "0.26B", 0.633, 0.752),
 ]
 TEACHER = {"lenient": 0.912, "content": 0.967}  # GLM-5.3-Flash labels vs the reviewed gold pages
 # Where the best InternVL model loses gold values (share of all gold values; journal 2026-10-15 ~12:50).

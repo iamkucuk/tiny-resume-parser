@@ -1261,3 +1261,11 @@ Not yet measured: bf16 / quantised CPU inference, batching, a GPU figure on the 
 - GD_vlr1e-5_seed1: val-chosen ep8 0.597 / 0.597 vs 0.622 / 0.635 same seed without it (−0.025 / −0.038). With seed 42
   (−0.062 / −0.019) and InternVL seed 42 (+0.026 / −0.038), the hypothesis is rejected. Weights deleted.
 - Next (milestone): the three best models are scored once on the 204 held-out test pages (truba/test.slurm).
+
+## 2026-10-15 ~17:40 — Milestone: the three best models scored once on the 204 test pages
+- truba/test.slurm (gold pages 51–254, never used for a decision). Lenient F1 raw (repaired) / strict / content:
+  InternVL S_soup10_vision 0.745 (0.746) / 0.732 / 0.844, unparsed 3; SmolVLM SV_soup3_tiles30 0.677 (0.683) /
+  0.667 / 0.788, unparsed 4; granite GD_soup4_lr1e-4 0.633 (0.647) / 0.623 / 0.752, unparsed 16, token limit 12.
+- The test scores are at or above the dev scores for InternVL and SmolVLM: choosing on val did not overfit the dev
+  pages. SmolVLM is ahead of granite on test, the reverse of gold dev (0.644 vs 0.660): 50 pages cannot separate
+  students 0.02 apart. granite's weak point is answers that never close (16 unparsed, 12 at the token limit).

@@ -39,12 +39,16 @@ duplicate list items are dropped. This is what `tiny-resume-parser parse` return
 
 ## Results
 
-| Student | Lenient F1 gold / val | Content F1 gold / val | Test (204 pages) |
-|---|---|---|---|
-| InternVL3-1B (average of 10) | 0.728 / 0.732 | 0.839 / 0.852 | running |
-| SmolVLM-500M (average of 3) | 0.644 / 0.676 | 0.813 / 0.797 | running |
-| granite-docling-258M (average of 4) | 0.660 / 0.649 | 0.798 / 0.780 | running |
-| *Teacher vs reviewed gold* | *0.912* | *0.967* | |
+| Student | Dev lenient gold / val | Dev content gold / val | Test lenient (repaired) | Test strict | Test content | Test pages unparsed |
+|---|---|---|---|---|---|---|
+| InternVL3-1B (average of 10) | 0.728 / 0.732 | 0.839 / 0.852 | **0.745** (0.746) | 0.732 | 0.844 | 3 / 204 |
+| SmolVLM-500M (average of 3) | 0.644 / 0.676 | 0.813 / 0.797 | 0.677 (0.683) | 0.667 | 0.788 | 4 / 204 |
+| granite-docling-258M (average of 4) | 0.660 / 0.649 | 0.798 / 0.780 | 0.633 (0.647) | 0.623 | 0.752 | 16 / 204 |
+| *Teacher vs reviewed gold* | *0.912* | *0.967* | | | | |
+
+The test pages were scored once, on 2026-10-15, after every setting had been chosen on the development pages. On
+them SmolVLM is ahead of granite-docling, the reverse of the 50 gold development pages: with 50 pages a difference of
+0.02 is within page-to-page noise.
 
 Reproduce a row:
 

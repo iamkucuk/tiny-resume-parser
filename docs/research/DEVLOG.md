@@ -422,3 +422,6 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 
 ## GD_vlr1e-5_seed1 (2026-10-15, job 1606140)
 - granite, vision lr 1e-5, seed 1. Val-chosen ep8 0.597 / 0.597 vs 0.622 / 0.635. Rejected; weights deleted.
+
+## Test set, milestone 1 (2026-10-15, jobs 1606330/31/32)
+- Lenient F1 on 204 test pages: S_soup10_vision 0.745, SV_soup3_tiles30 0.677, GD_soup4_lr1e-4 0.633 (repaired 0.746 / 0.683 / 0.647).

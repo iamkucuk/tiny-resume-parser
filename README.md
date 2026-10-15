@@ -12,8 +12,7 @@
 <p align="center"><img src="docs/assets/example.png" alt="Left: a two-column designer CV page with a photo. Right: the JSON the 0.94B model wrote for it, with name, contact details, work, education and skills in separate fields." width="900"></p>
 <p align="center"><sub>A validation page the model never trained on, and an excerpt of the JSON the 0.94B student wrote for it (strict field F1 0.82 against the teacher label).</sub></p>
 
-> **Status: research in progress.** Scores are on the development pages; the 204-page held-out test set is being
-> scored now. Model weights are not published yet.
+> **Status: research in progress.** Model weights are not published yet.
 
 ## Why read the page image instead of the PDF text
 
@@ -31,18 +30,19 @@ text is read by the model as it is by a person; robustness to that has not been 
 
 ## Results
 
-<img alt="Bar charts of lenient field F1 and content F1 on the 50 reviewed gold pages: InternVL3-1B 0.728 and 0.839, granite-docling-258M 0.660 and 0.798, SmolVLM-500M 0.644 and 0.813; the teacher reaches 0.912 and 0.967." src="docs/assets/results.svg" width="900">
+<img alt="Bar charts of lenient field F1 and content F1 on the 204 held-out test pages: InternVL3-1B 0.745 and 0.844, SmolVLM-500M 0.677 and 0.788, granite-docling-258M 0.633 and 0.752; the teacher reaches 0.912 and 0.967 on the reviewed pages." src="docs/assets/results.svg" width="900">
 
-| Student | Params | Lenient F1 gold / val | Content F1 gold / val | CPU s/page |
-|---|---|---|---|---|
-| InternVL3-1B (average of 10 fine-tunes) | 0.94B | **0.728 / 0.732** | **0.839 / 0.852** | 62 |
-| granite-docling-258M (average of 4) | 0.26B | 0.660 / 0.649 | 0.798 / 0.780 | 30 |
-| SmolVLM-500M (average of 3) | 0.51B | 0.644 / 0.676 | 0.813 / 0.797 | 59 |
-| *Teacher: GLM-5.3-Flash vs human-reviewed labels* | *~300B* | *0.912* | *0.967* | |
+| Student | Params | **Test** lenient F1 | Test content F1 | Dev lenient F1 gold / val | CPU s/page |
+|---|---|---|---|---|---|
+| InternVL3-1B (average of 10 fine-tunes) | 0.94B | **0.745** | **0.844** | 0.728 / 0.732 | 62 |
+| SmolVLM-500M (average of 3) | 0.51B | 0.677 | 0.788 | 0.644 / 0.676 | 59 |
+| granite-docling-258M (average of 4) | 0.26B | 0.633 | 0.752 | 0.660 / 0.649 | 30 |
+| *Teacher: GLM-5.3-Flash vs human-reviewed labels* | *~300B* | *0.912* | *0.967* | | |
 
 *Lenient* field F1 ignores case, spacing and punctuation; any letter or digit difference is an error. *Content* F1
-also accepts correct words placed under another field of the same section. Gold = 50 human-reviewed pages,
-val = 79 teacher-labelled pages; CPU = Apple M2 Max, float32. The teacher's own 0.912 is the ceiling for students
+also accepts correct words placed under another field of the same section. Test = 204 human-reviewed pages never
+used for any decision, scored once; dev = 50 reviewed gold pages / 79 teacher-labelled validation pages, used to
+choose every setting; CPU = Apple M2 Max, float32. The teacher's own 0.912 is the ceiling for students
 trained on its labels. Definitions, examples and commands: [docs/evaluation.md](docs/evaluation.md).
 
 ## Quickstart

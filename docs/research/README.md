@@ -97,5 +97,6 @@ instead of 1. The 6-epoch run from the best InternVL weights equalled them on go
 | 2026-10-13 | SmolVLM-500M added as a second student | own recipe found on 2026-10-14: lr 6e-5, 10 epochs |
 | 2026-10-14 | Literature review; granite-docling-258M added as a third student; content score added | SmolVLM 30 image tiles adopted |
 | 2026-10-15 | Weight averages for SmolVLM (0.644 / 0.676) and granite-docling (0.660 / 0.649) | rejected: key-by-key generation, NEFTune, extra pages for SmolVLM; a 10× lower vision-encoder learning rate (both models) |
+| 2026-10-15 | Milestone: the three best models scored once on the 204 held-out test pages | lenient F1 0.745 (InternVL), 0.677 (SmolVLM), 0.633 (granite-docling) |
 
 Scores are lenient field F1 on gold pages 1–50 / the 79 validation pages.
