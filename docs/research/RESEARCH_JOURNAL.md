@@ -1269,3 +1269,11 @@ Not yet measured: bf16 / quantised CPU inference, batching, a GPU figure on the 
 - The test scores are at or above the dev scores for InternVL and SmolVLM: choosing on val did not overfit the dev
   pages. SmolVLM is ahead of granite on test, the reverse of gold dev (0.644 vs 0.660): 50 pages cannot separate
   students 0.02 apart. granite's weak point is answers that never close (16 unparsed, 12 at the token limit).
+
+## 2026-10-15 ~17:50 — SmolVLM at 20 tiles: same accuracy, faster on CPU? (queued for 20:00)
+- Observation: 20 tiles scored the same as 30 on 2-seed means (2026-10-15 ~02:00), with 1,344 instead of 1,984 image
+  tokens per A4 page. On a CPU, prompt processing grows with image tokens, so a 20-tile model would read a page faster.
+- Ran: SV_tiles20_seed42 / _seed1 / _seed2 (configs/smolvlm-500m.toml, --max-patches 20), then a 3-seed average to
+  compare with SV_soup3_tiles30 (0.644 / 0.676 dev, 0.677 test) and a CPU timing of both.
+- Adopt for release if the 20-tile average is within the seed spread of the 30-tile average on both dev sets and
+  faster per page on CPU. First jobs submitted with the package layout (PYTHONPATH=src).
