@@ -1,6 +1,7 @@
 """Key-by-key mode (src/keywise.py) must lose nothing: for every labelled page, the 29 value texts re-assemble into an
 answer with the same scored fields as the label, and every prefix is an exact text prefix of the assembled JSON
-(so training prompts equal the prompts generation builds). Run: .venv/bin/python tests/test_keywise.py"""
+(so training prompts equal the prompts generation builds). Run: pytest, or .venv/bin/python tests/test_keywise.py
+The full check needs data/processed/ (not in the repository); without it only the hand-made record is checked."""
 import json
 import sys
 from pathlib import Path
@@ -11,16 +12,46 @@ import keywise  # noqa: E402
 from evaluate import pairs  # noqa: E402
 from schema import template, to_record  # noqa: E402
 
-assert len(keywise.KEYS) == 29 and keywise.KEYS[0] == ("basics", "name") and ("corrections",) not in keywise.KEYS
-assert [k[0] for k in keywise.KEYS[17:]] == [k for k in template() if k not in ("basics", "corrections")]
-pages = nulls = 0
-for name in ("labels_train_v6.jsonl", "labels_gold_v6_verified.jsonl"):
-    for line in (ROOT / "data" / "processed" / name).read_text().splitlines():
-        record = json.loads(line)["record"]
-        vals = keywise.values(record)
-        full = keywise.assemble(vals)
-        for i, v in enumerate(vals):
-            assert full.startswith(keywise.prefix(vals, i) + v), (name, i)
-        assert pairs(to_record(json.loads(keywise.answer(vals)))) == pairs(to_record(record)), name
-        pages, nulls = pages + 1, nulls + vals.count("null")
-print(f"ok: {pages} pages, {29 * pages} values, {nulls / (29 * pages):.1%} null")
+SAMPLE = {"basics": {"name": "Ada Lovelace", "emails": ["ada@example.com"]},
+          "work": [{"name": "Analytical Engines Ltd", "position": "Programmer", "startDate": "1843-01",
+                    "highlights": ["Wrote the first program"]}],
+          "skills": [{"name": "Mathematics", "keywords": ["Calculus", "Algebra"]}],
+          "languages": [{"language": "English", "fluency": "Native"}]}
+LABEL_FILES = [ROOT / "data" / "processed" / n for n in ("labels_train_v6.jsonl", "labels_gold_v6_verified.jsonl")]
+
+
+def check(record: dict) -> int:
+    """Assert the round trip for one record; return its number of null values."""
+    vals = keywise.values(record)
+    full = keywise.assemble(vals)
+    for i, v in enumerate(vals):
+        assert full.startswith(keywise.prefix(vals, i) + v), i
+    assert pairs(to_record(json.loads(keywise.answer(vals)))) == pairs(to_record(record))
+    return vals.count("null")
+
+
+def test_key_order():
+    assert len(keywise.KEYS) == 29 and keywise.KEYS[0] == ("basics", "name") and ("corrections",) not in keywise.KEYS
+    assert [k[0] for k in keywise.KEYS[17:]] == [k for k in template() if k not in ("basics", "corrections")]
+
+
+def test_round_trip_sample():
+    check(to_record(SAMPLE))
+
+
+def test_round_trip_all_labels():
+    if not all(f.exists() for f in LABEL_FILES):
+        import pytest
+        pytest.skip("data/processed/ label files not present (not in the repository)")
+    pages = nulls = 0
+    for f in LABEL_FILES:
+        for line in f.read_text().splitlines():
+            nulls += check(json.loads(line)["record"])
+            pages += 1
+    print(f"ok: {pages} pages, {29 * pages} values, {nulls / (29 * pages):.1%} null")
+
+
+if __name__ == "__main__":
+    test_key_order()
+    test_round_trip_sample()
+    test_round_trip_all_labels()
