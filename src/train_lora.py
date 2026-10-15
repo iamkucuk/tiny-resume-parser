@@ -1,4 +1,4 @@
-"""LoRA fine-tune of InternVL3-1B: CV page image -> ATS JSON (recipe: FINETUNING_RECIPE.md).
+"""LoRA fine-tune of InternVL3-1B: CV page image -> ATS JSON (recipe: docs/FINETUNING_RECIPE.md).
 
     .venv/bin/python src/train_lora.py --limit 50 --epochs 2 --out runs/smoke     # smoke test (gate)
     .venv/bin/python src/train_lora.py --out runs/lora_v1                          # full run
@@ -31,7 +31,7 @@ ROOT = Path(__file__).resolve().parent.parent
 LABELS = ROOT / "data" / "processed" / "labels_train_v6.jsonl"
 MODEL_ID = "OpenGVLab/InternVL3-1B-hf"
 PROMPT = "Extract this CV page as JSON."
-MAX_PATCHES = 6  # default tile cap: every page <= 7 tiles = 1,792 image tokens (FINETUNING_RECIPE.md); --max-patches changes it
+MAX_PATCHES = 6  # default tile cap: every page <= 7 tiles = 1,792 image tokens (docs/FINETUNING_RECIPE.md); --max-patches changes it
 SMOLVLM_ID = "HuggingFaceTB/SmolVLM-500M-Instruct"
 GRANITE_ID = "ibm-granite/granite-docling-258M"  # also Idefics3; told apart from SmolVLM by its chat template
 READ_PROMPT = "Write out all text on this page."  # reading stage: rows with a "transcript" (src/transcribe.py)

@@ -1,7 +1,7 @@
 # Development log — InternVL3-1B LoRA, CV page image → ATS JSON
 
 One entry per version. Each answers: what we ran into, what we observed, what we tried, what worked and what did not.
-Full result tables: `DESIGN_NOTES.md` Part 3. Research behind the choices: `research/`.
+Full result tables: `DESIGN_NOTES.md` Part 3. Research behind the choices: `literature/`.
 Scores are on the first 50 reviewed gold pages (`labels_gold_v6_verified.jsonl`, CVs never trained on) unless stated.
 Field F1 = exact match of (field path, value) pairs; unparsed answers count 0.
 
@@ -36,7 +36,7 @@ Field F1 = exact match of (field path, value) pairs; unparsed answers count 0.
 - **Worked:** clear gain on all measures. **Unknown:** which change caused it. The near-miss gap (similarity F1 − exact F1) stayed ~0.08–0.09, so the projector shows no clear effect on misreads.
 
 ## Between v3 and v4 (2026-10-12)
-- **Framework research** (`research/2026-10-12_frameworks_vs_our_recipe.md`): only LLaMA-Factory and TRL train our exact model; our recipe matches their defaults; the gradient-accumulation loss bug does not affect transformers 4.57.6 (checked in installed code). Gaps: per-epoch checkpoints + selection, 12 image tiles instead of 6 (affects 178/1,472 pages), per-component learning rates.
+- **Framework research** (`literature/2026-10-12_frameworks_vs_our_recipe.md`): only LLaMA-Factory and TRL train our exact model; our recipe matches their defaults; the gradient-accumulation loss bug does not affect transformers 4.57.6 (checked in installed code). Gaps: per-epoch checkpoints + selection, 12 image tiles instead of 6 (affects 178/1,472 pages), per-component learning rates.
 - **Training-label check:** school/club-like entries in `work` — 2.8% of training labels vs 2.9% of reviewed gold labels. Wrong-section errors come from the model, not from the labels.
 - **Speed test (L4, same 16 pages per step):** checkpointing on 0.85 s/page, 8.9 GB; **off 0.67 s/page (1.27×), 14.6 GB**; 4 or 8 pages per pass without checkpointing ran out of memory. The model has no BatchNorm (LayerNorm/RMSNorm only), so batch size changes speed, not results.
 - **Scoring speed:** `evaluate.py --batch N` generates N pages together; answers identical to one-at-a-time on 3 pages (free and constrained). GPU speed-up measured in lora_v4 (3.2×).

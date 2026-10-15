@@ -1,4 +1,4 @@
-"""One fixed form for label choices the teacher makes inconsistently (RESEARCH_JOURNAL.md, label ceiling).
+"""One fixed form for label choices the teacher makes inconsistently (docs/RESEARCH_JOURNAL.md, label ceiling).
 
 Rules (no page text is dropped):
 - list fields that hold several short items (skills.keywords, work/projects.technologies, education.courses,

@@ -1,8 +1,8 @@
 # Plan: Fine-tune a sub-1B vision-language model to turn CV page images into ATS JSON
 
 > Living document, authoritative for decisions and sequencing. Rewritten 2026-10-11 to
-> replace the granite-docling / DocTags / Gemini plan; the old schema and labeler are kept
-> in `src/_legacy/`.
+> replace the granite-docling / DocTags / Gemini plan; the old schema and labeler were
+> in `src/_legacy/` (removed 2026-10-15; in the first git commit).
 
 ## Status (2026-10-11)
 - Done: document reconstruction, gold-set selection, JSON schema, teacher labeling of all
@@ -68,7 +68,7 @@ src/
   train_lora.py        # InternVL3-1B LoRA fine-tune + generation check
   evaluate.py          # field-level P/R/F1 of an adapter on held-out pages; --constrained = lm-format-enforcer
   colab_utils.py       # inline HTML dashboard / result tables for the Colab notebook
-  _legacy/             # old flat-17-field DocTags schema and labeler
+  _legacy/             # old flat-17-field DocTags schema and labeler (removed 2026-10-15; in git history)
 scripts/build_gold_set.py
 ```
 

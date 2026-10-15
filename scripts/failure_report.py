@@ -1,4 +1,4 @@
-"""Build reports/failure_report.html from the classified errors of lora_v4 epoch 6 (free decoding)."""
+"""Build reports/failure_report.html (local only: rendered CV pages) from the classified errors of lora_v4 epoch 6 (free decoding)."""
 import json, base64, io, html, collections, re, sys
 from PIL import Image
 S = sys.argv[1]
@@ -198,5 +198,5 @@ mark{{background:var(--mark);color:inherit;border-radius:2px}}details.page summa
 <li><b>Wrong section</b> ({cnt["wrong_key"]}): continuation pages, certificates under Education (case 2).</li>
 <li><b>Label style</b>: one rule for grouped skill lines; case-insensitive scoring (case 6). Cheap, code-only.</li></ol>
 </main></body></html>'''
-open('reports/failure_report.html', 'w').write(page)
+import os; os.makedirs('reports', exist_ok=True); open('reports/failure_report.html', 'w').write(page)
 print('written', len(page) // 1024, 'KB')

@@ -1,10 +1,10 @@
 """Teacher labeling: one CV page image -> one CVRecord (src/schema.py) via a teacher VLM.
 
-Default teacher: ``glm-5.3-flash`` through the LiteLLM proxy (decision 2026-10-09, PLAN.md).
-One request per page; multi-page CVs are merged later by code (PLAN.md "Multi-page").
+Default teacher: ``glm-5.3-flash`` through the LiteLLM proxy (decision 2026-10-09, docs/PLAN.md).
+One request per page; multi-page CVs are merged later by code (docs/PLAN.md "Multi-page").
 
 Transport findings (verified against the proxy; carried over from the flat-17 version,
-kept in src/_legacy/auto_label_flat17.py):
+removed; see git history before 2026-10-15):
   - The image part MUST come BEFORE the text part in the content array, or the proxy
     drops the image.
   - Calls occasionally come back empty, refused ("no image"), or all-empty: retried.

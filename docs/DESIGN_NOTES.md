@@ -72,7 +72,7 @@ Per-field breakdown (free decoding, 36 parsed pages):
 - Teacher spelling fixes (`corrections`) explain only 14 of 285 near-miss values; the rest are the model's own misreads.
 - Weakest fields: `projects.highlights` (F1 ~0.08), `awards` (~0.07), `extra` (0), `basics.summary` (~0.25), `work.technologies` (~0.30). Strongest: `basics.name`, `phones`, `label`, `languages` (0.7–0.85).
 
-Research behind v2 (loops, hyperparameters, constrained decoding, evaluation, format, data), with sources and what was verified: `research/2026-10-11_training_best_practice.md`.
+Research behind v2 (loops, hyperparameters, constrained decoding, evaluation, format, data), with sources and what was verified: `literature/2026-10-11_training_best_practice.md`.
 
 Lessons: (1) loss 0.22 did not show the loops; only free generation did. (2) The 8-epoch Mac test already looped in `corrections` on 5/10 pages; it was read as underfitting without checking where answers broke. Before a GPU run, locate every failure, don't only count them. (3) Score on held-out pages with field F1, not validity on 10 training pages.
 

@@ -716,7 +716,7 @@ Three one-change runs against SV_smolvlm_default, queued 00:35:
 ## 2026-10-14 ~09:40 — Literature review (user: "stuck with simple solutions"); research hypotheses
 - Gap acknowledged: since the loop fix, runs were mostly tuning (+0.01–0.03 each). Rule added to the project rules: each track
   always has a literature-backed hypothesis queued or in preparation.
-- Review by a Sonnet research agent: `reports/literature_review_2026-10-14.md` (11 ranked hypotheses, sources).
+- Review by a Sonnet research agent: `literature/literature_review_2026-10-14.md` (11 ranked hypotheses, sources).
 - Spot-checked by me: Pix2Struct (2210.03347) ablation, DocVQA: full pretraining 67.8, without the reading warm-up 56.2,
   without screenshot parsing (reading only) 12.2 — read in the PDF. Caveat: that is pretraining from scratch, not a
   stage added to an already-trained VLM; transfer to our case is inferred. Alibaba resume parser (2510.09722): abstract
@@ -820,7 +820,7 @@ per-page seconds (generation only), peak RAM from `/usr/bin/time -l`. Model load
 | SmolVLM-500M (SV_lr6e-5_ep10 ep9) | 59 (36–77) | 18.3 | 3.9 GB | 10/10 |
 | InternVL3-1B (S_soup10_vision) | 62 (35–80) | 15.6 | 4.9 GB | 9/10 (1 schema error) |
 Reading: all three run on a laptop CPU at 0.5–1 min per page in under 5 GB; the teacher (GLM-5.3-Flash, ~300B, user) needs
-data-center GPUs. Colab's 2-core CPU will be slower; `colab_speed_test.ipynb` measures it (models on Drive `cv_parser_colab/speed/`).
+data-center GPUs. Colab's 2-core CPU will be slower; `notebooks/colab_speed_test.ipynb` measures it (models on Drive `cv_parser_colab/speed/`).
 Not yet measured: bf16 / quantised CPU inference, batching, a GPU figure on the same 10 pages.
 
 ## 2026-10-14 ~16:30 — granite-docling: 10 epochs adopted (GD_lr6e-5_ep10)
