@@ -1395,3 +1395,9 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - SV_perturb0.9_s2 (val-chosen ep7): 0.636 / 0.668 vs SV_lr6e-5_tiles30_seed2 0.625 / 0.656. 3-seed means 0.628 / 0.665 vs
   0.619 / 0.654 (+0.009 / +0.011): val higher on all three seeds, both within spread. Released SmolVLM is a 3-seed average,
   so queued SV_soup3_perturb0.9 (s42 ckpt-704, s1 ckpt-704, s2 ckpt-616) vs SV_soup3_tiles30 0.644 / 0.676.
+- GD_noperturb_s1 (val-chosen ep7): 0.634 / 0.620 vs GD lr1e-4 seed 1 0.622 / 0.635 (+0.012 / −0.015); seeds 42, 2 running.
+- GD_noperturb_s42 (val-chosen ep10) 0.618 / 0.629; _s2 (ep7) 0.577 / 0.606; with _s1 3-seed mean 0.610 / 0.618 vs perturb 0.1
+  0.617 / 0.611 (−0.007 / +0.007): no effect, as on InternVL (ZP_noperturb). Not adopted.
+- SV_soup3_perturb0.9 (1607307, 9 min): 0.674 / 0.658 vs SV_soup3_tiles30 0.644 / 0.676 (+0.030 / −0.018). Not adopted (must
+  beat both dev sets). Verdict on token perturbation: no setting beats the spread on any of the three students; recipe keeps
+  0.1. Weights of all GD_noperturb, SV_perturb0.9 and SV_soup3_perturb0.9 runs deleted. findings.md updated.

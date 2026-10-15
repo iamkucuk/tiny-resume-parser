@@ -16,7 +16,12 @@ on the page. Removing it from the target, together with token perturbation (on a
 token of the answer is replaced by a random token while the target stays correct; Nougat, arXiv 2308.13418),
 raised valid answers to 21 of 50. A later test with the final recipe turned token perturbation off over 3 seeds:
 0.716 / 0.711 against 0.706 / 0.708 with it, and no fewer loops (8 answers hit the token limit either way), so the
-loops ended because the `corrections` list was removed. The lesson that stayed: training loss did not show the
+loops ended because the `corrections` list was removed. The two smaller models gave the same answer. On
+granite-docling-258M, turning perturbation off gave 0.610 / 0.618 against 0.617 / 0.611 (3-seed means), and raising
+it to Nougat's strength (about 9 replaced tokens per page) gave 0.583 / 0.608. On SmolVLM-500M the stronger setting
+raised the 3-seed mean to 0.628 / 0.665 from 0.619 / 0.654, within the seed spread, and the average of those three
+models scored 0.674 / 0.658 against 0.644 / 0.676: higher on one set, lower on the other. The recipe keeps the light
+setting. The lesson that stayed: training loss did not show the
 loops; only generating answers did.
 
 **LoRA, then full fine-tuning.** More epochs, a trainable image-to-text projector and 12 image tiles instead of 6

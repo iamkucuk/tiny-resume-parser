@@ -454,3 +454,11 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 ## G4_grpo_unseen / G5_grpo_unseen_content (2026-10-15, jobs 1606603/04, ~2 h 49 min each)
 - GRPO from Z_aug_vision checkpoint-528 (0.705 / 0.719), lr 3e-6, 4 samples, 974 unseen hadikp pages. Lenient reward
   0.708 / 0.714; content reward 0.718 / 0.712. Not adopted; weights deleted.
+
+## GD_noperturb_s42 / _s1 / _s2 (2026-10-15, jobs 1606954/55/84, ~2 h each)
+- granite-docling recipe with `--perturb 0`. Val-chosen: s42 ep10 0.618 / 0.629, s1 ep7 0.634 / 0.620, s2 ep7 0.577 / 0.606;
+  mean 0.610 / 0.618 vs 0.617 / 0.611. No effect; weights deleted.
+
+## SV_perturb0.9_s42 / _s1 / _s2 and SV_soup3_perturb0.9 (2026-10-15, jobs 1606607/52, 1606751, 1607307)
+- SmolVLM 30-tile recipe with `--perturb 0.9`. Val-chosen: s42 ep8 0.616 / 0.665, s1 ep8 0.631 / 0.663, s2 ep7 0.636 / 0.668;
+  mean 0.628 / 0.665 vs 0.619 / 0.654. Average of the three: 0.674 / 0.658 vs SV_soup3_tiles30 0.644 / 0.676. Not adopted.
