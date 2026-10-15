@@ -13,16 +13,19 @@ import argparse
 import json
 from pathlib import Path
 
-from .data import label_index
+from .data import label_index, read_jsonl
 from .metrics import rescore
 
 
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("eval_dirs", type=Path, nargs="+", help="folders holding pages.jsonl from evaluate.py")
+    ap.add_argument(
+        "--labels", type=Path, help="label file the answers were scored against (default: all project labels)"
+    )
     ap.add_argument("--repair", action="store_true", help="repair broken answers before scoring")
     args = ap.parse_args(argv)
-    labels = label_index()
+    labels = {(r["cv_id"], r["page"]): r["record"] for r in read_jsonl(args.labels)} if args.labels else label_index()
     suffix = "_repair" * args.repair
     for d in args.eval_dirs:
         res = rescore(d, labels, args.repair)
