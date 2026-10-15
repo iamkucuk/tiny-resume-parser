@@ -1,4 +1,4 @@
-"""Draw the README figures into docs/assets/ (light and dark variants of each chart).
+"""Draw the README figures into docs/assets/.
 
     python scripts/make_figures.py
 
@@ -36,10 +36,9 @@ LOST = [
     ("under another field", 1.8),
 ]
 
-THEMES = {  # reference palette (dataviz skill): slot 1 blue, text and grid tokens per surface
-    "light": dict(bar="#2a78d6", text="#0b0b0b", muted="#52514e", grid="#d9d8d4", ceiling="#eb6834"),
-    "dark": dict(bar="#3987e5", text="#ffffff", muted="#c3c2b7", grid="#3a3a38", ceiling="#d95926"),
-}
+# One light version on a white card: GitHub picks <picture> variants by the operating-system theme, which can differ
+# from the GitHub theme and leave light text on a light page. A white card reads on both page themes.
+THEMES = {"light": dict(bar="#2a78d6", text="#0b0b0b", muted="#52514e", grid="#d9d8d4", ceiling="#eb6834")}
 
 
 def style(ax, t):
@@ -55,7 +54,6 @@ def style(ax, t):
 def results_chart(theme: str) -> None:
     t = THEMES[theme]
     fig, axes = plt.subplots(1, 2, figsize=(9, 2.6), sharey=True)
-    fig.patch.set_alpha(0)
     names = [f"{n}  ({p})" for n, p, _, _ in RESULTS][::-1]
     for ax, (metric, col, title) in zip(axes, [("lenient", 2, "Lenient field F1"), ("content", 3, "Content F1")]):
         values = [r[col] for r in RESULTS][::-1]
@@ -68,14 +66,13 @@ def results_chart(theme: str) -> None:
         style(ax, t)
     axes[0].tick_params(axis="y", labelcolor=t["text"])
     fig.tight_layout()
-    fig.savefig(ASSETS / f"results-{theme}.svg", transparent=True)
+    fig.savefig(ASSETS / "results.svg", facecolor="white")
     plt.close(fig)
 
 
 def lost_chart(theme: str) -> None:
     t = THEMES[theme]
     fig, ax = plt.subplots(figsize=(7, 2.6))
-    fig.patch.set_alpha(0)
     labels, values = [n for n, _ in LOST][::-1], [v for _, v in LOST][::-1]
     ax.barh(labels, values, height=0.55, color=t["bar"])
     for y, v in enumerate(values):
@@ -87,7 +84,7 @@ def lost_chart(theme: str) -> None:
     style(ax, t)
     ax.tick_params(axis="y", labelcolor=t["text"])
     fig.tight_layout()
-    fig.savefig(ASSETS / f"lost-values-{theme}.svg", transparent=True)
+    fig.savefig(ASSETS / "lost-values.svg", facecolor="white")
     plt.close(fig)
 
 

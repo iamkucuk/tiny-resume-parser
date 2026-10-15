@@ -57,10 +57,7 @@ Test pages: `--set gold --start 50`. SmolVLM: `--max-patches 30 --max-new-tokens
 
 ## Where the remaining errors are
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/lost-values-dark.svg">
-  <img alt="Bar chart of gold values the best InternVL model loses: left out 10.6 %, page not parsed 6.7 %, joined with other text 4.6 %, written in part 3.1 %, misread characters 2.9 %, under another field 1.8 %." src="assets/lost-values-light.svg">
-</picture>
+<img alt="Bar chart of gold values the best InternVL model loses: left out 10.6 %, page not parsed 6.7 %, joined with other text 4.6 %, written in part 3.1 %, misread characters 2.9 %, under another field 1.8 %." src="assets/lost-values.svg" width="700">
 
 Values the model leaves out are the largest loss; misread characters are among the smallest. Three of the 50 gold
 pages produce no parseable answer and carry 6.7 % of all gold values.

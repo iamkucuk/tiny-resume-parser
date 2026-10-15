@@ -31,10 +31,7 @@ text is read by the model as it is by a person; robustness to that has not been 
 
 ## Results
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/results-dark.svg">
-  <img alt="Bar charts of lenient field F1 and content F1 on the 50 reviewed gold pages: InternVL3-1B 0.728 and 0.839, granite-docling-258M 0.660 and 0.798, SmolVLM-500M 0.644 and 0.813; the teacher reaches 0.912 and 0.967." src="docs/assets/results-light.svg">
-</picture>
+<img alt="Bar charts of lenient field F1 and content F1 on the 50 reviewed gold pages: InternVL3-1B 0.728 and 0.839, granite-docling-258M 0.660 and 0.798, SmolVLM-500M 0.644 and 0.813; the teacher reaches 0.912 and 0.967." src="docs/assets/results.svg" width="900">
 
 | Student | Params | Lenient F1 gold / val | Content F1 gold / val | CPU s/page |
 |---|---|---|---|---|
