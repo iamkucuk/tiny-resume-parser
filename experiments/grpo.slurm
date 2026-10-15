@@ -1,26 +1,21 @@
 #!/bin/bash
 # GRPO after supervised fine-tuning, then score the final model on the dev pages (gold 1-50 + validation split).
 #   sbatch -J NAME experiments/grpo.slurm NAME "grpo args (--model CHECKPOINT ...)" "eval args"
-# TRL is in $D/venv/trl_pkgs: not on the shared venv path (PYTHONPATH only), pinned to its torch/transformers. It must
-# sit under the venv prefix: dill pickles modules outside sys.prefix by value, which breaks datasets fingerprinting.
-#SBATCH --partition=kolyoz-cuda
-#SBATCH --account=romer
+# TRL may sit in its own folder (TRL_PATH, set in slurm/site.sh) so a shared environment stays unchanged. That folder
+# must be under the environment prefix: dill pickles modules outside sys.prefix by value, which breaks datasets.
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=03:00:00
-#SBATCH --exclude=kolyoz10,kolyoz11,kolyoz13,kolyoz14,kolyoz17,kolyoz19,kolyoz22,kolyoz31,kolyoz58,kolyoz59,kolyoz60
-#SBATCH --output=/arf/scratch/fkucuk/cv_parser_test/logs/%x-%j.out
-#SBATCH --error=/arf/scratch/fkucuk/cv_parser_test/logs/%x-%j.err
 set -euo pipefail
 NAME=$1; GRPO_ARGS=$2; EVAL_ARGS=$3
-D=/arf/scratch/fkucuk/cv_parser_test; R=$D/cv_parser; OUT=$R/runs/$NAME
-export HF_HOME=$D/hf_cache HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false
-source $D/venv/bin/activate; cd $R; export PYTHONPATH=$R/src  # package without installing into the shared venv
+R=${SLURM_SUBMIT_DIR:-$PWD}; OUT=$R/runs/$NAME
+[ -f $R/slurm/site.sh ] && source $R/slurm/site.sh  # optional, untracked: environment, model cache (see slurm/README.md)
+cd $R; export PYTHONPATH=$R/src TOKENIZERS_PARALLELISM=false
 nvidia-smi --query-gpu=name --format=csv,noheader
 echo "== $NAME: grpo $GRPO_ARGS | eval $EVAL_ARGS"
-[ -e $OUT/log_history.json ] || PYTHONPATH=$R/src:$D/venv/trl_pkgs python -u experiments/train_grpo.py --out $OUT $GRPO_ARGS
+[ -e $OUT/log_history.json ] || PYTHONPATH=$R/src${TRL_PATH:+:$TRL_PATH} python -u experiments/train_grpo.py --out $OUT $GRPO_ARGS
 for SET in "gold --limit 50" "val"; do
   S=${SET%% *}; E=$OUT/eval_final_${S}
   [ -e $E/summary.json ] || python -u -m tiny_resume_parser.evaluate --model $OUT/model --set $SET --batch 8 --out $E $EVAL_ARGS > $E.log 2>&1 || echo "eval failed: $E"

@@ -25,7 +25,11 @@ Label files are JSONL, one page per line:
 The page images come from the [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu)
 by invoiceModelisation (Roboflow Universe, CC BY 4.0); the labels are written by
 [`tiny_resume_parser.label`](../src/tiny_resume_parser/label.py). Data preparation scripts are in
-[`scripts/`](../scripts). Data and labels are not in the repository yet.
+[`scripts/`](../scripts). Data and labels are not in the repository yet. The package looks for them in `data/` at the
+repository root, or in the folder named by `TINY_RESUME_PARSER_DATA`.
+
+Labelling new pages needs an OpenAI-compatible endpoint that serves a vision model. Set `LABEL_BASE_URL` and
+`LABEL_API_KEY` (and optionally `LABEL_MODEL`, default `glm-5.3-flash`) in the environment or in `.env`.
 
 ## Train one student
 
@@ -58,7 +62,8 @@ The InternVL model averages 10 runs, SmolVLM 3 and granite-docling 4.
 
 [`slurm/`](../slurm) holds the jobs used for the reported runs: `exp.slurm` trains, scores every epoch from epoch 3
 on and keeps only the checkpoint chosen on the validation pages; `soup.slurm` averages and scores; `test.slurm`
-scores the test pages. Paths, partition and account in them belong to the TRUBA cluster and need changing elsewhere.
+scores the test pages. Cluster settings go on the `sbatch` command line and in `slurm/site.sh`
+([slurm/README.md](../slurm/README.md)).
 
 ## Experiments not in the recipe
 

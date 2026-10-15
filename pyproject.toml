@@ -31,6 +31,7 @@ tiny-resume-parser = "tiny_resume_parser.cli:main"
 
 [project.urls]
 Repository = "https://github.com/iamkucuk/tiny-resume-parser"
+Documentation = "https://github.com/iamkucuk/tiny-resume-parser/tree/main/docs"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -48,4 +49,4 @@ ignore = ["E731", "B905", "E501"]  # E501: the formatter wraps code; long string
 
 [tool.ruff.lint.per-file-ignores]
 "scripts/*" = ["E741", "B007"]          # one-off data and analysis scripts, kept as they ran
-"notebooks/*" = ["E741"]
+"docs/research/notebooks/*" = ["E741"]

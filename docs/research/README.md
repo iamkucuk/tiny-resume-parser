@@ -16,6 +16,7 @@ at the time. The curated summary is [../findings.md](../findings.md). File paths
 | [PLAN.md](PLAN.md) | The original plan (2026-10-11) and its decisions: schema, teacher, data split. | see where the project started |
 | [DATASET_RESEARCH.md](DATASET_RESEARCH.md) | The page data: sources, licences, how pages were grouped into CVs. | check what the models were trained on |
 | [FINETUNING_RECIPE.md](FINETUNING_RECIPE.md) | The first LoRA recipe for InternVL3-1B, replaced by full fine-tuning on 2026-10-13. | see the starting recipe |
+| [notebooks/](notebooks/) | The Colab notebooks of the first LoRA run and the speed test, as they ran. | see the early runs |
 | [literature/](literature/) | Three literature reviews (2026-10-11, -12, -14) with sources and what was checked. | see which published work each idea came from |
 | [results_2026-10-15.html](results_2026-10-15.html) | Results page of 2026-10-15 (before the test-set scores): best model per student, what changed, where errors remain. | see the state on that date |
 

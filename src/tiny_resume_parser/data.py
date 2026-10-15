@@ -3,18 +3,20 @@
 Label files are JSONL, one page per line: {"cv_id", "page", "image" (path under data/), "record" (a CVRecord dict)}.
 The validation split is 5% of CVs chosen by a hash of the cv_id, so every page of a CV falls on the same side.
 The reviewed gold file is never trained on: pages 1-50 are a development set, pages 51-254 the test set.
+The data folder is <repository>/data, or the folder named by the TINY_RESUME_PARSER_DATA environment variable.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "data"
+DATA = Path(os.environ.get("TINY_RESUME_PARSER_DATA", ROOT / "data"))
 LABELS = DATA / "processed" / "labels_train_v6.jsonl"
 GOLD = DATA / "processed" / "labels_gold_v6_verified.jsonl"
 

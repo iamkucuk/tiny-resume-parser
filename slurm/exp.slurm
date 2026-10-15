@@ -2,21 +2,16 @@
 # One experiment = train, then score every saved epoch from MIN_EPOCH on the dev pages (gold 1-50 + validation split).
 #   sbatch --gres=gpu:N --cpus-per-task=16N slurm/exp.slurm NAME "train args" "eval args" [MIN_EPOCH]
 # eval args must repeat what changes the input (--max-patches) and, for another base model, --model.
-#SBATCH --partition=kolyoz-cuda
-#SBATCH --account=romer
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --time=12:00:00
-#SBATCH --exclude=kolyoz10,kolyoz11,kolyoz13,kolyoz14,kolyoz17,kolyoz19,kolyoz22,kolyoz31,kolyoz58,kolyoz59,kolyoz60
-#SBATCH --output=/arf/scratch/fkucuk/cv_parser_test/logs/%x-%j.out
-#SBATCH --error=/arf/scratch/fkucuk/cv_parser_test/logs/%x-%j.err
 set -euo pipefail
 NAME=$1; TRAIN_ARGS=$2; EVAL_ARGS=$3; MIN_EPOCH=${4:-3}
-D=/arf/scratch/fkucuk/cv_parser_test; R=$D/cv_parser; OUT=$R/runs/$NAME
-export HF_HOME=$D/hf_cache HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false
-source $D/venv/bin/activate; cd $R; export PYTHONPATH=$R/src  # package without installing into the shared venv
+R=${SLURM_SUBMIT_DIR:-$PWD}; OUT=$R/runs/$NAME
+[ -f $R/slurm/site.sh ] && source $R/slurm/site.sh  # optional, untracked: environment, model cache (see slurm/README.md)
+cd $R; export PYTHONPATH=$R/src TOKENIZERS_PARALLELISM=false
 nvidia-smi --query-gpu=name --format=csv,noheader
-NG=$(echo "$CUDA_VISIBLE_DEVICES" | tr , "\n" | grep -c .)  # nvidia-smi -L lists one GPU twice on some nodes (kolyoz31)
+NG=$(echo "$CUDA_VISIBLE_DEVICES" | tr , "\n" | grep -c .)  # nvidia-smi -L can list one GPU twice
 echo "== $NAME on $NG GPU(s): train $TRAIN_ARGS | eval $EVAL_ARGS"
 if [ ! -e $OUT/log_history.json ]; then
   if [ "$NG" -gt 1 ]; then python -m torch.distributed.run --standalone --nproc_per_node=$NG -m tiny_resume_parser.train --out $OUT --check-pages 0 $TRAIN_ARGS

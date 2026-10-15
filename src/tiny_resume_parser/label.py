@@ -1,10 +1,10 @@
 """Teacher labeling: one CV page image -> one CVRecord (schema.py) via a teacher VLM.
 
-Default teacher: ``glm-5.3-flash`` through the LiteLLM proxy (decision 2026-10-09, docs/research/PLAN.md).
+Default teacher: ``glm-5.3-flash`` through any OpenAI-compatible chat endpoint (decision 2026-10-09,
+docs/research/PLAN.md).
 One request per page; multi-page CVs are merged later by code (docs/research/PLAN.md "Multi-page").
 
-Transport findings (verified against the proxy; carried over from the flat-17 version,
-removed; see git history before 2026-10-15):
+Transport findings (verified on the endpoint used for the labels):
   - The image part MUST come BEFORE the text part in the content array, or the proxy
     drops the image.
   - Calls occasionally come back empty, refused ("no image"), or all-empty: retried.
@@ -19,7 +19,8 @@ Output: one JSONL line per page, appended:
 ``attempts`` keeps every raw reply and error for audit. A rerun skips pages already
 ``ok`` in the output file; readers take the last line per (cv_id, page).
 
-The API key is read from LITELLM_API_KEY: the environment, else .env at the project root.
+Settings come from the environment, else from .env at the repository root: LABEL_BASE_URL (the endpoint,
+e.g. https://host/v1), LABEL_API_KEY, and optionally LABEL_MODEL.
 """
 
 from __future__ import annotations
@@ -38,13 +39,12 @@ import requests
 from PIL import Image
 from pydantic import ValidationError
 
+from .data import DATA, ROOT
 from .schema import entry_templates, template, to_record
-
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 
 def _load_env(path: Path) -> None:
-    """Read KEY=VALUE lines from the project's .env (holds LITELLM_API_KEY); real env wins."""
+    """Read KEY=VALUE lines from the repository's .env; variables already in the environment win."""
     if path.exists():
         for line in path.read_text().splitlines():
             if "=" in line and not line.lstrip().startswith("#"):
@@ -52,12 +52,11 @@ def _load_env(path: Path) -> None:
                 os.environ.setdefault(k.strip(), v.strip())
 
 
-_load_env(PROJECT_ROOT / ".env")
-DATA_ROOT = PROJECT_ROOT / "data"
-DOCUMENTS_PATH = DATA_ROOT / "processed" / "documents.jsonl"
+_load_env(ROOT / ".env")
+DOCUMENTS_PATH = DATA / "processed" / "documents.jsonl"
 
-DEFAULT_BASE_URL = os.environ.get("LITELLM_BASE_URL", "https://litellm.furkankucuk.net/v1")
-DEFAULT_MODEL = os.environ.get("VLABEL_MODEL", "glm-5.3-flash")
+DEFAULT_BASE_URL = os.environ.get("LABEL_BASE_URL")
+DEFAULT_MODEL = os.environ.get("LABEL_MODEL", "glm-5.3-flash")
 
 _REFUSAL_MARKERS = (
     "no image",
@@ -260,7 +259,7 @@ def label_page(
 
 
 def label_task(task: dict, **kw) -> dict:
-    img = DATA_ROOT / task["image"]
+    img = DATA / task["image"]
     out = {**task, "model": kw["model"], "ts": time.time()}
     if not img.exists():
         return {**out, "status": "missing_image", "record": None, "attempts": []}
@@ -310,9 +309,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = ap.parse_args(argv)
 
-    key = os.environ.get("LITELLM_API_KEY")
-    if not key:
-        ap.error("set LITELLM_API_KEY in the environment or in .env at the project root")
+    key = os.environ.get("LABEL_API_KEY")
+    if not key or not args.base_url:
+        ap.error("set LABEL_BASE_URL and LABEL_API_KEY in the environment or in .env at the repository root")
 
     docs = [json.loads(line) for line in args.documents.read_text().splitlines()]
     if args.ids:

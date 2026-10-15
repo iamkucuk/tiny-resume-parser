@@ -83,7 +83,6 @@ scripts/                  data preparation and figures
 experiments/              methods that were tried and not adopted
 slurm/                    cluster jobs: train and score, average, test
 tests/                    scoring rules, PDF input, configs
-notebooks/                Colab notebooks: first LoRA run, CPU and GPU speed
 docs/                     method, evaluation, training, findings, model card, research log
 ```
 

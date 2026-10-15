@@ -1,6 +1,6 @@
 """Reward trend of a running GRPO job, from the per-step dicts TRL prints to the job's .out log.
 
-python experiments/grpo_progress.py /arf/scratch/fkucuk/cv_parser_test/logs/G1_grpo_lr1e-6-1602542.out [--block 25]
+python experiments/grpo_progress.py logs/G1_grpo-1602542.out [--block 25]
 """
 
 import argparse
