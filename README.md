@@ -20,7 +20,7 @@ is handled the same way, whether it is a born-digital PDF, a scan or a photo.
 
 ## Results
 
-<img alt="Bar charts of lenient field F1 and content F1 on the 204 held-out test pages: InternVL3-1B 0.745 and 0.844, SmolVLM-500M 0.677 and 0.788, granite-docling-258M 0.633 and 0.752; the teacher reaches 0.912 and 0.967 on the reviewed pages." src="docs/assets/results.svg" width="900">
+<img alt="Bar charts of lenient field F1 and content F1 on the 204 held-out test pages: InternVL3-1B 0.745 and 0.844, SmolVLM-500M 0.677 and 0.788, granite-docling-258M 0.633 and 0.752; the dashed line is the labelling model run a second time on 50 reviewed development pages, 0.912 and 0.967." src="docs/assets/results.svg" width="900">
 
 | Model | Parameters | Field F1 | Content F1 | CPU seconds per page |
 |---|---|---|---|---|
@@ -30,8 +30,9 @@ is handled the same way, whether it is a born-digital PDF, a scan or a photo.
 
 Scores are on 204 human-reviewed test pages that were not used for any decision. Field F1 counts a value as correct
 when it matches the reviewed label apart from case, spacing and punctuation. Content F1 also accepts correct text
-placed under another field of the same section. The labelling model itself scores 0.912 field F1 on the same pages, which is the
-practical ceiling for models trained on its labels. Definitions and development scores are in
+placed under another field of the same section. When the labelling model labels 50 reviewed pages a second time,
+it scores 0.912 field F1 against them: its labels vary between runs, which limits what models trained on them can
+reach. Definitions and development scores are in
 [docs/evaluation.md](docs/evaluation.md); CPU times are for an Apple M2 Max in float32.
 
 ## Quickstart

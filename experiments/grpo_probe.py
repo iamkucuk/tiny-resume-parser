@@ -39,8 +39,14 @@ TEACHER_GOLD = DATA / "processed/labels_gold_v6.jsonl"  # teacher labels of the 
 
 
 def sample(model, processor, image, n: int, max_patches: int, max_new_tokens: int) -> list[str]:
+    # The page is repeated n times in the batch. num_return_sequences would copy pixel_values tile by tile
+    # (repeat_interleave on the tile axis), so each sample would see the page's tiles in the wrong order.
     inputs = processor(
-        text=[prompt_text(processor)], images=[image], return_tensors="pt", **family(processor)["size"](max_patches)
+        text=[prompt_text(processor)] * n,
+        images=[image] * n,
+        padding=True,
+        return_tensors="pt",
+        **family(processor)["size"](max_patches),
     ).to(model.device)
     with torch.no_grad():
         out = model.generate(
@@ -49,7 +55,6 @@ def sample(model, processor, image, n: int, max_patches: int, max_new_tokens: in
             temperature=1.0,
             top_p=1.0,
             top_k=0,
-            num_return_sequences=n,
             max_new_tokens=max_new_tokens,
             use_cache=True,
             pad_token_id=processor.tokenizer.pad_token_id,

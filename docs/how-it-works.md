@@ -31,8 +31,9 @@ asks for text to be copied as written, including spelling mistakes, because the 
 the page, not to correct it. Of the dataset's 2,451 pages, the 725 stored at 640 × 640 pixels were dropped: their
 labels had 6.8 % wrong values, against about 1 % on larger pages.
 
-The labels are not perfect, and this limits what the small models can learn. On the 254 pages corrected by hand,
-the labelling model scores 0.912 field F1.
+The labels vary between runs, and this limits what the small models can learn. Run a second time on 50 pages
+corrected by hand, the labelling model scores 0.912 field F1 against the corrected labels. The first run, which the
+review started from, needed few corrections (0.997).
 
 ## Model input
 

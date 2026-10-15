@@ -25,7 +25,7 @@ RESULTS = [  # (student, parameters, lenient F1, content F1)
     ("SmolVLM-500M", "0.51B", 0.677, 0.788),
     ("granite-docling-258M", "0.26B", 0.633, 0.752),
 ]
-TEACHER = {"lenient": 0.912, "content": 0.967}  # GLM-5.3-Flash labels vs the reviewed gold pages
+TEACHER = {"lenient": 0.912, "content": 0.967}  # a second GLM-5.3-Flash labelling run vs the 50 reviewed dev gold pages
 # Where the best InternVL model loses gold values (share of all gold values; journal 2026-10-15 ~12:50).
 LOST = [
     ("left out", 10.6),
@@ -62,10 +62,18 @@ def results_chart(theme: str) -> None:
             ax.text(v - 0.015, y, f"{v:.3f}", va="center", ha="right", fontsize=10, color="white")
         ax.axvline(TEACHER[metric], color=t["ceiling"], linewidth=2, linestyle=(0, (4, 3)))
         ax.set_xlim(0, 1)
-        ax.set_title(f"{title}   (dashed: teacher {TEACHER[metric]:.3f})", loc="left", fontsize=11, color=t["text"])
+        ax.set_title(f"{title}   (dashed line: {TEACHER[metric]:.3f})", loc="left", fontsize=11, color=t["text"])
         style(ax, t)
     axes[0].tick_params(axis="y", labelcolor=t["text"])
-    fig.tight_layout()
+    fig.text(
+        0.01,
+        0.01,
+        "204 held-out test pages. Dashed line: the labelling model, run a second time on 50 reviewed "
+        "development pages, scored against them.",
+        fontsize=9,
+        color=t["muted"],
+    )
+    fig.tight_layout(rect=(0, 0.07, 1, 1))
     fig.savefig(ASSETS / "results.svg", facecolor="white")
     plt.close(fig)
 

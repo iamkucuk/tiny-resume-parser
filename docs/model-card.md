@@ -30,8 +30,9 @@ not be verified; released weights will be trained without them.
 
 ## Evaluation
 
-Field F1 on 204 held-out human-reviewed test pages (scored once), after choosing on 50 reviewed and 79 validation pages ([evaluation.md](evaluation.md)). The teacher reaches
-0.912 lenient F1 on the reviewed pages, which bounds what students trained on its labels can reach.
+Field F1 on 204 held-out human-reviewed test pages (scored once), after choosing on 50 reviewed and 79 validation pages ([evaluation.md](evaluation.md)). The labelling model,
+run a second time on 50 reviewed pages, scores 0.912 lenient F1 against them; this variation between labelling runs
+limits what models trained on its labels can reach.
 
 ## Limitations
 

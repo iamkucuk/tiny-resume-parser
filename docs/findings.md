@@ -70,9 +70,9 @@ show why in more detail; that analysis is in the research log entry of 2026-10-1
 <img alt="Bar chart of gold values the best InternVL model loses: left out 10.6 %, page not parsed 6.7 %, joined with other text 4.6 %, written in part 3.1 %, misread characters 2.9 %, under another field 1.8 %." src="assets/lost-values.svg" width="700">
 
 The largest loss is values the model does not write at all. Misread characters are one of the smallest. Part of the
-remaining gap is in the labels themselves: on the reviewed pages the labelling model scores 0.912 field F1, and two
-labelling runs on the same pages differ by a similar amount, mostly in how text is split into fields. Measured by
-content F1, which ignores how text is split, the labelling model reaches 0.967.
+remaining gap is in the labels themselves. When the labelling model labels 50 reviewed pages a second time, it
+scores 0.912 field F1 against them; about half of the disagreements are the same text split into fields
+differently. Measured by content F1, which ignores how text is split, the second run reaches 0.967.
 
 Model size is the strongest lever measured, but it is outside this project's limit of 1B parameters: with LoRA,
 InternVL3-2B reached 0.754 / 0.716 and InternVL3-8B 0.824 / 0.812.

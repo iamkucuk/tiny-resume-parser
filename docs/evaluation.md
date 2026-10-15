@@ -44,7 +44,7 @@ reviewed pages are the test set, scored once per milestone so that no setting is
 | InternVL3-1B, average of 10 runs | 0.728 / 0.732 | 0.839 / 0.852 | **0.745** (0.746) | 0.732 | 0.844 | 3 of 204 |
 | SmolVLM-500M, average of 3 runs | 0.644 / 0.676 | 0.813 / 0.797 | 0.677 (0.683) | 0.667 | 0.788 | 4 of 204 |
 | granite-docling-258M, average of 4 runs | 0.660 / 0.649 | 0.798 / 0.780 | 0.633 (0.647) | 0.623 | 0.752 | 16 of 204 |
-| Labelling model against the corrected labels | 0.912 | 0.967 | | | | |
+| Labelling model, second run, against the corrected labels | 0.912 (50 gold pages) | 0.967 | | | | |
 
 The test pages were scored on 2026-10-15, after every setting had been chosen. SmolVLM scores above granite-docling
 on the test pages and below it on the 50 gold development pages; with 50 pages, a difference of 0.02 is within the

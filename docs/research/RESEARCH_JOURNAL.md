@@ -1317,3 +1317,14 @@ Dev answers, start model (Z_aug_vision ep6) vs after GRPO, gold pages 1–50, le
   GRPO did (temperature 1) from the start model, on 40 training pages and gold 1–50, and measures where the reward
   spread comes from (broken answers vs content), best-of-8 vs greedy, the share of greedy-missed values found in any
   sample, and how often the teacher-label reward orders two samples differently from the reviewed-label reward.
+
+## 2026-10-15 19:30 — GRPO analysis part 2: first sampling run invalid; corrected teacher-agreement claim
+- P_grpo_probe (1606448) sampled with `num_return_sequences=8`. Its samples scored 0.124 mean reward on training
+  pages against 0.910 for greedy and ~0.74 in GRPO's own training log: transformers copies `pixel_values` tile by
+  tile (repeat_interleave on the tile axis), so each sample saw the page's tiles in the wrong order. Results discarded
+  (kept as `runs/P_grpo_probe/samples_scrambled_tiles.jsonl`). The script now repeats the whole input 8 times;
+  rerun as P_grpo_probe2 (1606457). Check before reading its results: sample mean reward on training pages near 0.74.
+- Docs said the teacher scores 0.912 "on the 204 test pages" / "on the 254 reviewed pages". The 0.912 is a second
+  GLM run on the 50 dev gold pages scored against the reviewed labels (H0 above); run 1 vs reviewed is 0.997, and
+  review changed 27 of 4,612 lenient values on those pages. README, how-it-works, findings, evaluation, model card
+  and the results chart now say this.
