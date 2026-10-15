@@ -40,7 +40,8 @@ noise; its licence is unknown, so released weights do not use it.
 
 **The two smaller models.** The InternVL recipe did not transfer. SmolVLM-500M with it scored 0.370 / 0.460, and 10
 of its 50 gold answers looped to the token limit. A 6× higher learning rate and 10 epochs gave 0.596 / 0.627; 30
-image tiles instead of 12 added +0.043 / +0.032; averaging 3 seeds gave 0.644 / 0.676. granite-docling-258M needed
+image tiles instead of 12 added +0.043 / +0.032 (20 tiles scored the same over 3 seeds and was only 4 % faster on
+CPU); averaging 3 seeds gave 0.644 / 0.676. granite-docling-258M needed
 an even higher learning rate (1e-4: +0.024 / +0.031 over 6e-5), did worse with more than 12 tiles, and its 4-seed
 average reached 0.660 / 0.649, +0.044 / +0.033 over a single model.
 
@@ -112,6 +113,5 @@ InternVL3-2B reached 0.754 / 0.716 and InternVL3-8B 0.824 / 0.812.
 ## Open questions
 
 - The separate effects of removing the `corrections` list and of token perturbation (a test of the second is running).
-- Whether SmolVLM can use 20 image tiles instead of 30: one seed each scored the same, a 3-seed test is running.
 - Why granite-docling loses accuracy above 12 tiles, and why 2 pages per step scored lower.
 - Merging the pages of one CV, and faster CPU inference through quantisation.

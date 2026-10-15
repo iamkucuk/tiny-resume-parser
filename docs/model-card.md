@@ -9,7 +9,7 @@ The weights are not published yet. This card describes the three models that wil
 | Training | full fine-tune, average of 10 runs | full fine-tune, average of 3 runs | full fine-tune, average of 4 runs |
 | Lenient F1, 204 test pages | 0.745 | 0.677 | 0.633 |
 | Lenient F1 (gold dev / val) | 0.728 / 0.732 | 0.644 / 0.676 | 0.660 / 0.649 |
-| CPU time per page (M2 Max, fp32) | ~62 s | ~59 s | ~30 s |
+| CPU time per page (M2 Max, fp32) | ~62 s | ~68 s | ~30 s |
 
 ## Intended use
 

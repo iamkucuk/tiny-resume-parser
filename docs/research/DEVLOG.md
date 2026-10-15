@@ -434,3 +434,8 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 - SV_soup3_tiles20 (1606478, 8 min): **0.660 / 0.676** vs SV_soup3_tiles30 0.644 / 0.676 — tie (gold +0.016 within
   spread, val equal). Decision by CPU time on the same 10 val pages (both averages, M2 Max, float32, batch 1).
   Note: the README's SmolVLM CPU figure (59 s/page) was measured at 12 tiles, not the released 30; this timing replaces it.
+- CPU timing, SmolVLM averages, 10 val pages, M2 Max, float32, batch 1: 20 tiles median 66.5 s (35–100), total 643 s,
+  18.7 tokens/s, 4.7 GB, 8/10 valid; 30 tiles median 67.5 s (52–89), total 669 s, 17.1 tokens/s, 5.3 GB, 8/10 valid.
+  20 tiles is 9 % faster per token but writes 5 % more tokens: 4 % less time overall. **Decision: keep the 30-tile
+  average** (dev tie, speed within 4 %, and it is the model scored on the test pages). README / model card SmolVLM
+  CPU figure corrected 59 s → 68 s (59 s was a 12-tile model from 2026-10-14).

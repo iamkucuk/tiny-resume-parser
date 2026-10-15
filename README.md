@@ -25,7 +25,7 @@ is handled the same way, whether it is a born-digital PDF, a scan or a photo.
 | Model | Parameters | Field F1 | Content F1 | CPU seconds per page |
 |---|---|---|---|---|
 | InternVL3-1B | 0.94B | **0.745** | **0.844** | 62 |
-| SmolVLM-500M | 0.51B | 0.677 | 0.788 | 59 |
+| SmolVLM-500M | 0.51B | 0.677 | 0.788 | 68 |
 | granite-docling-258M | 0.26B | 0.633 | 0.752 | 30 |
 
 Scores are on 204 human-reviewed test pages that were not used for any decision. Field F1 counts a value as correct
@@ -33,7 +33,7 @@ when it matches the reviewed label apart from case, spacing and punctuation. Con
 placed under another field of the same section. When the labelling model labels 50 reviewed pages a second time,
 it scores 0.912 field F1 against them: its labels vary between runs, which limits what models trained on them can
 reach. Definitions and development scores are in
-[docs/evaluation.md](docs/evaluation.md); CPU times are for an Apple M2 Max in float32.
+[docs/evaluation.md](docs/evaluation.md); CPU times are medians over 10 validation pages on an Apple M2 Max in float32.
 
 ## Quickstart
 
