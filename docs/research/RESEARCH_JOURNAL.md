@@ -1250,3 +1250,14 @@ Not yet measured: bf16 / quantised CPU inference, batching, a GPU figure on the 
 - SV_soup5_tiles30 (1606302) = average of SmolVLM 30-tile seeds 42/1/2/3/4 at their val-chosen epochs: 0.657 / 0.673
   (lenient gold / val) vs SV_soup3_tiles30 0.644 / 0.676: +0.013 / −0.003. 5-seed mean 0.627 / 0.656.
 - Same pattern as granite (6 > 4 seeds on gold, not on val). SV_soup3_tiles30 stays the SmolVLM best (chosen on val).
+
+## 2026-10-15 ~16:45 — InternVL lower vision-encoder lr, seed 42: val drops; not continued
+- ZV_vlr1e-6_seed42 (1606259): lenient gold / val ep3 0.645 / 0.630, ep4 0.693 / 0.645, ep5 0.725 / 0.682,
+  ep6 0.715 / 0.667. Val-chosen ep5 0.725 / 0.682 vs Z_aug_vision (seed 42) 0.699 / 0.720: +0.026 / −0.038.
+- With granite seed 42 also lower (−0.062 / −0.019), the lower encoder rate does not help either model: the
+  encoders need to adapt at the full rate. Seeds 1 / 2 cancelled; weights deleted. Granite seed 1 still running.
+
+## 2026-10-15 ~17:00 — lower vision-encoder lr: rejected for both models
+- GD_vlr1e-5_seed1: val-chosen ep8 0.597 / 0.597 vs 0.622 / 0.635 same seed without it (−0.025 / −0.038). With seed 42
+  (−0.062 / −0.019) and InternVL seed 42 (+0.026 / −0.038), the hypothesis is rejected. Weights deleted.
+- Next (milestone): the three best models are scored once on the 204 held-out test pages (truba/test.slurm).

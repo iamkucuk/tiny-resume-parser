@@ -1,7 +1,7 @@
 """Teacher labeling: one CV page image -> one CVRecord (schema.py) via a teacher VLM.
 
-Default teacher: ``glm-5.3-flash`` through the LiteLLM proxy (decision 2026-10-09, docs/PLAN.md).
-One request per page; multi-page CVs are merged later by code (docs/PLAN.md "Multi-page").
+Default teacher: ``glm-5.3-flash`` through the LiteLLM proxy (decision 2026-10-09, docs/research/PLAN.md).
+One request per page; multi-page CVs are merged later by code (docs/research/PLAN.md "Multi-page").
 
 Transport findings (verified against the proxy; carried over from the flat-17 version,
 removed; see git history before 2026-10-15):

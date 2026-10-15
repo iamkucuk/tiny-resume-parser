@@ -1,7 +1,7 @@
 """CV record schema: the fixed JSON template the teacher labels and the student emits.
 
 Base: JSON Resume (https://jsonresume.org/schema). Additions come from the field survey of
-this dataset (OCR of all 2,451 pages, 2026-10-09; see docs/PLAN.md "Decisions 2026-10-09"):
+this dataset (OCR of all 2,451 pages, 2026-10-09; see docs/research/PLAN.md "Decisions 2026-10-09"):
 personal attributes, job type, per-entry technologies, project type, education honors,
 skill type, language test scores, and `extra` for anything no other key holds.
 `corrections` lists every spelling or grammar fix the labeler made to ordinary words; names,

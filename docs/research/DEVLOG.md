@@ -416,3 +416,9 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 
 ## SV_soup5_tiles30 (2026-10-15, job 1606302)
 - Weight average of 5 SmolVLM 30-tile seeds: 0.657 / 0.673 vs SV_soup3_tiles30 0.644 / 0.676. Not adopted.
+
+## ZV_vlr1e-6_seed42 (2026-10-15, job 1606259)
+- InternVL3-1B default recipe, vision lr 1e-6. Val-chosen ep5 0.725 / 0.682 vs 0.699 / 0.720. Not continued; seeds 1/2 cancelled; weights deleted.
+
+## GD_vlr1e-5_seed1 (2026-10-15, job 1606140)
+- granite, vision lr 1e-5, seed 1. Val-chosen ep8 0.597 / 0.597 vs 0.622 / 0.635. Rejected; weights deleted.
