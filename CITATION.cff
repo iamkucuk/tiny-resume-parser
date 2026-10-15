@@ -1,0 +1,9 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "tiny-resume-parser: small vision-language models that read CV page images into ATS JSON"
+authors:
+  - family-names: Kucuk
+    given-names: Furkan
+year: 2026
+repository-code: "https://github.com/iamkucuk/tiny-resume-parser"
+license-url: "https://polyformproject.org/licenses/noncommercial/1.0.0"
