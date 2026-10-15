@@ -1,0 +1,184 @@
+<title>cv_parser Results, 15 October</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~760px) of sections; tables and bar charts scroll inside their own boxes on phones. */
+:root {
+  --bg: #f6f7f9; --surface: #ffffff; --fg: #1b2330; --muted: #5a6577; --line: #d9dee6;
+  --accent: #1f6f78; --accent-soft: #d6ebec; --val: #8a6d1f; --val-soft: #f1e6c6;
+  --good: #2e7d4f; --bad: #b0413e; --wait: #6b5fa8;
+  --f-display: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #12161d; --surface: #1a2029; --fg: #e3e8ef; --muted: #9aa5b5; --line: #2c3542;
+  --accent: #5fb7c0; --accent-soft: #1d3a3e; --val: #d6b25a; --val-soft: #3a3220;
+  --good: #6cc28f; --bad: #e07a76; --wait: #a99ce0; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #12161d; --surface: #1a2029; --fg: #e3e8ef; --muted: #9aa5b5; --line: #2c3542;
+  --accent: #5fb7c0; --accent-soft: #1d3a3e; --val: #d6b25a; --val-soft: #3a3220;
+  --good: #6cc28f; --bad: #e07a76; --wait: #a99ce0; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font: 15px/1.6 var(--f-body); }
+.wrap { max-width: 760px; margin: 0 auto; padding-inline: 18px; padding-block: 40px 64px; display: grid; gap: 44px; }
+header { display: grid; gap: 10px; }
+.eyebrow { font: 500 12px/1 var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 600 clamp(28px, 5vw, 40px)/1.1 var(--f-display); margin: 0; text-wrap: balance; }
+h2 { font: 600 22px/1.2 var(--f-display); margin: 0; text-wrap: balance; }
+h3 { font: 600 16px/1.3 var(--f-display); margin: 0; }
+p { margin: 0; max-width: 66ch; }
+section { display: grid; gap: 14px; }
+.note { border-left: 3px solid var(--wait); padding: 8px 14px; background: var(--surface); color: var(--fg); }
+.muted { color: var(--muted); }
+.num, td.n, th.n { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 14px; }
+th, td { padding: 8px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { font: 600 12px/1.3 var(--f-body); color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+tr:last-child td { border-bottom: 0; }
+.pill { display: inline-block; font: 500 11px/1 var(--f-mono); padding: 4px 7px; border-radius: 3px; letter-spacing: .03em; white-space: nowrap; }
+.pill.good { color: var(--good); border: 1px solid var(--good); }
+.pill.bad { color: var(--bad); border: 1px solid var(--bad); }
+.pill.wait { color: var(--wait); border: 1px solid var(--wait); }
+ul { margin: 0; padding-left: 20px; display: grid; gap: 6px; max-width: 66ch; }
+code { font: 13px var(--f-mono); }
+
+/* bar chart: 0–1 scale, both dev sets per row */
+.chart { background: var(--surface); border: 1px solid var(--line); padding: 16px 16px 10px; overflow-x: auto; }
+.chart-inner { min-width: 520px; display: grid; gap: 14px; }
+.row { display: grid; grid-template-columns: 170px 1fr; gap: 12px; align-items: center; }
+.row .lab { font-size: 13px; line-height: 1.3; }
+.row .lab small { display: block; color: var(--muted); font-size: 12px; }
+.track { position: relative; display: grid; gap: 3px; }
+.bar { height: 14px; position: relative; }
+.bar span { position: absolute; left: 0; top: 0; bottom: 0; }
+.bar.g span { background: var(--accent); }
+.bar.v span { background: var(--val); }
+.bar em { position: absolute; top: -1px; font: 500 11px/16px var(--f-mono); font-style: normal; color: var(--fg); padding-left: 6px; }
+.grid { position: absolute; inset: 0; pointer-events: none; }
+.grid i { position: absolute; top: -4px; bottom: -4px; border-left: 1px dashed var(--line); }
+.grid i.ceil { border-left: 2px solid var(--bad); }
+.axis { display: grid; grid-template-columns: 170px 1fr; gap: 12px; }
+.axis .ticks { position: relative; height: 16px; font: 11px var(--f-mono); color: var(--muted); }
+.axis .ticks b { position: absolute; transform: translateX(-50%); font-weight: 400; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; background: var(--k); }
+.legend span.ceil::before { width: 2px; height: 12px; }
+footer { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">cv_parser · research report · 15 October 2026</div>
+  <h1>CV page image to ATS JSON with models under 1B parameters</h1>
+  <p class="muted">Three small vision-language models are fine-tuned to read a photo or scan of one CV page and write its content as JSON in a fixed schema. The labels come from the GLM-5.3-Flash teacher model.</p>
+  <p class="note">All scores are on the development sets: 50 human-reviewed gold pages and 79 teacher-labelled validation pages. The 204-page test set has not been scored. Three runs are still running; their results are not in this report.</p>
+</header>
+
+<section>
+  <h2>Best model per student</h2>
+  <p><b>Lenient field F1</b> ignores case, spacing and punctuation; any letter or digit difference is an error. <b>Content F1</b> also accepts correct text that was split, merged or placed under a nearby field. The epoch of each run is chosen on the validation pages.</p>
+  <div class="tbl"><table>
+    <tr><th>Student</th><th class="n">Params</th><th class="n">Lenient gold / val</th><th class="n">Content gold / val</th><th class="n">Since 14 Oct</th></tr>
+    <tr><td>InternVL3-1B<br><span class="muted">average of 10 fine-tuned models</span></td><td class="n">0.94B</td><td class="n">0.728 / 0.732</td><td class="n">0.839 / 0.852</td><td class="n">unchanged</td></tr>
+    <tr><td>SmolVLM-500M<br><span class="muted">average of 3 models, 30 image tiles</span></td><td class="n">0.51B</td><td class="n">0.644 / 0.676</td><td class="n">0.813 / 0.797</td><td class="n">+0.048 / +0.049</td></tr>
+    <tr><td>granite-docling-258M<br><span class="muted">average of 4 models, lr 1e-4</span></td><td class="n">0.26B</td><td class="n">0.660 / 0.649</td><td class="n">0.798 / 0.780</td><td class="n">+0.118 / +0.103</td></tr>
+    <tr><td><i>Teacher vs reviewed gold (the ceiling)</i></td><td class="n">~300B</td><td class="n">0.912</td><td class="n">0.967</td><td class="n"></td></tr>
+  </table></div>
+
+  <div class="chart" role="img" aria-label="Lenient F1 on gold and validation pages per student, on a 0 to 1 scale, with the teacher ceiling at 0.912">
+    <div class="chart-inner">
+      <div class="legend"><span style="--k: var(--accent)">gold (50 reviewed pages)</span><span style="--k: var(--val)">val (79 pages)</span><span class="ceil" style="--k: var(--bad)">teacher ceiling 0.912</span></div>
+      <div id="bars"></div>
+      <div class="axis"><div></div><div class="ticks" id="ticks"></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>What changed today</h2>
+  <div class="tbl"><table>
+    <tr><th>Student</th><th>Change</th><th class="n">Effect, lenient gold / val</th><th>Decision</th></tr>
+    <tr><td>SmolVLM</td><td>30 image tiles instead of 12 (3,072 px longest edge)</td><td class="n">+0.043 / +0.032</td><td><span class="pill good">adopted</span></td></tr>
+    <tr><td>SmolVLM</td><td>Weight average of 3 seeds at 30 tiles</td><td class="n">+0.025 / +0.022</td><td><span class="pill good">adopted</span></td></tr>
+    <tr><td>SmolVLM</td><td>48 image tiles</td><td class="n">no gain</td><td><span class="pill bad">rejected</span></td></tr>
+    <tr><td>SmolVLM</td><td>First training stage on page transcripts</td><td class="n">+0.005 / −0.023</td><td><span class="pill bad">rejected</span></td></tr>
+    <tr><td>SmolVLM</td><td>NEFTune noise on text embeddings, same seed</td><td class="n">−0.003 / −0.005</td><td><span class="pill bad">rejected</span></td></tr>
+    <tr><td>granite</td><td>Weight average of 4 seeds at lr 1e-4</td><td class="n">+0.044 / +0.033</td><td><span class="pill good">adopted</span></td></tr>
+    <tr><td>granite</td><td>Weight average of 6 seeds</td><td class="n">0.675 / 0.629</td><td><span class="pill bad">val lower than 4</span></td></tr>
+    <tr><td>granite</td><td>30 or 48 image tiles</td><td class="n">lower</td><td><span class="pill bad">rejected</span></td></tr>
+    <tr><td>granite</td><td>NEFTune noise, 3 paired seeds</td><td class="n">+0.003 / +0.007</td><td><span class="pill bad">rejected</span></td></tr>
+  </table></div>
+  <p class="muted">"Effect" compares means over seeds where more than one seed ran; seed-to-seed spread for SmolVLM and granite is up to 0.058 on gold, so single-seed differences below ~0.03 are not trusted.</p>
+</section>
+
+<section>
+  <h2>Key-by-key generation</h2>
+  <p>Instead of writing the whole JSON in one answer, the model is called once per key (29 keys). The code writes the JSON up to <code>"key":</code>, including the values already generated for earlier keys, and the model writes only that key's value, quotes and brackets included, or <code>null</code> when the page has none. Training uses the existing teacher labels, with 8 random keys per page per epoch.</p>
+  <div class="tbl"><table>
+    <tr><th>Run</th><th class="n">Key-by-key</th><th class="n">Whole-page reference</th><th class="n">Difference</th></tr>
+    <tr><td>InternVL, from the base model, 3 epochs</td><td class="n">0.647 / 0.650</td><td class="n">0.705 / 0.708<br><span class="muted">9-seed mean</span></td><td class="n">−0.058 / −0.058</td></tr>
+    <tr><td>InternVL, from the base model, 6 epochs</td><td class="n">0.707 / 0.685</td><td class="n">0.705 / 0.708</td><td class="n">+0.002 / −0.023</td></tr>
+    <tr><td>InternVL, from the best weights, 1 epoch</td><td class="n">0.681 / 0.667</td><td class="n">0.728 / 0.732<br><span class="muted">start weights</span></td><td class="n">−0.047 / −0.065</td></tr>
+    <tr><td>InternVL, from the best weights, 3 epochs</td><td class="n">0.711 / 0.704</td><td class="n">0.728 / 0.732</td><td class="n">−0.017 / −0.028</td></tr>
+    <tr><td>SmolVLM, 3 epochs</td><td class="n">0.530 / 0.526</td><td class="n">0.619 / 0.654<br><span class="muted">3-seed mean</span></td><td class="n">−0.089 / −0.128</td></tr>
+    <tr><td>granite, 3 epochs</td><td class="n">0.474 / 0.463</td><td class="n">0.616 / 0.616<br><span class="muted">seed mean</span></td><td class="n">−0.142 / −0.153</td></tr>
+  </table></div>
+  <ul>
+    <li>More training closes most of the gap: every run was still rising at its last epoch.</li>
+    <li>From the best weights after 3 epochs, content F1 is the same as whole-page on gold (0.842 vs 0.839): the model reads the same text; the remaining loss is wording and field placement.</li>
+    <li>Invalid values and values cut at the token limit are rare (1–4 per set for InternVL).</li>
+    <li>Cost: 29 generation calls per page instead of 1.</li>
+    <li><b>Running:</b> 6 epochs from the best InternVL weights. Adopted only if it beats 0.728 / 0.732 by more than 0.02 on both sets.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Where the remaining errors are</h2>
+  <p>Answers that repeat until the token limit are now rare for all three students (0–2 of 79 validation pages). The gap between lenient and content F1 shows where points are lost:</p>
+  <div class="tbl"><table>
+    <tr><th>Student</th><th class="n">Lenient gold / val</th><th class="n">Content gold / val</th><th class="n">Gap</th></tr>
+    <tr><td>InternVL3-1B</td><td class="n">0.728 / 0.732</td><td class="n">0.839 / 0.852</td><td class="n">0.11 / 0.12</td></tr>
+    <tr><td>SmolVLM-500M</td><td class="n">0.644 / 0.676</td><td class="n">0.813 / 0.797</td><td class="n">0.17 / 0.12</td></tr>
+    <tr><td>granite-docling-258M</td><td class="n">0.660 / 0.649</td><td class="n">0.798 / 0.780</td><td class="n">0.14 / 0.13</td></tr>
+  </table></div>
+  <p>Where the best InternVL model loses gold values (share of all correct values):</p>
+  <div class="tbl"><table>
+    <tr><th>Lost value</th><th class="n">Gold (4,612)</th><th class="n">Val (7,203)</th><th>Content F1 counts it as</th></tr>
+    <tr><td>Missing, nothing similar written</td><td class="n">10.6 %</td><td class="n">12.3 %</td><td>wrong</td></tr>
+    <tr><td>Page not parsed (answer not valid JSON)</td><td class="n">6.7 %</td><td class="n">0 %</td><td>wrong</td></tr>
+    <tr><td>Joined with other text into one value</td><td class="n">4.6 %</td><td class="n">6.8 %</td><td>correct</td></tr>
+    <tr><td>Written only in part</td><td class="n">3.1 %</td><td class="n">2.9 %</td><td>correct</td></tr>
+    <tr><td>Misread letters</td><td class="n">2.9 %</td><td class="n">3.7 %</td><td>wrong</td></tr>
+    <tr><td>Same text under another field</td><td class="n">1.8 %</td><td class="n">2.1 %</td><td>correct</td></tr>
+  </table></div>
+  <p>About half of the gap matches the teacher's own inconsistency: two runs of the teacher on the same pages agree at 0.912 lenient but 0.967 content F1, mostly on how text is split and which field holds it. Missing values and unparsed pages cost more than the whole gap.</p>
+</section>
+
+<section>
+  <h2>Running now</h2>
+  <ul>
+    <li><b>InternVL:</b> key-by-key, 6 epochs from the best weights (decides adoption).</li>
+    <li><b>SmolVLM:</b> current recipe trained on 2,465 pages (993 extra pages) instead of 1,472, aimed at field-placement errors. Compared with the same seed without them, 0.645 / 0.656.</li>
+  </ul>
+</section>
+
+<footer>Sources: RESEARCH_JOURNAL.md (every hypothesis and result) and DEVLOG.md (one entry per training run) in the cv_parser repository. Compute: H100/H200 GPUs on the TRUBA cluster.</footer>
+</div>
+
+<script>
+const rows = [
+  ["InternVL3-1B", "0.94B, average of 10", 0.728, 0.732],
+  ["SmolVLM-500M", "0.51B, average of 3", 0.644, 0.676],
+  ["granite-docling-258M", "0.26B, average of 4", 0.660, 0.649],
+];
+const pct = x => (x * 100).toFixed(1) + "%";
+const grid = '<div class="grid">' + [0, .25, .5, .75, 1].map(t => `<i style="left:${pct(t)}"></i>`).join("") + `<i class="ceil" style="left:${pct(0.912)}"></i></div>`;
+document.getElementById("bars").innerHTML = rows.map(([n, s, g, v]) => `
+  <div class="row"><div class="lab">${n}<small>${s}</small></div>
+    <div class="track">${grid}
+      <div class="bar g"><span style="width:${pct(g)}"></span><em style="left:${pct(g)}">${g.toFixed(3)}</em></div>
+      <div class="bar v"><span style="width:${pct(v)}"></span><em style="left:${pct(v)}">${v.toFixed(3)}</em></div>
+    </div></div>`).join("");
+document.getElementById("ticks").innerHTML = [0, .25, .5, .75, 1].map(t => `<b style="left:${pct(t)}">${t}</b>`).join("");
+</script>
