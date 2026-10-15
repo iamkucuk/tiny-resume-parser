@@ -49,6 +49,10 @@ tiny-resume-parser parse cv.pdf --model PATH_TO_MODEL
 PDF pages are rendered at 120 dpi; PNG and JPEG files are read as they are. Until weights are published, `--model`
 takes a model trained with [docs/training.md](docs/training.md).
 
+To see training and scoring end to end without the full dataset, [examples/quickstart.ipynb](examples/quickstart.ipynb)
+fine-tunes granite-docling-258M on the eight pages in [examples/](examples) on Colab or a local machine.
+[docs/code-tour.md](docs/code-tour.md) walks through the code in the order a page travels.
+
 ## How it works
 
 ```mermaid
@@ -79,9 +83,10 @@ did not improve it; for GRPO, the training pages left little room above the answ
 ```
 src/tiny_resume_parser/   the package: schema, data, models, train, generate, evaluate, metrics, soup, label, parse
 configs/                  training settings for each model
+examples/                 eight labelled pages and a notebook that trains on them (Colab or local)
 slurm/                    cluster jobs: train and score, average, test
 tests/                    scoring rules, PDF input, configs
-docs/                     method, evaluation, training, findings, model card; research/ = the lab log
+docs/                     method, code tour, evaluation, training, findings, model card; research/ = the lab log
 ```
 
 ## Limitations

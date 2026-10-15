@@ -31,6 +31,9 @@ repository root, or in the folder named by `TINY_RESUME_PARSER_DATA`.
 Labelling new pages needs an OpenAI-compatible endpoint that serves a vision model. Set `LABEL_BASE_URL` and
 `LABEL_API_KEY` (and optionally `LABEL_MODEL`, default `glm-5.3-flash`) in the environment or in `.env`.
 
+To try the pipeline first, [examples/](../examples) holds eight labelled pages in this format; set
+`TINY_RESUME_PARSER_DATA=examples` and pass `--train-file examples/train.jsonl`.
+
 ## Train one student
 
 ```bash
