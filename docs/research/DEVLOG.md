@@ -426,3 +426,8 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 ## Test set, milestone 1 (2026-10-15, jobs 1606330/31/32)
 - Lenient F1 on 204 test pages: S_soup10_vision 0.745, SV_soup3_tiles30 0.677, GD_soup4_lr1e-4 0.633 (repaired 0.746 / 0.683 / 0.647).
 - 2026-10-15 18:20 — deleted weights of SV_soup5_tiles30 (rejected) and its only-member seeds SV_lr6e-5_tiles30_seed3 / _seed4 (6 GB); eval folders kept. Group disk 1,890 of 2,000 GiB, mostly other projects.
+
+### SV_tiles20_seed42 / _seed1 / _seed2 (TRUBA 1606349–51, ~2 h 15 min each) — SmolVLM, configs/smolvlm-500m.toml with --max-patches 20
+- Val-chosen: seed 42 ep8 0.613 / 0.658; seed 1 ep8 0.617 / 0.648; seed 2 ep9 0.602 / 0.655 → **mean 0.611 / 0.654**.
+- 30-tile reference, 3-seed mean 0.619 / 0.654: equal within spread. Next: SV_soup3_tiles20 (1606478, average of the
+  three val-chosen checkpoints) vs SV_soup3_tiles30 0.644 / 0.676, then CPU time per page if they tie.
