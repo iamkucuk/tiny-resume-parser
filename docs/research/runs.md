@@ -462,3 +462,11 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 ## SV_perturb0.9_s42 / _s1 / _s2 and SV_soup3_perturb0.9 (2026-10-15, jobs 1606607/52, 1606751, 1607307)
 - SmolVLM 30-tile recipe with `--perturb 0.9`. Val-chosen: s42 ep8 0.616 / 0.665, s1 ep8 0.631 / 0.663, s2 ep7 0.636 / 0.668;
   mean 0.628 / 0.665 vs 0.619 / 0.654. Average of the three: 0.674 / 0.658 vs SV_soup3_tiles30 0.644 / 0.676. Not adopted.
+
+## S_soup4_clean (2026-10-16, job 1608049; test 1608124)
+- Average of Z_aug_vision ckpt-528, Z1_aug_vision_seed1, Z2_aug_vision_seed2, Z3_aug_vision_seed3 ckpt-440 (no hadikp
+  pages). Dev 0.734 / 0.712. Test lenient 0.739 (0.746 repaired), strict 0.726, content 0.841 vs S_soup10_vision 0.745 (0.746).
+
+## ZR_seed4 … ZR_seed9 (2026-10-16, jobs 1608125–30, ~1 h each)
+- Default recipe configs/internvl3-1b.toml, seeds 4–9, labels_train_v6 only: members for the clean 10-model average.
+  Val-chosen: seed4 ep5 0.724 / 0.713, seed5 ep5 0.698 / 0.700, seed6 ep5 0.701 / 0.715; seeds 7–9 running.

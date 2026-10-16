@@ -37,6 +37,18 @@ on the validation pages and the gold score is reported at that epoch. A change i
 seed-to-seed spread (about 0.01 to 0.02 F1, larger for the two smaller models) on both sets. The remaining 204
 reviewed pages are the test set, scored once per milestone so that no setting is chosen on them.
 
+## Labels and languages
+
+The reviewed labels started as the labelling model's output: compared with them, its first labels score 0.996 lenient
+field F1, so the review changed fewer than 1 % of values. Errors of the labelling model that the review did not catch
+are in the reviewed labels too and cannot be seen in any score. Its second run scores 0.912 on the 50 reviewed development
+pages, 0.910 on the 38 French and 0.920 on the 12 English ones; this measures how consistent it is, not how correct.
+
+Each page's language was estimated by counting common French and English words in its label. 80 % of the training
+pages are French and 19 % English; the 204 test pages are 149 French, 53 English and 2 mixed. The French training
+pages hold about 330,000 words, about 19,500 of them distinct (names and email parts included), and half of all label
+values are one word long. The README explains what this means for training.
+
 ## Results
 
 | Model | Development lenient, gold / val | Development content, gold / val | Test lenient (repaired) | Test strict | Test content | Test pages not parsed |

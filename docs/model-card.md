@@ -26,9 +26,28 @@ values, about 11 % of values on the dev pages) must not decide anything about a 
 ## Training data
 
 1,393 CV page images from the [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu)
-(invoiceModelisation, Roboflow Universe, CC BY 4.0), labelled by GLM-5.3-Flash. Mostly French
-and English CVs, single pages. Some development runs added pages from `hadikp/resume-data-pdf`, whose licence could
+(invoiceModelisation, Roboflow Universe, CC BY 4.0), labelled by GLM-5.3-Flash. 80 % French and
+19 % English CVs, single pages. Some development runs added pages from `hadikp/resume-data-pdf`, whose licence could
 not be verified; released weights will be trained without them.
+
+## Limits of the training data
+
+**The labels come from a model that was not made for French.** Every label was written by GLM-5.3-Flash, whose
+model card lists English and Chinese as its languages, while 80 % of the CVs are French. Its errors on French text
+become part of the training labels, and the students learn them. The 254 test and development pages were reviewed by
+hand starting from those labels, and the review changed fewer than 1 % of values, so the test measures agreement with
+reviewed model labels, not with labels written independently by people. Run a second time, the labelling model scores
+0.912 against the reviewed labels, which limits what models trained on its labels can reach.
+
+**English-trained base models, a small and narrow sample of French.** The base models learned to read mostly on
+English text. SmolVLM-500M and granite-docling-258M list English as their only language; InternVL3-1B is listed as
+multilingual, but its model card gives no share per language, and French is likely a small part of its training data
+next to English. The training set here gives about 330,000 words of French from 1,116 CV pages, and it is narrow
+French: names, job titles, school names, dates and short skill lists, with half of all values one word long and few
+full sentences. Fine-tuning therefore asks models that read English well to learn to read French from a small and
+narrow sample, which covers little of French spelling, accents and vocabulary, while long training on it may weaken
+the English reading they started with. This makes training harder; how much of the remaining error it causes has not
+been measured.
 
 ## Evaluation
 
