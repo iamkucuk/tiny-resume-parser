@@ -479,3 +479,8 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 ## N35_seed42 / _seed1 / _seed2 (2026-10-16, jobs 1608960–62, ~1 h 20 min each)
 - InternVL3.5-1B-HF (1.06B) with configs/internvl3-1b.toml unchanged. Val-chosen: seed42 ep6 0.721 / 0.703, seed1 ep4
   0.723 / 0.707, seed2 ep5 0.691 / 0.715; mean 0.712 / 0.708 vs InternVL3-1B singles 0.711 / 0.707. No gain.
+
+## KD8_seed42 / _seed1 / _seed2 (2026-10-16, jobs 1609007–09, ~1 h 20 min each) — not adopted
+- InternVL3-1B recipe + logit distillation from T8B_lora (InternVL3-8B LoRA r32, gold 0.780 / val 0.786), kd-weight
+  0.5, temperature 2. Val-chosen: seed42 ep6 0.704 / 0.717, seed1 ep6 0.697 / 0.715, seed2 ep4 0.718 / 0.705; mean
+  0.706 / 0.712 vs InternVL3-1B singles 0.711 / 0.707. No gain.
