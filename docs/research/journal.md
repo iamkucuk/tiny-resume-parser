@@ -1457,14 +1457,14 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   No gain: the larger Qwen3-0.6B LM (vs Qwen2.5-0.5B) does not help at this recipe, and the model is 1.06B. Not adopted
   as is; checkpoints kept for a possible lr check or soup.
 - 18:50 T8B_lora (1608980, 54 min): InternVL3-8B LoRA r32 3 epochs, gold 0.780 / val 0.786 lenient (vs 1B singles 0.711 / 0.707). Submitted KD8_seed42/1/2: InternVL3-1B recipe + --teacher runs/T8B_lora/model, kd-weight 0.5, T 2.
-- 21:00 H-distil result (not adopted): KD8_seed42/1/2 (1609007–09, ~1 h 20 min each; 7.3 s/step with the 8B teacher
+- 19:10 H-distil result (not adopted): KD8_seed42/1/2 (1609007–09, ~1 h 20 min each; 7.3 s/step with the 8B teacher
   in the loop). Val-chosen: seed42 ep6 0.704 / 0.717, seed1 ep6 0.697 / 0.715, seed2 ep4 0.718 / 0.705; mean 0.706 /
   0.712 vs InternVL3-1B singles 0.711 / 0.707 (-0.005 / +0.005, inside the seed spread). Off-policy logit KD from a
   teacher that scores 0.780 / 0.786 does not move the student at weight 0.5, T 2. Possible reasons: the student
   already fits its training pages (train 0.91 vs dev 0.70), so a softer target on the same pages adds no new
   information; the gap is generalisation, which KD on the same 1,472 pages cannot close. Next for this line: KD on
   pages the student has not seen (synthetic or unlabelled pages, teacher answers as targets), not more weight sweeps.
-- 19:20 Kernels for Qwen3.5: flash-linear-attention / fla-core 0.4.2 (0.5.x needs torch >= 2.7; shared torch is 2.6)
+- 18:55 Kernels for Qwen3.5: flash-linear-attention / fla-core 0.4.2 (0.5.x needs torch >= 2.7; shared torch is 2.6)
   and causal-conv1d 1.7.0 built from source (CUDA 12.4, old C++ ABI) in venv/tf5_pkgs. Speed 4.8 s/step after kernel
   compilation vs 36 s without. Q35_seed42/1/2 (1609048–50, 20:00). LightOnOCR-3 and Xiaomi-OCR-0 share the Qwen3.5
   architecture, chat template and vocabulary but not the tokenizer (different merges and pre-tokenizer), so train.py
