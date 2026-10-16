@@ -250,6 +250,7 @@ def main(argv: list[str] | None = None) -> int:
         ),
         train_dataset=train,
         data_collator=collator,
+        processing_class=processor,  # saved in every checkpoint: Qwen3.5-family bases differ only in tokenizer
     )
     trainer.train()
     if trainer.is_world_process_zero():  # torchrun: only rank 0 saves

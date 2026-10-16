@@ -3,7 +3,7 @@
     python -m tiny_resume_parser.soup --out runs/avg/model runs/seed42/checkpoint-528 runs/seed1/model ...
 
 Each input folder holds config.json + model.safetensors (a Trainer checkpoint or a saved model/). The output folder
-gets the averaged model.safetensors and the first input's config files, so evaluate.py --model <out> loads it.
+gets the averaged model.safetensors and the first input's config and processor files, so evaluate.py --model <out> loads it.
 """
 
 import argparse
@@ -37,8 +37,13 @@ def main(argv: list[str] | None = None) -> None:
         str(args.out / "model.safetensors"),
         metadata={"format": "pt"},
     )
-    for name in ("config.json", "generation_config.json"):
-        shutil.copy(args.inputs[0] / name, args.out / name)
+    # config files plus the processor, which checkpoints hold since bases with one architecture differ in tokenizer
+    for f in args.inputs[0].iterdir():
+        if f.suffix in (".json", ".jinja", ".txt") and f.name not in (
+            "trainer_state.json",
+            "model.safetensors.index.json",
+        ):
+            shutil.copy(f, args.out / f.name)
     print(f"saved average of {len(args.inputs)} models to {args.out}")
 
 
