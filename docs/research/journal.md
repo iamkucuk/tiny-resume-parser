@@ -1482,3 +1482,9 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   far more multilingual and document data than Qwen2.5-0.5B) inside the same size budget; the research ranking put
   this first. Next: Q35_soup3 (1609075) = average of the 3 val-chosen checkpoints, scored on dev; Q35_soup3_test
   (1609076) on the test set. LightOnOCR-3 and Xiaomi-OCR-0 (same architecture, OCR-trained) running/queued.
+- 20:55 H-synth result, 1,000 synthetic pages (InternVL3-1B): SY1k_seed42/1/2 (1608974–76, ~1 h 22 min each). Val-chosen:
+  seed42 ep6 0.740 / 0.715, seed1 ep6 0.747 / 0.716, seed2 ep6 0.736 / 0.742; mean 0.741 / 0.724 vs singles 0.711 /
+  0.707 (+0.030 / +0.017). Gold beats the seed spread; validation is at its upper edge. All three chose epoch 6,
+  and each epoch has 882 steps instead of 528 (2,472 vs 1,472 pages), so more optimisation steps are a confound:
+  likely gain, not yet separated from training length. SY3k (3,000 synthetic, 1608977–79) running. If it is
+  adopted, the next run is Qwen3.5-0.8B + synthetic pages.
