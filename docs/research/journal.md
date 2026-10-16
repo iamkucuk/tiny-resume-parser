@@ -1401,3 +1401,14 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - SV_soup3_perturb0.9 (1607307, 9 min): 0.674 / 0.658 vs SV_soup3_tiles30 0.644 / 0.676 (+0.030 / −0.018). Not adopted (must
   beat both dev sets). Verdict on token perturbation: no setting beats the spread on any of the three students; recipe keeps
   0.1. Weights of all GD_noperturb, SV_perturb0.9 and SV_soup3_perturb0.9 runs deleted. findings.md updated.
+
+## 2026-10-16 12:20 — Release: InternVL average rebuilt without hadikp members
+- Found before publishing: S_soup10_vision includes ZH_hk241, ZH1_hk241_seed1, ZH2_hk241_seed2 (trained with 241 hadikp
+  pages, licence unknown); the model card promises released weights without them. SmolVLM and granite averages use only
+  labels_train_v6.
+- S_soup4_clean (1608049) = Z_aug_vision ckpt-528, Z1_aug_vision_seed1, Z2_aug_vision_seed2, Z3_aug_vision_seed3 ckpt-440:
+  0.734 / 0.712 vs S_soup10_vision 0.728 / 0.732. Test scoring 1608124 (test.slurm fixed: it wrote its log before creating
+  the run folder).
+- User chose to retrain 6 clean seeds: ZR_seed4–6 (1608125–27), ZR_seed7–9 (1608128–30, after the first three), default
+  recipe configs/internvl3-1b.toml. Then a 10-member clean average with a fresh test score; released weights in bf16
+  (all reported GPU scores were computed with bf16 weights).
