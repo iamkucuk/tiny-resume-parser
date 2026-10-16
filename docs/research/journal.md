@@ -1491,3 +1491,8 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - 21:10 Q35_soup3 (1609075): uniform average of Q35_seed42/model, Q35_seed1/checkpoint-440, Q35_seed2/model. Dev 0.858 /
   0.822 lenient (strict gold 0.844, content gold 0.952) vs member mean 0.835 / 0.806 (+0.023 / +0.016) and vs the
   released InternVL average 0.732 / 0.724. Test scoring Q35_soup3_test (1609076) running.
+- 21:35 MILESTONE test, Q35_soup3_test (1609076): 204 test pages, lenient 0.846 (repaired 0.846), strict 0.836,
+  content 0.916; 185 valid, 17 schema errors, 2 unparsed, 0 at the token limit. Released ResuVL-L (InternVL3-1B
+  10-run average): 0.735 (0.739), strict 0.722, content 0.840, 4 unparsed. +0.111 lenient, +0.076 content, at 0.87B.
+  GPU generation (TRUBA, batch 8, dev pages): ~25 % fewer tokens/s than InternVL3-1B, ~10 % shorter answers in tokens;
+  CPU speed not measured (needs transformers >= 5.2 on the Mac; no fla kernels on CPU).
