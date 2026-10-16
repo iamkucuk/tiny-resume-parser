@@ -1412,3 +1412,10 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - User chose to retrain 6 clean seeds: ZR_seed4–6 (1608125–27), ZR_seed7–9 (1608128–30, after the first three), default
   recipe configs/internvl3-1b.toml. Then a 10-member clean average with a fresh test score; released weights in bf16
   (all reported GPU scores were computed with bf16 weights).
+- 10:57 S_soup4_clean test (1608124): strict 0.726, lenient 0.739, content 0.841; repaired strict 0.732, lenient 0.746,
+  content 0.849. S_soup10_vision test was lenient 0.745 (0.746 repaired): the 4 clean members alone lose 0.006 raw,
+  nothing repaired, within the seed spread. The 10-member clean average is still the planned release.
+- 11:50 ZR_seed5 / ZR_seed6 done (1 h each), val chose epoch 5 for both: gold 0.698 / 0.701, val 0.700 / 0.715 lenient
+  (single-model range). ZR_seed4 still running; ZR_seed7–9 wait on it (afterany:1608125).
+- 11:55 ZR_seed4 done: val chose epoch 5, gold 0.724 / val 0.713. ZR_seed7 running, ZR_seed8–9 pending.
+- 12:05 Released ResuVL-S (granite-docling average of 4) and ResuVL-M (SmolVLM average of 3) to huggingface.co/furkankucuk, bf16, CC BY-NC 4.0 + LICENSE-base-model.txt (Apache 2.0). Name chosen by the user from 10 options checked on HF / GitHub / PyPI. parse --model furkankucuk/ResuVL-{S,M} tested from an empty cache.

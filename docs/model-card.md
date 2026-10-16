@@ -1,8 +1,10 @@
 # Model card
 
-The weights are not published yet. This card describes the three models that will be released.
+The three models are released as ResuVL-S, ResuVL-M and ResuVL-L. [ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S) and
+[ResuVL-M](https://huggingface.co/furkankucuk/ResuVL-M) are on Hugging Face; ResuVL-L is being retrained without the pages of unknown licence
+and will follow, with new scores.
 
-| | InternVL3-1B | SmolVLM-500M | granite-docling-258M |
+| | ResuVL-L | ResuVL-M | ResuVL-S |
 |---|---|---|---|
 | Base model | OpenGVLab/InternVL3-1B-hf | HuggingFaceTB/SmolVLM-500M-Instruct | ibm-granite/granite-docling-258M |
 | Parameters | 0.94B | 0.51B | 0.26B |

@@ -17,7 +17,8 @@ extracted like visible text, two-column layouts come out interleaved, scanned pa
 some PDFs store text without a usable character mapping. These models read the rendered page instead, so every CV
 is handled the same way, whether it is a born-digital PDF, a scan or a photo.
 
-> Research in progress. Model weights are not published yet.
+> Weights on Hugging Face: [ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S) (0.26B) and [ResuVL-M](https://huggingface.co/furkankucuk/ResuVL-M) (0.51B). ResuVL-L (0.94B) is
+> being retrained on licensed data only and will follow.
 
 ## Results
 
@@ -25,9 +26,9 @@ is handled the same way, whether it is a born-digital PDF, a scan or a photo.
 
 | Model | Parameters | Field F1 | Content F1 | CPU seconds per page |
 |---|---|---|---|---|
-| InternVL3-1B | 0.94B | **0.745** | **0.844** | 62 |
-| SmolVLM-500M | 0.51B | 0.677 | 0.788 | 68 |
-| granite-docling-258M | 0.26B | 0.633 | 0.752 | 30 |
+| ResuVL-L (InternVL3-1B) | 0.94B | **0.745** | **0.844** | 62 |
+| ResuVL-M (SmolVLM-500M) | 0.51B | 0.677 | 0.788 | 68 |
+| ResuVL-S (granite-docling-258M) | 0.26B | 0.633 | 0.752 | 30 |
 
 Scores are on 204 human-reviewed test pages that were not used for any decision. Field F1 counts a value as correct
 when it matches the reviewed label apart from case, spacing and punctuation. Content F1 also accepts correct text
@@ -40,7 +41,7 @@ reach. Definitions and development scores are in
 
 ```bash
 pip install git+https://github.com/iamkucuk/tiny-resume-parser
-tiny-resume-parser parse cv.pdf --model PATH_TO_MODEL
+tiny-resume-parser parse cv.pdf --model furkankucuk/ResuVL-M
 ```
 
 ```json
