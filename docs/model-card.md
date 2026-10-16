@@ -1,16 +1,15 @@
 # Model card
 
-The three models are released as ResuVL-S, ResuVL-M and ResuVL-L. [ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S) and
-[ResuVL-M](https://huggingface.co/furkankucuk/ResuVL-M) are on Hugging Face; ResuVL-L is being retrained without the pages of unknown licence
-and will follow, with new scores.
+The three models are released on Hugging Face as [ResuVL-L](https://huggingface.co/furkankucuk/ResuVL-L), [ResuVL-M](https://huggingface.co/furkankucuk/ResuVL-M) and
+[ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S).
 
 | | ResuVL-L | ResuVL-M | ResuVL-S |
 |---|---|---|---|
 | Base model | OpenGVLab/InternVL3-1B-hf | HuggingFaceTB/SmolVLM-500M-Instruct | ibm-granite/granite-docling-258M |
 | Parameters | 0.94B | 0.51B | 0.26B |
 | Training | full fine-tune, average of 10 runs | full fine-tune, average of 3 runs | full fine-tune, average of 4 runs |
-| Lenient F1, 204 test pages | 0.745 | 0.677 | 0.633 |
-| Lenient F1 (gold dev / val) | 0.728 / 0.732 | 0.644 / 0.676 | 0.660 / 0.649 |
+| Lenient F1, 204 test pages | 0.735 | 0.677 | 0.633 |
+| Lenient F1 (gold dev / val) | 0.732 / 0.724 | 0.644 / 0.676 | 0.660 / 0.649 |
 | CPU time per page (M2 Max, fp32) | ~62 s | ~68 s | ~30 s |
 
 ## Intended use
@@ -28,7 +27,7 @@ values, about 11 % of values on the dev pages) must not decide anything about a 
 1,393 CV page images from the [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu)
 (invoiceModelisation, Roboflow Universe, CC BY 4.0), labelled by GLM-5.3-Flash. 80 % French and
 19 % English CVs, single pages. Some development runs added pages from `hadikp/resume-data-pdf`, whose licence could
-not be verified; released weights will be trained without them.
+not be verified; the released weights were trained without them.
 
 ## Limits of the training data
 
@@ -60,7 +59,7 @@ limits what models trained on its labels can reach.
 - One page at a time; multi-page CVs are returned page by page.
 - Other languages, scripts and very unusual layouts are untested.
 - Text written visibly on the page is read like any other text; robustness to injected instructions is not measured.
-- Pages with no parseable answer on the test set: 3 of 204 (InternVL), 4 (SmolVLM), 16 (granite-docling, which also hits the token limit on 12 pages).
+- Pages with no parseable answer on the test set: 4 of 204 (InternVL), 4 (SmolVLM), 16 (granite-docling, which also hits the token limit on 12 pages).
 
 ## Licence
 

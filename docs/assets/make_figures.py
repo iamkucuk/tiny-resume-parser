@@ -21,7 +21,7 @@ ASSETS = Path(__file__).resolve().parent
 
 # Lenient and content field F1 on the 204 held-out test pages, raw answers (slurm/test.slurm, 2026-10-15).
 RESULTS = [  # (student, parameters, lenient F1, content F1)
-    ("InternVL3-1B", "0.94B", 0.745, 0.844),
+    ("InternVL3-1B", "0.94B", 0.735, 0.840),
     ("SmolVLM-500M", "0.51B", 0.677, 0.788),
     ("granite-docling-258M", "0.26B", 0.633, 0.752),
 ]
@@ -87,7 +87,10 @@ def lost_chart(theme: str) -> None:
         ax.text(v + 0.2, y, f"{v:.1f} %", va="center", fontsize=10, color=t["text"])
     ax.set_xlim(0, 13)
     ax.set_title(
-        "Gold values the best InternVL model loses (share of all gold values)", loc="left", fontsize=11, color=t["text"]
+        "Gold values the earlier InternVL average loses (share of all gold values)",
+        loc="left",
+        fontsize=11,
+        color=t["text"],
     )
     style(ax, t)
     ax.tick_params(axis="y", labelcolor=t["text"])

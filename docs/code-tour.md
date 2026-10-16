@@ -90,7 +90,7 @@ file again and computes the other variants without running the model.
 
 Several fine-tunes of the same base model, trained with different seeds, are averaged weight by weight (a uniform
 model soup, arXiv 2203.05482). The soup paper's explanation is that fine-tunes from one starting point stay in one low-loss region,
-so their average lands inside it. Here the average of 10 InternVL models beat the mean single model by 0.024 F1
+so their average lands inside it. Here the average of 10 InternVL models beat the mean single model by about 0.02 F1
 ([findings.md](findings.md)), at no extra inference cost.
 
 ## 8. Using a model: `parse.py` and `cli.py`

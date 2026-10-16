@@ -1,4 +1,4 @@
-# InternVL3-1B: the recipe behind the best InternVL model (weight average of 10 seeds, 0.728 / 0.732 lenient F1).
+# InternVL3-1B: the recipe behind the best InternVL model (weight average of 10 seeds, 0.732 / 0.724 lenient F1).
 # python -m tiny_resume_parser.train --config configs/internvl3-1b.toml --seed 42 --out runs/NAME
 model = "OpenGVLab/InternVL3-1B-hf"
 augment = 0.5           # image noise on half of the training pages

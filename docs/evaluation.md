@@ -53,12 +53,14 @@ values are one word long. The README explains what this means for training.
 
 | Model | Development lenient, gold / val | Development content, gold / val | Test lenient (repaired) | Test strict | Test content | Test pages not parsed |
 |---|---|---|---|---|---|---|
-| InternVL3-1B, average of 10 runs | 0.728 / 0.732 | 0.839 / 0.852 | **0.745** (0.746) | 0.732 | 0.844 | 3 of 204 |
+| InternVL3-1B, average of 10 runs | 0.732 / 0.724 | 0.847 / 0.855 | **0.735** (0.739) | 0.722 | 0.840 | 4 of 204 |
 | SmolVLM-500M, average of 3 runs | 0.644 / 0.676 | 0.813 / 0.797 | 0.677 (0.683) | 0.667 | 0.788 | 4 of 204 |
 | granite-docling-258M, average of 4 runs | 0.660 / 0.649 | 0.798 / 0.780 | 0.633 (0.647) | 0.623 | 0.752 | 16 of 204 |
 | Labelling model, second run, against the corrected labels | 0.912 (50 gold pages) | 0.967 | | | | |
 
-The test pages were scored on 2026-10-15, after every setting had been chosen. SmolVLM scores above granite-docling
+The test pages were scored on 2026-10-15, after every setting had been chosen. The InternVL average was rebuilt on
+2026-10-16 from 10 runs trained only on the licensed pages and scored once more; the earlier average, three of whose
+members had also seen 241 pages of unknown licence, scored 0.745 and is not released. SmolVLM scores above granite-docling
 on the test pages and below it on the 50 gold development pages; with 50 pages, a difference of 0.02 is within the
 variation between pages.
 

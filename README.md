@@ -17,16 +17,16 @@ extracted like visible text, two-column layouts come out interleaved, scanned pa
 some PDFs store text without a usable character mapping. These models read the rendered page instead, so every CV
 is handled the same way, whether it is a born-digital PDF, a scan or a photo.
 
-> Weights on Hugging Face: [ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S) (0.26B) and [ResuVL-M](https://huggingface.co/furkankucuk/ResuVL-M) (0.51B). ResuVL-L (0.94B) is
-> being retrained on licensed data only and will follow.
+> Weights on Hugging Face: [ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S) (0.26B), [ResuVL-M](https://huggingface.co/furkankucuk/ResuVL-M) (0.51B) and
+> [ResuVL-L](https://huggingface.co/furkankucuk/ResuVL-L) (0.94B).
 
 ## Results
 
-<img alt="Bar charts of lenient field F1 and content F1 on the 204 held-out test pages: InternVL3-1B 0.745 and 0.844, SmolVLM-500M 0.677 and 0.788, granite-docling-258M 0.633 and 0.752; the dashed line is the labelling model run a second time on 50 reviewed development pages, 0.912 and 0.967." src="docs/assets/results.svg" width="900">
+<img alt="Bar charts of lenient field F1 and content F1 on the 204 held-out test pages: InternVL3-1B 0.735 and 0.840, SmolVLM-500M 0.677 and 0.788, granite-docling-258M 0.633 and 0.752; the dashed line is the labelling model run a second time on 50 reviewed development pages, 0.912 and 0.967." src="docs/assets/results.svg" width="900">
 
 | Model | Parameters | Field F1 | Content F1 | CPU seconds per page |
 |---|---|---|---|---|
-| ResuVL-L (InternVL3-1B) | 0.94B | **0.745** | **0.844** | 62 |
+| ResuVL-L (InternVL3-1B) | 0.94B | **0.735** | **0.840** | 62 |
 | ResuVL-M (SmolVLM-500M) | 0.51B | 0.677 | 0.788 | 68 |
 | ResuVL-S (granite-docling-258M) | 0.26B | 0.633 | 0.752 | 30 |
 
@@ -62,7 +62,7 @@ The numbers behind these two points are in [docs/evaluation.md](docs/evaluation.
 
 ```bash
 pip install git+https://github.com/iamkucuk/tiny-resume-parser
-tiny-resume-parser parse cv.pdf --model furkankucuk/ResuVL-M
+tiny-resume-parser parse cv.pdf --model furkankucuk/ResuVL-L
 ```
 
 ```json

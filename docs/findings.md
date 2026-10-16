@@ -33,13 +33,13 @@ contrast, blur, JPEG artefacts, on half of the pages) and also training the visi
 from 0.684 / 0.671 to 0.706 / 0.708. Each change alone helped only one of the two sets.
 
 **Weight averaging.** Averaging the weights of 10 fine-tuned models ("model soup", arXiv 2203.05482) gave
-0.728 / 0.732, +0.024 on both sets over the mean of single models, at no extra inference cost. Larger averages (13 to 19
-models) did not score higher on validation, so the 10-model average is the released InternVL model.
+0.732 / 0.724, +0.023 / +0.017 over the mean of the single models (0.709 / 0.707), at no extra inference cost. In an
+earlier set of runs, larger averages (13 to 19 models) did not score higher on validation. The released InternVL model
+averages 10 runs trained only on the licensed pages.
 
-**Answer repair.** On 3 of the 50 gold pages the best model writes no valid JSON (a loop, a bad escape, a missing
-comma), and those pages hold 6.7 % of all gold values. Repairing the answer after generation (fix escapes, keep the
-complete values before the break, drop repeated list items) raises gold from 0.728 to 0.746 and leaves validation
-unchanged. Development decisions compare unrepaired answers; the `parse` command returns repaired ones.
+**Answer repair.** On 1 of the 50 gold pages the released InternVL model writes no valid JSON (broken answers come
+from a loop, a bad escape or a missing comma). Repairing the answer after generation (fix escapes, keep the complete
+values before the break, drop repeated list items) raises gold from 0.732 to 0.739 and leaves validation unchanged. Development decisions compare unrepaired answers; the `parse` command returns repaired ones.
 
 **More data.** Training on half of the pages cost 0.04 to 0.08 with the same number of steps, so the number of
 distinct pages matters. Adding 993 pages from a second dataset gave +0.011 / +0.013 over 6 seeds, which is within
@@ -110,9 +110,10 @@ beats the greedy answer remains untested.
 
 ## Where the errors are
 
-<img alt="Bar chart of gold values the best InternVL model loses: left out 10.6 %, page not parsed 6.7 %, joined with other text 4.6 %, written in part 3.1 %, misread characters 2.9 %, under another field 1.8 %." src="assets/lost-values.svg" width="700">
+<img alt="Bar chart of gold values the earlier InternVL average loses: left out 10.6 %, page not parsed 6.7 %, joined with other text 4.6 %, written in part 3.1 %, misread characters 2.9 %, under another field 1.8 %." src="assets/lost-values.svg" width="700">
 
-The largest loss is values the model does not write at all. Misread characters are one of the smallest. Part of the
+The breakdown is of the earlier InternVL average on the 50 gold pages, before it was rebuilt without the pages
+of unknown licence; the released model scores within 0.01 of it. The largest loss is values the model does not write at all. Misread characters are one of the smallest. Part of the
 remaining gap is in the labels themselves. When the labelling model labels 50 reviewed pages a second time, it
 scores 0.912 field F1 against them; about half of the disagreements are the same text split into fields
 differently. Measured by content F1, which ignores how text is split, the second run reaches 0.967.

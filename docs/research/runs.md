@@ -469,4 +469,9 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 
 ## ZR_seed4 … ZR_seed9 (2026-10-16, jobs 1608125–30, ~1 h each)
 - Default recipe configs/internvl3-1b.toml, seeds 4–9, labels_train_v6 only: members for the clean 10-model average.
-  Val-chosen: seed4 ep5 0.724 / 0.713, seed5 ep5 0.698 / 0.700, seed6 ep5 0.701 / 0.715; seeds 7–9 running.
+  Val-chosen: seed4 ep5 0.724 / 0.713, seed5 ep5 0.698 / 0.700, seed6 ep5 0.701 / 0.715, seed7 ep6 0.721 / 0.711, seed8 ep5 0.695 / 0.696,
+  seed9 ep5 0.726 / 0.709. Mean 0.711 / 0.707.
+
+## S_soup10_clean (2026-10-16, job 1608784; test 1608785) — released as ResuVL-L
+- Average of the 4 S_soup4_clean members + ZR_seed4–9 at val-chosen epochs. Dev 0.732 / 0.724 lenient, content
+  0.847 / 0.855. Test lenient 0.735 (0.739 repaired), strict 0.722, content 0.840; 4 of 204 unparsed.
