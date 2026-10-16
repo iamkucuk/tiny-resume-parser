@@ -12,7 +12,7 @@ same repository. ResuVL-L needs transformers 5.2 or later.
 | Training | full fine-tune, average of 3 runs | full fine-tune, average of 3 runs | full fine-tune, average of 4 runs |
 | Lenient F1, 204 test pages | 0.845 | 0.681 | 0.652 |
 | Lenient F1 (gold dev / val) | 0.858 / 0.822 | 0.644 / 0.676 | 0.660 / 0.649 |
-| CPU time per page (M2 Max, fp32) | ~128 s | ~68 s | ~30 s |
+| CPU time per page (M2 Max) | ~55 s (bf16 language model) | ~68 s (fp32) | ~30 s (fp32) |
 
 ## Intended use
 

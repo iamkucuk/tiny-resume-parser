@@ -26,7 +26,7 @@ is handled the same way, whether it is a born-digital PDF, a scan or a photo.
 
 | Model | Parameters | Field F1 | Content F1 | CPU seconds per page |
 |---|---|---|---|---|
-| ResuVL-L (Qwen3.5-0.8B) | 0.87B | **0.845** | **0.916** | 128 |
+| ResuVL-L (Qwen3.5-0.8B) | 0.87B | **0.845** | **0.916** | 55 |
 | ResuVL-L v0.1 (InternVL3-1B) | 0.94B | 0.735 | 0.840 | 62 |
 | ResuVL-M (SmolVLM-500M) | 0.51B | 0.681 | 0.791 | 68 |
 | ResuVL-S (granite-docling-258M) | 0.26B | 0.652 | 0.777 | 30 |
@@ -36,7 +36,8 @@ when it matches the reviewed label apart from case, spacing and punctuation. Con
 placed under another field of the same section. When the labelling model labels 50 reviewed pages a second time,
 it scores 0.912 field F1 against them: its labels vary between runs, which limits what models trained on them can
 reach. Definitions and development scores are in
-[docs/evaluation.md](docs/evaluation.md); CPU times are medians over 10 validation pages on an Apple M2 Max in float32.
+[docs/evaluation.md](docs/evaluation.md); CPU times are medians over 10 validation pages on an Apple M2 Max, in float32 except for ResuVL-L, whose language
+model runs in bf16 on CPUs that support it.
 The earlier ResuVL-L, built on InternVL3-1B, stays available as revision `v0.1.0` of the same repository.
 
 ## Limits of the data

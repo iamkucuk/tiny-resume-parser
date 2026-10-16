@@ -4,10 +4,17 @@ Generation is greedy. Pages in one batch are left-padded, so every answer contin
 The model runs in bf16 where the hardware supports it, else in float32 (bf16 is ~80x slower on CPUs without bf16
 hardware, and T4 GPUs have none). Without the causal-conv1d kernel (CPU, Apple GPU), the short depthwise
 convolutions of Qwen3.5's linear-attention layers run as shifted multiply-adds: PyTorch's CPU convolution runs them
-one channel at a time, about 220 ms per call, which made a page take over an hour.
+one channel at a time, about 220 ms per call, which made a page take over an hour. On a CPU with bf16 hardware
+(Apple M2 and later, AVX512-BF16, AMX, Arm bf16), Qwen3.5's language model runs in bf16 and its vision encoder in
+float32: generation reads half the bytes per token, and pages took 55 s instead of 128 s on an M2 Max with the same
+F1 (0.811 vs 0.816 on 10 validation pages).
 """
 
 from __future__ import annotations
+
+import platform
+import subprocess
+import sys
 
 import torch
 import torch.nn.functional as F
@@ -35,7 +42,23 @@ def load_model(model: str, device: str | None = None):
                 F.pad(x, (c.padding[0],) * 2), c.weight.squeeze(1), c.bias
             )
             layer.causal_conv1d_update = conv1d_update
+    if device == "cpu" and m.config.model_type == "qwen3_5" and cpu_has_bf16():
+        m.model.language_model.to(torch.bfloat16)
+        m.lm_head.to(torch.bfloat16)
     return m.to(device).eval(), processor, device
+
+
+def cpu_has_bf16() -> bool:
+    """Whether this CPU has bf16 instructions (without them bf16 matrix products are emulated and slow)."""
+    if sys.platform == "darwin":
+        out = subprocess.run(["sysctl", "-n", "hw.optional.arm.FEAT_BF16"], capture_output=True, text=True)
+        return out.stdout.strip() == "1"
+    if platform.machine() in ("x86_64", "AMD64"):
+        return torch.cpu._is_avx512_bf16_supported() or torch.cpu._is_amx_tile_supported()
+    try:
+        return " bf16" in open("/proc/cpuinfo").read()
+    except OSError:
+        return False
 
 
 def depthwise_conv1d(x: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor | None) -> torch.Tensor:

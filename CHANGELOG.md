@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 — 2026-10-17
+
+- On a CPU with bf16 instructions (Apple M2 and later, AVX512-BF16, AMX, Arm bf16), Qwen3.5's language model runs in
+  bf16 and its vision encoder in float32: ResuVL-L reads a page in about 55 s instead of 128 s on an M2 Max, with
+  the same field F1 on 10 validation pages (0.811 against 0.816).
+
 ## 0.2.0 — 2026-10-16
 
 - ResuVL-L is now built on Qwen3.5-0.8B (0.87B, average of 3 fine-tuned runs): lenient field F1 0.845 on the 204

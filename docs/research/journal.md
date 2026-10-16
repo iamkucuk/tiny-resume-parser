@@ -1554,3 +1554,10 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - 00:35 Q35SY_soup3 (1609734) dev 0.875 / 0.820; Q35_soup6 (1609735, all six Qwen3.5 runs) 0.873 / 0.820; released
   Q35_soup3 0.858 / 0.822. Gold +0.017 / +0.015, validation -0.002: gains on one set only, so neither replaces the
   release (rule: beat the spread on both sets). Learning-rate runs Q35lr2 started 00:30.
+- 01:25 CPU speed, ResuVL-L v2 (user asked for 8-bit quantisation): torch dynamic int8 (qnnpack, the only engine on
+  macOS) on the whole model: 0.082 vs 0.100 s per token on a small page, prompt 2x slower, answers depart from float32
+  after 10–17 tokens; not adopted. Decode profile: 77 % of token time in aten::mm (memory-bound: ~3.5 GB fp32 weights
+  read per token, ~1 GB of it the 248k-vocab output layer). bf16 (M2 has FEAT_BF16): 37 vs 102 ms per token, prompt
+  6x slower when the whole model is bf16. Language model + lm_head in bf16, vision encoder fp32: 10 val pages median
+  58.5 s (wrapper) and 54.5 s (default path) vs 127.5 s, F1 0.811 vs 0.816 (827 vs 826 matched values), 10/10 valid.
+  generate.py now does this on CPUs with bf16 instructions (cpu_has_bf16). Released as 0.2.1.
