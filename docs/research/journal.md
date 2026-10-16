@@ -1543,7 +1543,7 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   Qwen3.5-0.8B bf16 average (commit 2d43574cc4, sha256 d0fb3069…; old InternVL processor files removed). ResuVL-S and
   ResuVL-M cards updated. parse --model furkankucuk/ResuVL-L tested from an empty cache on CPU: valid record.
 
-## 2026-10-17 01:15 — Qwen3.5-0.8B + 1,000 synthetic pages: no measurable gain
+## 2026-10-17 00:15 — Qwen3.5-0.8B + 1,000 synthetic pages: no measurable gain
 - Q35SY1k_seed42/1/2 (1609084–86, ~1 h 40 min each), configs/internvl3-1b.toml recipe on train_v6_synth1k.jsonl.
   Val-chosen: seed42 ep6 0.833 / 0.804, seed1 ep5 0.855 / 0.810, seed2 ep6 0.840 / 0.823; mean 0.843 / 0.812 vs Q35
   0.835 / 0.806 (+0.008 / +0.006, inside the spread). The synthetic pages helped InternVL3-1B (+0.030 / +0.017) but not
@@ -1551,6 +1551,6 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - Queued: Q35SY_soup3 (1609734) and Q35_soup6 (1609735, all six Qwen3.5 runs; same base, so averaging applies) on
   dev; Q35lr2_seed42/1/2 (1609736/38/40) = lr 2e-5 (the recipe was never tuned for Qwen3.5); Q35p20_seed42/1/2
   (1609737/39/41, after them) = max-patches 20 (4.0 Mpx cap instead of 2.4; tests whether reading errors fall).
-- 01:35 Q35SY_soup3 (1609734) dev 0.875 / 0.820; Q35_soup6 (1609735, all six Qwen3.5 runs) 0.873 / 0.820; released
+- 00:35 Q35SY_soup3 (1609734) dev 0.875 / 0.820; Q35_soup6 (1609735, all six Qwen3.5 runs) 0.873 / 0.820; released
   Q35_soup3 0.858 / 0.822. Gold +0.017 / +0.015, validation -0.002: gains on one set only, so neither replaces the
-  release (rule: beat the spread on both sets). Learning-rate runs Q35lr2 started 01:30.
+  release (rule: beat the spread on both sets). Learning-rate runs Q35lr2 started 00:30.
