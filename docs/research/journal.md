@@ -1470,3 +1470,15 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   architecture, chat template and vocabulary but not the tokenizer (different merges and pre-tokenizer), so train.py
   now saves the processor in every checkpoint and soup.py copies it (commit b05e0e8; checked: average tokenizes like
   LightOnOCR-3). LO3_seed42/1/2 (1609057/59/61) after the Q35 runs; XO0_seed42/1/2 (1609058/60/62) after LO3.
+- 20:35 H-base result, Qwen3.5-0.8B (873M; Gated DeltaNet + attention LM, 248k vocab) with the unchanged
+  configs/internvl3-1b.toml recipe (lr, epochs, augment), max-patches 12, transformers 5.5.4 + fla kernels: ADOPTED as
+  the new InternVL-track candidate. Q35_seed42/1/2 (1609048–50, ~1 h 17 min each). Val-chosen: seed42 ep6 0.849 /
+  0.800, seed1 ep5 0.829 / 0.821, seed2 ep6 0.826 / 0.797; mean 0.835 / 0.806 vs InternVL3-1B singles 0.711 / 0.707
+  (+0.12 / +0.10, ~6x the seed spread, on both dev sets). Every epoch >= 4 is >= 0.826 on gold. Above the 8B LoRA
+  teacher (0.780 / 0.786) and above the released 10-run InternVL average (0.732 / 0.724). Checked: rescored locally
+  (same numbers; strict 0.816 / 0.811, content 0.929 / 0.905 for seed1 ep5); pages and order match the gold file;
+  answers are model output (seed1 page 1 reads the name and title, invents a phone number). Gold-50 seed1 ep5: 43
+  valid, 6 schema errors, 1 unparsed. Likely mechanism (not tested): a newer and larger LM (Qwen3.5 0.8B, trained on
+  far more multilingual and document data than Qwen2.5-0.5B) inside the same size budget; the research ranking put
+  this first. Next: Q35_soup3 (1609075) = average of the 3 val-chosen checkpoints, scored on dev; Q35_soup3_test
+  (1609076) on the test set. LightOnOCR-3 and Xiaomi-OCR-0 (same architecture, OCR-trained) running/queued.

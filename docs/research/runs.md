@@ -484,3 +484,8 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 - InternVL3-1B recipe + logit distillation from T8B_lora (InternVL3-8B LoRA r32, gold 0.780 / val 0.786), kd-weight
   0.5, temperature 2. Val-chosen: seed42 ep6 0.704 / 0.717, seed1 ep6 0.697 / 0.715, seed2 ep4 0.718 / 0.705; mean
   0.706 / 0.712 vs InternVL3-1B singles 0.711 / 0.707. No gain.
+
+## Q35_seed42 / _seed1 / _seed2 (2026-10-16, jobs 1609048–50, ~1 h 17 min each) — adopted as candidate
+- Qwen/Qwen3.5-0.8B (873M) with configs/internvl3-1b.toml, --max-patches 12, EXTRA_PYTHONPATH=venv/tf5_pkgs
+  (transformers 5.5.4, fla-core 0.4.2, causal-conv1d 1.7.0); 4.8 s/step. Val-chosen: seed42 ep6 0.849 / 0.800, seed1
+  ep5 0.829 / 0.821, seed2 ep6 0.826 / 0.797; mean 0.835 / 0.806 vs InternVL3-1B singles 0.711 / 0.707.
