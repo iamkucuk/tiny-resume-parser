@@ -493,4 +493,4 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 ## SY1k_seed42 / _seed1 / _seed2 (2026-10-16, jobs 1608974–76, ~1 h 22 min each) — likely gain, confounded
 - InternVL3-1B recipe on train_v6_synth1k.jsonl (1,472 real + 1,000 synthetic pages from experiments/synth_cvs.py).
   Val-chosen: seed42 ep6 0.740 / 0.715, seed1 ep6 0.747 / 0.716, seed2 ep6 0.736 / 0.742; mean 0.741 / 0.724 vs
-  singles 0.711 / 0.707. 882 steps per epoch vs 528.
+  singles 0.711 / 0.707. 882 steps in total vs 528.
