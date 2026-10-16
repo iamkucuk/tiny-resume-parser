@@ -45,7 +45,7 @@ def score(answer: str, gold: dict) -> dict:
     """status: valid (passes the schema), schema_error (JSON but not the schema; still scored), unparsed (scored as 0)."""
     try:
         pred = json.loads(answer)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, RecursionError):  # RecursionError: brackets nested past Python's limit
         pred, status = {}, "unparsed"
     else:
         try:
@@ -89,6 +89,8 @@ def repair(answer: str):
     a = re.sub(r'\\(?!["\\/bfnrtu])', r"\\\\", answer)
     try:
         return dedup(json.loads(a))
+    except RecursionError:
+        return None
     except json.JSONDecodeError as e:
         pos = e.pos
     p = salvage(a)
@@ -121,7 +123,7 @@ def salvage(a: str):
     cut, open_ = last_ok
     try:
         return json.loads(a[:cut].rstrip().rstrip(",") + "".join("}" if c == "{" else "]" for c in reversed(open_)))
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, RecursionError):
         return None
 
 
@@ -139,7 +141,7 @@ def parse(answer: str, fix: bool = False) -> dict:
     """Answer text -> record dict ({} if it does not parse); with fix, broken answers are repaired first."""
     try:
         pred = json.loads(answer)
-    except json.JSONDecodeError:
+    except (json.JSONDecodeError, RecursionError):
         pred = repair(answer) if fix else None
     if not isinstance(pred, dict):
         return {}

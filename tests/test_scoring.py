@@ -4,7 +4,7 @@ re-placed text within a section; repair keeps only complete values. Run: pytest,
 
 from collections import Counter
 
-from tiny_resume_parser.metrics import content, f1, lenient, pairs, repair
+from tiny_resume_parser.metrics import content, f1, lenient, pairs, parse, repair, score
 
 
 def matched(pred: Counter, gold: Counter) -> int:
@@ -58,3 +58,18 @@ if __name__ == "__main__":
         if name.startswith("test_"):
             fn()
             print("ok", name)
+
+
+def test_answer_nested_past_the_recursion_limit_scores_as_unparsed(monkeypatch):
+    # A looping model can write thousands of "[": on Python 3.11 json.loads then raises RecursionError, and one such
+    # answer stopped the scoring of a whole epoch. Raised directly here, since Python 3.14 parses deep nesting.
+    import tiny_resume_parser.metrics as m
+
+    def too_deep(*a, **k):
+        raise RecursionError("maximum recursion depth exceeded while decoding a JSON array")
+
+    monkeypatch.setattr(m.json, "loads", too_deep)
+    deep = '{"skills": [[[[1]]]]}'
+    assert score(deep, {})["status"] == "unparsed"
+    assert repair(deep) is None
+    assert parse(deep, fix=True) == {}
