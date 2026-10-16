@@ -10,7 +10,7 @@ set -euo pipefail
 NAME=$1; EVAL_ARGS=$2; shift 2
 R=${SLURM_SUBMIT_DIR:-$PWD}; OUT=$R/runs/$NAME
 [ -f $R/slurm/site.sh ] && source $R/slurm/site.sh  # optional, untracked: environment, model cache (see slurm/README.md)
-cd $R; export PYTHONPATH=$R/src TOKENIZERS_PARALLELISM=false
+cd $R; export PYTHONPATH=$R/src${EXTRA_PYTHONPATH:+:$EXTRA_PYTHONPATH} TOKENIZERS_PARALLELISM=false  # EXTRA_PYTHONPATH: e.g. a newer transformers
 echo "== $NAME: average of $* | eval $EVAL_ARGS"
 [ -e $OUT/model/model.safetensors ] || python -u -m tiny_resume_parser.soup --out $OUT/model "$@"
 for SET in "gold --limit 50" "val"; do

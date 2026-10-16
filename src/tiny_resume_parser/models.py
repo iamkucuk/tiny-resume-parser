@@ -1,4 +1,4 @@
-"""The three student model families and how each one is prompted.
+"""The student model families and how each one is prompted.
 
 Every family needs three facts: the text that opens the assistant's answer, the token that ends it, and how
 --max-patches becomes processor settings. InternVL caps the number of 448 px
@@ -17,13 +17,15 @@ from transformers import AutoProcessor
 from .schema import to_target
 
 INTERNVL_ID = "OpenGVLab/InternVL3-1B-hf"
+INTERNVL35_ID = "OpenGVLab/InternVL3_5-1B-HF"  # same chat format; Qwen3 language model, 151,936-token vocabulary
 SMOLVLM_ID = "HuggingFaceTB/SmolVLM-500M-Instruct"
 GRANITE_ID = "ibm-granite/granite-docling-258M"  # also Idefics3; told apart from SmolVLM by its chat template
+QWEN35_ID = "Qwen/Qwen3.5-0.8B"  # also LightOnOCR-3-0.8B and Xiaomi-OCR-0: same processor and chat template
 MODEL_ID = INTERNVL_ID
 PROMPT = "Extract this CV page as JSON."
 MAX_PATCHES = 12  # InternVL3-1B recipe; SmolVLM uses 30 (configs/*.toml)
 # Tile cap each released recipe was trained with; inference must use the same value (configs/*.toml).
-TRAINED_PATCHES = {"InternVLProcessor": 12, "Idefics3Processor": 30, "GraniteDocling": 12}
+TRAINED_PATCHES = {"InternVLProcessor": 12, "Idefics3Processor": 30, "GraniteDocling": 12, "Qwen3VLProcessor": 12}
 IDEFICS3_EDGE = {12: 2048, 20: 2560, 30: 3072, 48: 4096}  # tiles on an A4 page -> longest_edge in px
 
 FAMILY = {
@@ -42,6 +44,14 @@ FAMILY = {
         ),
     ),
 }
+# Qwen3.5 sizes the page by a pixel budget (one image token per 32 x 32 px), not by tiles: --max-patches n gives the
+# pixel area of n InternVL tiles (12 -> 2.4 Mpx, about 2,350 image tokens on A4). Its chat template writes an empty
+# thinking block before every answer; it belongs to the header, so the model neither learns nor writes it.
+FAMILY["Qwen3VLProcessor"] = dict(
+    header="<|im_start|>assistant\n<think>\n\n</think>\n\n",
+    end="<|im_end|>",
+    size=lambda n: {"size": {"longest_edge": n * 448 * 448, "shortest_edge": 65536}},
+)
 FAMILY["GraniteDocling"] = FAMILY["Idefics3Processor"] | dict(
     header="<|start_of_role|>assistant<|end_of_role|>", end="<|end_of_text|>"
 )
@@ -68,11 +78,12 @@ def load_processor(model: str):
         return AutoProcessor.from_pretrained(model)
     cfg = json.loads((Path(model) / "config.json").read_text())
     # both Idefics3 models: granite-docling's vocabulary has 100,352 tokens, SmolVLM's 49,280
-    base = (
-        INTERNVL_ID
-        if cfg["model_type"] == "internvl"
-        else {100352: GRANITE_ID, 49280: SMOLVLM_ID}[cfg["text_config"]["vocab_size"]]
-    )
+    if cfg["model_type"] == "internvl":
+        base = {"qwen2": INTERNVL_ID, "qwen3": INTERNVL35_ID}[cfg["text_config"]["model_type"]]
+    elif cfg["model_type"] == "qwen3_5":
+        base = QWEN35_ID
+    else:
+        base = {100352: GRANITE_ID, 49280: SMOLVLM_ID}[cfg["text_config"]["vocab_size"]]
     return AutoProcessor.from_pretrained(base)
 
 

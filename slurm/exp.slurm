@@ -9,7 +9,7 @@ set -euo pipefail
 NAME=$1; TRAIN_ARGS=$2; EVAL_ARGS=$3; MIN_EPOCH=${4:-3}
 R=${SLURM_SUBMIT_DIR:-$PWD}; OUT=$R/runs/$NAME
 [ -f $R/slurm/site.sh ] && source $R/slurm/site.sh  # optional, untracked: environment, model cache (see slurm/README.md)
-cd $R; export PYTHONPATH=$R/src TOKENIZERS_PARALLELISM=false
+cd $R; export PYTHONPATH=$R/src${EXTRA_PYTHONPATH:+:$EXTRA_PYTHONPATH} TOKENIZERS_PARALLELISM=false  # EXTRA_PYTHONPATH: e.g. a newer transformers
 nvidia-smi --query-gpu=name --format=csv,noheader
 NG=$(echo "$CUDA_VISIBLE_DEVICES" | tr , "\n" | grep -c .)  # nvidia-smi -L can list one GPU twice
 echo "== $NAME on $NG GPU(s): train $TRAIN_ARGS | eval $EVAL_ARGS"

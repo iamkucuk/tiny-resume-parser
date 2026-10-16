@@ -1424,3 +1424,36 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - 13:30 S_soup10_clean (1608784) dev 0.732 / 0.724 lenient, content 0.847 / 0.855. Test (1608785): strict 0.722, lenient 0.735, content 0.840; repaired 0.725 / 0.739 / 0.845; unparsed 4 of 204 (2 token limit). vs S_soup10_vision test 0.745 (0.746), S_soup4_clean 0.739 (0.746). Release = S_soup10_clean as planned before the test score (dev ties S_soup4_clean: 0.732 / 0.724 vs 0.734 / 0.712); choosing between them on test would select on the test pages.
 - 13:40 Release check: the bf16 release folders, scored again on the 204 test pages (REL_L/M/S_test, 1608852–54), reproduce the published scores exactly: L 0.735 (0.739), M 0.677 (0.683), S 0.633 (0.647). Answers identical on 204 / 204 (L, M); S 192 / 204, the other 12 are token-limit runaways cut earlier (lower --max-new-tokens in the check), scored 0 in both. Uploaded S/M weights have the same sha256 as the scored folders.
 - 14:40 Uploaded ResuVL-L (S_soup10_clean, bf16, sha256 4c60c2cd…) to huggingface.co/furkankucuk/ResuVL-L; parse --model furkankucuk/ResuVL-L tested from an empty cache. Docs updated to its scores.
+- 14:50 Published GitHub release v0.1.0 (tag on f230c11). Obsolete weights on TRUBA listed for the user to delete: S_soup10_vision/model, S_soup4_clean/model, SV_soup3_tiles20/model, SV_tiles20_seed42/1/2 checkpoints.
+
+## 2026-10-16 16:30 — Literature search: paths to F1 > 0.9 under 1B
+- Four research agents (base models, larger-model transfer, data/labels, objectives/architecture) worked from one
+  context file; reports in docs/research/literature-2026-10-16/ (unedited, sources inside). Claude verified on the HF
+  API: Qwen3.5-0.8B 873M, LightOnOCR-3-0.8B 853M, Xiaomi-OCR-0 873M, OvisOCR2 853M (all Qwen3_5ForConditionalGeneration,
+  Apache-2.0); PaddleOCR-VL-1.6 959M; LightOnOCR-2-1B 1,006M (over the cap); InternVL3.5-1B 1,061M (over); GLM-OCR
+  1,325M (over, despite "0.9B"). InternVL3-1B/2B/8B share vocab 151,674 and the same vision config (logit KD possible).
+- Common conclusion: F1 tracks language-model size (165M 0.633 < 360M 0.677 < 0.5B 0.735 < 1.5B 0.754 < 7B 0.824);
+  omission is a decision error (56 % of missed values appear in one of 8 samples), not a reading error.
+- Ranked hypotheses: (1) Qwen3.5-0.8B-family base (larger LM inside 1B; OCR-trained variants), (2) logit distillation
+  from a fine-tuned InternVL3-8B, (3) synthetic French CVs with exact labels, (4) measure the label-noise floor (5
+  teacher runs + blind adjudication). Not pursued: pruning 2B->1B (61 % LM cut), RL-only (no sub-1B report), encoder
+  swap (needs ~29M alignment pairs), transcribe-then-structure, extra decoder layers, multi-token prediction.
+
+## 2026-10-16 17:50 — Three new hypotheses running (from the literature search)
+- H-base (larger LM inside ~1B): N35_seed42/1/2 (1608960–62) = InternVL3.5-1B-HF (Qwen3-0.6B LM, 1.06B total) with the
+  unchanged configs/internvl3-1b.toml recipe; compare with the 1B single-seed runs (mean 0.711 / 0.707). Qwen3.5-0.8B
+  family (LightOnOCR-3-0.8B, Xiaomi-OCR-0): code path works under transformers 5.5.4 (venv/tf5_pkgs, smoke test ok:
+  mask check, train, save, load, generate), but without flash-linear-attention / causal-conv1d kernels it trains at
+  36 s per 16 pages vs 3.9 s for InternVL3.5 (6 epochs = 5.3 h); Q35_seed42 cancelled; kernels need approval.
+- H-distil: T8B_lora (1608972, 20:00) = InternVL3-8B teacher, LoRA r32 + projector, lr 1e-4, 3 epochs, augment 0.5,
+  merged to bf16, scored on gold-50 + val. train.py now has --lora (teachers) and --teacher/--kd-weight/--kd-temp
+  ((1-w) CE + w T^2 KL(teacher||student) on answer tokens; checked: 0 for equal logits, equals manual KL).
+- H-synth: experiments/synth_cvs.py renders training records (not val/gold) with new name/contacts, sometimes swapped
+  sections, 4 layouts x 9 fonts x 9 colours x 4 date styles, every label value printed, 120 dpi; 3,000 pages
+  (68 skipped: over one page). SY1k_seed42/1/2 (1608974–76, 20:00) = real + 1,000 synthetic; SY3k_seed42/1/2
+  (1608977–79, after them) = real + 3,000. Same recipe, 6 epochs. Disk 1,958 GiB of 2,000 at submit.
+- 18:40 H-base result, InternVL3.5-1B with the InternVL3 recipe: val-chosen seed42 ep6 0.721 / 0.703, seed1 ep4
+  0.723 / 0.707, seed2 ep5 0.691 / 0.715; mean 0.712 / 0.708 vs InternVL3-1B single runs 0.711 / 0.707 (ZR seeds 4-9).
+  No gain: the larger Qwen3-0.6B LM (vs Qwen2.5-0.5B) does not help at this recipe, and the model is 1.06B. Not adopted
+  as is; checkpoints kept for a possible lr check or soup.
+- 18:50 T8B_lora (1608980, 54 min): InternVL3-8B LoRA r32 3 epochs, gold 0.780 / val 0.786 lenient (vs 1B singles 0.711 / 0.707). Submitted KD8_seed42/1/2: InternVL3-1B recipe + --teacher runs/T8B_lora/model, kd-weight 0.5, T 2.

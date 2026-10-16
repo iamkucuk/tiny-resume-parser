@@ -9,6 +9,8 @@ the 5% validation split; writes out/model, out/checkpoint-<step> per epoch with 
 out/log_history.json. A config file sets the defaults; any flag on the command line overrides it.
 Loss is on the answer tokens only: image, prompt and the assistant header are masked (-100), and a check on the first
 batch stops the run if any image token is learnt.
+With --teacher, the loss also pulls the student's next-token distribution on the answer tokens towards a larger
+fine-tuned model's (logit distillation; teacher and student must share the tokenizer, e.g. InternVL3-8B -> 1B).
 """
 
 from __future__ import annotations
@@ -26,6 +28,25 @@ from transformers import AutoModelForImageTextToText, Trainer, TrainingArguments
 
 from .data import LABELS, is_validation, page_image
 from .models import MAX_PATCHES, MODEL_ID, family, load_processor, messages, student_target
+
+
+class DistillTrainer(Trainer):
+    """(1 - w) * cross-entropy + w * T^2 * KL(teacher || student) over the answer tokens (labels != -100)."""
+
+    def __init__(self, *a, teacher=None, kd_weight=0.5, kd_temp=2.0, **kw):
+        super().__init__(*a, **kw)
+        self.teacher, self.kd_weight, self.kd_temp = teacher, kd_weight, kd_temp
+
+    def compute_loss(self, model, inputs, return_outputs=False, **kw):
+        out = model(**inputs)
+        with torch.no_grad():
+            t_logits = self.teacher(**{k: v for k, v in inputs.items() if k != "labels"}).logits
+        keep = inputs["labels"][:, 1:] != -100  # logits at position i predict token i + 1
+        s = out.logits[:, :-1][keep].float() / self.kd_temp
+        t = t_logits[:, :-1][keep].float() / self.kd_temp
+        kl = torch.nn.functional.kl_div(s.log_softmax(-1), t.log_softmax(-1), log_target=True, reduction="batchmean")
+        loss = (1 - self.kd_weight) * out.loss + self.kd_weight * self.kd_temp**2 * kl
+        return (loss, out) if return_outputs else loss
 
 
 def augment_page(im: Image.Image) -> Image.Image:
@@ -116,6 +137,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ap.add_argument("--augment", type=float, default=0.5, help="share of pages that get image noise (0 = off)")
     ap.add_argument("--perturb", type=float, default=0.1, help="token perturbation probability (0 = off)")
+    ap.add_argument(
+        "--lora", type=int, default=0, help="LoRA rank on the language model (0: full fine-tune); used for teachers"
+    )
+    ap.add_argument("--teacher", help="fine-tuned larger model with the same tokenizer: distil its logits")
+    ap.add_argument("--kd-weight", type=float, default=0.5, help="weight of the distillation term (--teacher)")
+    ap.add_argument("--kd-temp", type=float, default=2.0, help="softmax temperature of the distillation term")
     ap.add_argument("--no-grad-ckpt", action="store_true", help="no gradient checkpointing: faster, more GPU memory")
     ap.add_argument("--save-every-epoch", action="store_true", help="save out/checkpoint-<step> after every epoch")
     ap.add_argument("--workers", type=int, default=0, help="DataLoader worker processes")
@@ -146,20 +173,59 @@ def main(argv: list[str] | None = None) -> int:
     collator = Collator(processor, args.perturb, args.max_patches, args.augment)
     probe = Collator(processor, max_patches=args.max_patches)(train[:1])  # gate check: loss only on the answer
     is_img = probe["input_ids"] == processor.image_token_id
-    n_img, n_tiles = int(is_img.sum()), probe["pixel_values"].shape[:-3].numel()
-    per_tile = getattr(processor, "image_seq_length", None) or processor.image_seq_len  # InternVL 256, SmolVLM 64
-    if n_img != n_tiles * per_tile or (probe["labels"][is_img] != -100).any():
-        raise SystemExit(f"label mask check failed: {n_img} image tokens for {n_tiles} tiles")
+    n_img = int(is_img.sum())
+    if "image_grid_thw" in probe:  # Qwen3.5: one token per merge x merge patches of the page grid
+        expected = int(probe["image_grid_thw"].prod(-1).sum()) // processor.image_processor.merge_size**2
+    else:  # tiles x tokens per tile: InternVL 256, SmolVLM 64
+        expected = probe["pixel_values"].shape[:-3].numel() * (
+            getattr(processor, "image_seq_length", None) or processor.image_seq_len
+        )
+    if n_img != expected or (probe["labels"][is_img] != -100).any():
+        raise SystemExit(f"label mask check failed: {n_img} image tokens, expected {expected}")
     print(f"mask check ok: {n_img} image tokens masked, {int((probe['labels'] != -100).sum())} answer tokens learnt")
 
     # Weights always in float32: in pure bf16 many small updates round away (and gave grad-norm spikes). On a GPU
     # with bf16 (A100, L4, H100) the matmuls run in bf16 autocast; on a T4, Apple MPS or a CPU, in float32.
     bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported(including_emulation=False)
-    model = AutoModelForImageTextToText.from_pretrained(args.model, dtype=torch.float32)
-    model.enable_input_require_grads()
-    print(f"full fine-tune: {sum(p.numel() for p in model.parameters()) / 1e6:.1f} M parameters, bf16 {bf16}")
+    if args.lora:
+        # Teachers only (InternVL3-8B): frozen bf16 base, LoRA on the language model's linear layers, projector fully
+        # trained; trainable weights in float32. The adapter is merged at the end, so out/model is a plain model.
+        from peft import LoraConfig, get_peft_model
 
-    trainer = Trainer(
+        model = AutoModelForImageTextToText.from_pretrained(args.model, dtype=torch.bfloat16)
+        model.enable_input_require_grads()
+        model = get_peft_model(
+            model,
+            LoraConfig(
+                r=args.lora,
+                lora_alpha=2 * args.lora,
+                lora_dropout=0.05,
+                target_modules=r"model\.language_model\..*\.(q_proj|k_proj|v_proj|o_proj|gate_proj|up_proj|down_proj)",
+                modules_to_save=["multi_modal_projector"],
+            ),
+        )
+        for p in model.parameters():
+            if p.requires_grad:
+                p.data = p.data.float()
+        model.print_trainable_parameters()
+    else:
+        model = AutoModelForImageTextToText.from_pretrained(args.model, dtype=torch.float32)
+        model.enable_input_require_grads()
+        print(f"full fine-tune: {sum(p.numel() for p in model.parameters()) / 1e6:.1f} M parameters, bf16 {bf16}")
+
+    kd = {}
+    if args.teacher:
+        teacher = AutoModelForImageTextToText.from_pretrained(args.teacher, dtype=torch.bfloat16).eval()
+        teacher.requires_grad_(False)
+        same = teacher.config.image_token_id == model.config.image_token_id
+        if not same or teacher.get_output_embeddings().weight.shape[0] != model.get_output_embeddings().weight.shape[0]:
+            raise SystemExit("teacher and student must share the tokenizer (image token id and vocabulary size)")
+        kd = dict(teacher=teacher.to("cuda" if torch.cuda.is_available() else "cpu"), kd_weight=args.kd_weight)
+        kd["kd_temp"] = args.kd_temp
+        print(f"distilling from {args.teacher}: weight {args.kd_weight}, temperature {args.kd_temp}")
+
+    trainer = (DistillTrainer if kd else Trainer)(
+        **kd,
         model=model,
         args=TrainingArguments(
             output_dir=str(args.out),
@@ -187,6 +253,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     trainer.train()
     if trainer.is_world_process_zero():  # torchrun: only rank 0 saves
+        if args.lora:
+            model = model.merge_and_unload().to(torch.bfloat16)
         model.save_pretrained(args.out / "model")
         processor.save_pretrained(args.out / "model")
         (args.out / "log_history.json").write_text(json.dumps(trainer.state.log_history, indent=1))

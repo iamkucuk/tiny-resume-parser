@@ -475,3 +475,7 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 ## S_soup10_clean (2026-10-16, job 1608784; test 1608785) — released as ResuVL-L
 - Average of the 4 S_soup4_clean members + ZR_seed4–9 at val-chosen epochs. Dev 0.732 / 0.724 lenient, content
   0.847 / 0.855. Test lenient 0.735 (0.739 repaired), strict 0.722, content 0.840; 4 of 204 unparsed.
+
+## N35_seed42 / _seed1 / _seed2 (2026-10-16, jobs 1608960–62, ~1 h 20 min each)
+- InternVL3.5-1B-HF (1.06B) with configs/internvl3-1b.toml unchanged. Val-chosen: seed42 ep6 0.721 / 0.703, seed1 ep4
+  0.723 / 0.707, seed2 ep5 0.691 / 0.715; mean 0.712 / 0.708 vs InternVL3-1B singles 0.711 / 0.707. No gain.
