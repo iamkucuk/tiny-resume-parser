@@ -1488,3 +1488,6 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   and the runs take 882 steps in total instead of 528 (2,472 vs 1,472 pages), so more optimisation steps are a confound:
   likely gain, not yet separated from training length. SY3k (3,000 synthetic, 1608977–79) running. If it is
   adopted, the next run is Qwen3.5-0.8B + synthetic pages.
+- 21:10 Q35_soup3 (1609075): uniform average of Q35_seed42/model, Q35_seed1/checkpoint-440, Q35_seed2/model. Dev 0.858 /
+  0.822 lenient (strict gold 0.844, content gold 0.952) vs member mean 0.835 / 0.806 (+0.023 / +0.016) and vs the
+  released InternVL average 0.732 / 0.724. Test scoring Q35_soup3_test (1609076) running.
