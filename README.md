@@ -53,7 +53,8 @@ takes a model trained with [docs/training.md](docs/training.md).
 To see training and scoring end to end without the full dataset, [examples/quickstart.ipynb](examples/quickstart.ipynb)
 ([open in Colab](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/quickstart.ipynb))
 fine-tunes granite-docling-258M on the eight pages in [examples/](examples) on Colab or a local machine.
-[docs/code-tour.md](docs/code-tour.md) walks through the code in the order a page travels.
+A copy with all outputs from a finished run is
+[examples/quickstart_executed.ipynb](examples/quickstart_executed.ipynb). [docs/code-tour.md](docs/code-tour.md) walks through the code in the order a page travels.
 
 ## How it works
 
