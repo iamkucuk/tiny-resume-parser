@@ -1496,3 +1496,46 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   10-run average): 0.735 (0.739), strict 0.722, content 0.840, 4 unparsed. +0.111 lenient, +0.076 content, at 0.87B.
   GPU generation (TRUBA, batch 8, dev pages): ~25 % fewer tokens/s than InternVL3-1B, ~10 % shorter answers in tokens;
   CPU speed not measured (needs transformers >= 5.2 on the Mac; no fla kernels on CPU).
+
+## 2026-10-16 21:40 — Release 0.2.0: Qwen3.5-0.8B average becomes ResuVL-L (user: "our new spotlight model")
+- User chose: replace furkankucuk/ResuVL-L (old InternVL3-1B weights kept as HF revision v0.1.0); docs first, then
+  publish. Checked before release: Qwen3.5-0.8B is Apache 2.0; Q35 runs trained on labels_train_v6.jsonl only (0
+  hadikp pages).
+- bf16 release file runs/release_bf16/ResuVL-L-v2 (from Q35_soup3/model; ../make_bf16.py in a job, the login node hit
+  its CPU limit). REL_L2_test (1609092): lenient 0.845 (repaired 0.845), strict 0.835, content 0.916, 2 unparsed;
+  172 of 204 answers identical to the unrounded average (0.846). Docs report the release file.
+- Package moved to transformers 5.5.4 (pyproject pin, version 0.2.0). Same released files under 5.5.4 on the test
+  pages: TF5_L_test (InternVL3-1B average) 204/204 identical answers, 0.735; TF5_M_test (SmolVLM) 62/204 identical,
+  0.677 -> 0.681 raw, 0.683 -> 0.682 repaired; TF5_S_test (granite-docling) 50/204 identical, 0.633 -> 0.652 raw,
+  0.647 -> 0.653 repaired, unparsed 16 -> 13, token limit 12 -> 7. Idefics3ImageProcessor became
+  Idefics3ImageProcessorPil in 5.x (same size settings printed); cause of the differences not isolated. Docs give the
+  5.5.4 test scores for S and M (what package users get) with the 4.57.6 scores next to them; dev scores stay 4.57.6.
+- 21:45 H-base, LightOnOCR-3-0.8B (Qwen3.5 architecture + OCR training, own tokenizer) with the same recipe: LO3_seed42/1/2
+  (1609057/59/61, ~1 h 15 min each). Val-chosen: seed42 ep6 0.844 / 0.812, seed1 ep4 0.807 / 0.813, seed2 ep4 0.838 /
+  0.827; mean 0.830 / 0.817 vs Qwen3.5-0.8B 0.835 / 0.806 (-0.005 / +0.011, inside the seed spread). OCR training adds
+  nothing measurable at this recipe. LO3_soup3 (average of the three) scored on dev for comparison with Q35_soup3.
+- CPU speed of ResuVL-L v2 on the M2 Max (transformers 5.5.4, float32, batch 1, no fla kernels on CPU: torch fallback
+  uses ~1.3 cores): first validation page not finished after 24 min, vs 35–80 s per page for the InternVL3-1B average.
+  Release choice asked of the user.
+- 21:55 LO3_soup3 (1609120): average of the three LightOnOCR-3 runs, dev 0.847 / 0.829 vs Q35_soup3 0.858 / 0.822
+  (-0.011 / +0.007, a tie within the spread). Qwen3.5-0.8B stays the release (chosen first, Apache 2.0, no tie-break
+  on test pages). LO3 weights kept for a possible cross-base comparison; not tested on the test pages.
+- 22:25 H-synth, 3,000 synthetic pages (InternVL3-1B): SY3k_seed42/1/2 (1608977–79, ~2 h each). Val-chosen: seed42 ep5
+  0.764 / 0.748, seed1 ep6 0.745 / 0.736, seed2 ep6 0.741 / 0.743; mean 0.750 / 0.742 vs singles 0.711 / 0.707
+  (+0.039 / +0.035, above the spread on both sets) and vs SY1k 0.741 / 0.724 (+0.009 / +0.018). More synthetic pages,
+  more gain, but these runs take ~1,650 steps instead of 528, so training length is still confounded. Control queued:
+  ZL10_seed42/1/2 = real pages only, 10 epochs (880 steps, matches SY1k), after the Q35SY1k runs.
+- 22:50 H-base, Xiaomi-OCR-0 (Qwen3.5 architecture, OCR model writing structured JSON): XO0_seed1 (1609060) ep6 0.539 /
+  0.478; 44 of 79 val answers unparsed, every one at a spot where the model wrote `":[{"` in place of a word inside
+  copied text (`des ventes par` -> `des":[{" par`, `diplômée` -> `":[{"ée`). Likely its pre-training output format;
+  not adopted with this recipe. Scoring of ep3 had crashed: json.loads raised RecursionError on Python 3.11 for an
+  answer with thousands of "[" (fixed in metrics.py, commit baa7dfd).
+- 22:55 CPU speed of ResuVL-L v2 explained: torch.profiler on 10 generated tokens: 86 % of CPU time in
+  aten::_slow_conv2d_forward, 1.1 M calls. The depthwise conv1d (kernel 4, ~6,100 channels) of the 18 linear-attention
+  layers runs one channel at a time on PyTorch's macOS CPU build (mkldnn not available): 224 ms per call. generate.py
+  now replaces it, when the causal-conv1d kernel is missing, with 4 shifted multiply-adds (0.05 ms; same argmax, max
+  logit diff 1.5e-4 on one page; tests/test_generate_conv.py). Small page: prefill 13.5 s -> 1.9 s, ~0.12 s per token.
+  XO0_seed42 and XO0_seed2 cancelled (22:50): the failure in seed1 is systematic; their GPUs go to Q35SY1k.
+- 23:55 CPU speed test of ResuVL-L v2 with the depthwise fix (same 10 val pages, M2 Max, float32, batch 1, transformers
+  5.5.4): median 127.5 s/page (67–205), 7.1 tokens/s, peak RAM 5.8 GB, 10/10 valid, F1 0.816 on these pages. InternVL3-1B
+  average on 2026-10-14: 62 s, 15.6 tokens/s, 4.9 GB. About 2x slower on CPU; docs say 128 s.

@@ -24,12 +24,13 @@ def is_validation(cv_id: str) -> bool:
 The data folder is `data/` at the repository root, or the folder named by `TINY_RESUME_PARSER_DATA`. The
 [`examples/`](../examples) folder uses the same format.
 
-## 3. Three model families, one prompt: `models.py`
+## 3. Four model families, one prompt: `models.py`
 
-[`models.py`](../src/tiny_resume_parser/models.py) holds what differs between InternVL3-1B, SmolVLM-500M and
+[`models.py`](../src/tiny_resume_parser/models.py) holds what differs between Qwen3.5-0.8B, InternVL3-1B, SmolVLM-500M and
 granite-docling-258M: the text that opens the assistant's answer, the token that ends it, and how the page is cut
 into image tiles. InternVL takes a tile count; the two Idefics3 models take a longest edge in pixels, so
-`--max-patches 12` becomes 2,048 px. Each tile becomes 64 (Idefics3) or 256 (InternVL) image tokens, which is most of
+`--max-patches 12` becomes 2,048 px; Qwen3.5 takes a pixel budget, 12 × 448 × 448. Qwen3.5's answer opens after an
+empty thinking block, which belongs to the header, so the model neither learns nor writes it. Each tile becomes 64 (Idefics3) or 256 (InternVL) image tokens, which is most of
 the input: the first example page, read by granite-docling at 12 tiles, is 832 image tokens and 489 answer
 tokens.
 

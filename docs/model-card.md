@@ -1,16 +1,18 @@
 # Model card
 
 The three models are released on Hugging Face as [ResuVL-L](https://huggingface.co/furkankucuk/ResuVL-L), [ResuVL-M](https://huggingface.co/furkankucuk/ResuVL-M) and
-[ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S).
+[ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S). From version 0.2.0, ResuVL-L is built on Qwen3.5-0.8B; the
+earlier ResuVL-L, built on InternVL3-1B (0.94B, 0.735 on the test pages), stays available as revision `v0.1.0` of the
+same repository. ResuVL-L needs transformers 5.2 or later.
 
 | | ResuVL-L | ResuVL-M | ResuVL-S |
 |---|---|---|---|
-| Base model | OpenGVLab/InternVL3-1B-hf | HuggingFaceTB/SmolVLM-500M-Instruct | ibm-granite/granite-docling-258M |
-| Parameters | 0.94B | 0.51B | 0.26B |
-| Training | full fine-tune, average of 10 runs | full fine-tune, average of 3 runs | full fine-tune, average of 4 runs |
-| Lenient F1, 204 test pages | 0.735 | 0.677 | 0.633 |
-| Lenient F1 (gold dev / val) | 0.732 / 0.724 | 0.644 / 0.676 | 0.660 / 0.649 |
-| CPU time per page (M2 Max, fp32) | ~62 s | ~68 s | ~30 s |
+| Base model | Qwen/Qwen3.5-0.8B | HuggingFaceTB/SmolVLM-500M-Instruct | ibm-granite/granite-docling-258M |
+| Parameters | 0.87B | 0.51B | 0.26B |
+| Training | full fine-tune, average of 3 runs | full fine-tune, average of 3 runs | full fine-tune, average of 4 runs |
+| Lenient F1, 204 test pages | 0.845 | 0.681 | 0.652 |
+| Lenient F1 (gold dev / val) | 0.858 / 0.822 | 0.644 / 0.676 | 0.660 / 0.649 |
+| CPU time per page (M2 Max, fp32) | ~128 s | ~68 s | ~30 s |
 
 ## Intended use
 
@@ -20,7 +22,7 @@ machine that holds the CV. Output is a draft for a person or an applicant-tracki
 ## Not intended for
 
 Ranking or rejecting candidates. The model extracts what is written; it does not judge it, and its errors (left-out
-values, about 11 % of values on the dev pages) must not decide anything about a person without review.
+values and misread ones, about 17 % of label values on the test pages for ResuVL-L) must not decide anything about a person without review.
 
 ## Training data
 
@@ -40,8 +42,8 @@ reviewed model labels, not with labels written independently by people. Run a se
 
 **English-trained base models, a small and narrow sample of French.** The base models learned to read mostly on
 English text. SmolVLM-500M and granite-docling-258M list English as their only language; InternVL3-1B is listed as
-multilingual, but its model card gives no share per language, and French is likely a small part of its training data
-next to English. The training set here gives about 330,000 words of French from 1,116 CV pages, and it is narrow
+multilingual and Qwen3.5-0.8B as covering 201 languages and dialects, but neither model card gives a share per
+language, and French is likely a small part of their training data next to English. The training set here gives about 330,000 words of French from 1,116 CV pages, and it is narrow
 French: names, job titles, school names, dates and short skill lists, with half of all values one word long and few
 full sentences. Fine-tuning therefore asks models that read English well to learn to read French from a small and
 narrow sample, which covers little of French spelling, accents and vocabulary, while long training on it may weaken
@@ -59,7 +61,7 @@ limits what models trained on its labels can reach.
 - One page at a time; multi-page CVs are returned page by page.
 - Other languages, scripts and very unusual layouts are untested.
 - Text written visibly on the page is read like any other text; robustness to injected instructions is not measured.
-- Pages with no parseable answer on the test set: 4 of 204 (InternVL), 4 (SmolVLM), 16 (granite-docling, which also hits the token limit on 12 pages).
+- Pages with no parseable answer on the test set: 2 of 204 (ResuVL-L), 4 (ResuVL-M), 13 (ResuVL-S, which also hits the token limit on 7 pages).
 
 ## Licence
 

@@ -1,6 +1,6 @@
 {
- "source": "best InternVL3-1B model (weight average of 10 fine-tunes), validation page creative-resume-template-with-photo-back p1",
- "field_f1_strict": 0.823,
+ "source": "ResuVL-L (Qwen3.5-0.8B, weight average of 3 fine-tunes), validation page creative-resume-template-with-photo-back p1",
+ "field_f1_strict": 1.0,
  "answer": {
   "basics": {
    "name": "Josephine Meyers",
@@ -21,8 +21,8 @@
     },
     {
      "network": "Twitter",
-     "username": "jmeyersweets",
-     "url": "jmeyersweets"
+     "username": "jmeyerstweets",
+     "url": "jmeyerstweets"
     },
     {
      "network": "Instagram",
@@ -76,28 +76,25 @@
    {
     "name": "SEO-Tools",
     "type": "technical",
+    "level": "~4/5",
     "keywords": [
-     "Ahrefs",
-     "Semrush",
-     "Google Search Console"
-    ]
-   },
-   {
-    "name": "EmailMarketing",
-    "type": "technical",
-    "keywords": [
-     "MailChimp",
-     "Limusn for university projects"
+     "Used Ahrefs, Semrush as well as Google Search Console"
     ]
    },
    {
     "name": "Microsoft Office Suite",
     "type": "technical",
-    "level": "~4/5",
+    "level": "~5/5",
     "keywords": [
-     "Microsoft Word",
-     "Excel",
-     "PowerPoint"
+     "Microsoft Word, Excel & PowerPoint"
+    ]
+   },
+   {
+    "name": "Email-Marketing",
+    "type": "technical",
+    "level": "~5/5",
+    "keywords": [
+     "Used MailChimp & Litmus for university projects"
     ]
    },
    {
@@ -105,8 +102,7 @@
     "type": "technical",
     "level": "~4/5",
     "keywords": [
-     "Google Ads",
-     "Facebook Ads for a personal blog"
+     "Used Google Ads & Facebook Ads for a personal blog"
     ]
    }
   ],

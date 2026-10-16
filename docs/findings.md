@@ -35,9 +35,9 @@ from 0.684 / 0.671 to 0.706 / 0.708. Each change alone helped only one of the tw
 **Weight averaging.** Averaging the weights of 10 fine-tuned models ("model soup", arXiv 2203.05482) gave
 0.732 / 0.724, +0.023 / +0.017 over the mean of the single models (0.709 / 0.707), at no extra inference cost. In an
 earlier set of runs, larger averages (13 to 19 models) did not score higher on validation. The released InternVL model
-averages 10 runs trained only on the licensed pages.
+averages 10 runs trained only on the licensed pages (ResuVL-L up to version 0.1.0).
 
-**Answer repair.** On 1 of the 50 gold pages the released InternVL model writes no valid JSON (broken answers come
+**Answer repair.** On 1 of the 50 gold pages the InternVL average writes no valid JSON (broken answers come
 from a loop, a bad escape or a missing comma). Repairing the answer after generation (fix escapes, keep the complete
 values before the break, drop repeated list items) raises gold from 0.732 to 0.739 and leaves validation unchanged. Development decisions compare unrepaired answers; the `parse` command returns repaired ones.
 
@@ -108,18 +108,45 @@ beat the greedy answer on 27 of 50, against 8 of 40 training pages) gave 0.708 /
 reward, against 0.705 / 0.719 for the starting model: again within the seed spread. Keeping only pages where a sample
 beats the greedy answer remains untested.
 
+## Base models and larger teachers
+
+A literature search in October 2026 ranked a newer base model inside the 1B limit first, ahead of more data and of
+transfer from a larger model. Three base models were trained with the InternVL3-1B recipe unchanged, three seeds each.
+
+**Qwen3.5-0.8B (0.87B) is the largest single gain.** Its three runs averaged 0.835 / 0.806 against 0.711 / 0.707 for
+InternVL3-1B, about six times the seed spread on both sets, and every epoch from the fourth on scored at least 0.826 on
+the gold pages. Averaging the three runs gave 0.858 / 0.822, and this average is the released ResuVL-L. It also scores
+above InternVL3-8B fine-tuned with LoRA adapters (0.780 / 0.786), although that comparison is uneven: the 8B model
+had three epochs of LoRA training, not a full fine-tune. Qwen3.5-0.8B has a newer and larger language model, and its model card
+describes training on image and text tokens together from early on; which of these causes the gain was not tested.
+
+**InternVL3.5-1B (1.06B) did not help.** Its newer Qwen3-0.6B language model gave 0.712 / 0.708, the same as
+InternVL3-1B.
+
+**Distilling an 8B model did not help.** InternVL3-8B fine-tuned with LoRA (0.780 / 0.786) was used as a teacher:
+the 1B student learned from the teacher's output probabilities as well as from the labels (equal weight, temperature
+2). Three runs gave 0.706 / 0.712 against 0.711 / 0.707. The student already fits its training pages closely, so
+softer targets on the same pages add little; distilling on pages the student has not seen remains untested.
+
+**Synthetic pages: a likely gain, not yet separated from training length.** 1,000 pages were rendered from training
+labels with new names and contact details, four layouts, nine fonts and nine colours, so their labels are exact.
+Added to the training pages, they gave 0.741 / 0.724 for InternVL3-1B (+0.030 / +0.017). The runs also took 882
+training steps instead of 528, and all three peaked at the last epoch, so part of the gain may come from longer
+training.
+
 ## Where the errors are
 
 <img alt="Bar chart of gold values the earlier InternVL average loses: left out 10.6 %, page not parsed 6.7 %, joined with other text 4.6 %, written in part 3.1 %, misread characters 2.9 %, under another field 1.8 %." src="assets/lost-values.svg" width="700">
 
 The breakdown is of the earlier InternVL average on the 50 gold pages, before it was rebuilt without the pages
-of unknown licence; the released model scores within 0.01 of it. The largest loss is values the model does not write at all. Misread characters are one of the smallest. Part of the
+of unknown licence; the rebuilt InternVL average scores within 0.01 of it. The largest loss is values the model does not write at all. Misread characters are one of the smallest. Part of the
 remaining gap is in the labels themselves. When the labelling model labels 50 reviewed pages a second time, it
 scores 0.912 field F1 against them; about half of the disagreements are the same text split into fields
 differently. Measured by content F1, which ignores how text is split, the second run reaches 0.967.
 
-Model size is the strongest lever measured, but it is outside this project's limit of 1B parameters: with LoRA,
-InternVL3-2B reached 0.754 / 0.716 and InternVL3-8B 0.824 / 0.812.
+Within one model family, size is a strong lever but is outside this project's limit of 1B parameters: with LoRA,
+InternVL3-2B reached 0.754 / 0.716 and InternVL3-8B 0.824 / 0.812, both with the epoch chosen on the gold pages,
+which overstates them. The newer base model above reaches more at 0.87B.
 
 ## Open questions
 

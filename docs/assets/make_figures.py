@@ -2,8 +2,8 @@
 
     python docs/assets/make_figures.py
 
-Numbers come from the research record (docs/research/journal.md, 2026-10-15) and are written out below so a
-change is one edit here. The example figure uses docs/assets/example_page.jpg and the best InternVL model's answer
+Numbers come from the research record (docs/research/journal.md, 2026-10-15 and 2026-10-16) and are written out below so a
+change is one edit here. The example figure uses docs/assets/example_page.jpg and ResuVL-L's (Qwen3.5-0.8B) answer
 for that page (docs/assets/example_answer.json).
 """
 
@@ -19,11 +19,12 @@ from PIL import Image  # noqa: E402
 
 ASSETS = Path(__file__).resolve().parent
 
-# Lenient and content field F1 on the 204 held-out test pages, raw answers (slurm/test.slurm, 2026-10-15).
+# Lenient and content field F1 on the 204 held-out test pages, raw answers, transformers 5.5.4 (slurm/test.slurm, 2026-10-16).
 RESULTS = [  # (student, parameters, lenient F1, content F1)
+    ("Qwen3.5-0.8B", "0.87B", 0.845, 0.916),
     ("InternVL3-1B", "0.94B", 0.735, 0.840),
-    ("SmolVLM-500M", "0.51B", 0.677, 0.788),
-    ("granite-docling-258M", "0.26B", 0.633, 0.752),
+    ("SmolVLM-500M", "0.51B", 0.681, 0.791),
+    ("granite-docling-258M", "0.26B", 0.652, 0.777),
 ]
 TEACHER = {"lenient": 0.912, "content": 0.967}  # a second GLM-5.3-Flash labelling run vs the 50 reviewed dev gold pages
 # Where the best InternVL model loses gold values (share of all gold values; journal 2026-10-15 ~12:50).
@@ -53,7 +54,7 @@ def style(ax, t):
 
 def results_chart(theme: str) -> None:
     t = THEMES[theme]
-    fig, axes = plt.subplots(1, 2, figsize=(9, 2.6), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(9, 3.0), sharey=True)
     names = [f"{n}  ({p})" for n, p, _, _ in RESULTS][::-1]
     for ax, (metric, col, title) in zip(axes, [("lenient", 2, "Lenient field F1"), ("content", 3, "Content F1")]):
         values = [r[col] for r in RESULTS][::-1]
@@ -133,7 +134,7 @@ def example_figure() -> None:
     ax_img.set_title("CV page (image)", fontsize=12, loc="left")
     ax_txt = fig.add_axes((0.47, 0.02, 0.52, 0.9))
     ax_txt.axis("off")
-    ax_txt.set_title("JSON written by the 0.94B model (excerpt)", fontsize=12, loc="left")
+    ax_txt.set_title("JSON written by ResuVL-L, 0.87B (excerpt)", fontsize=12, loc="left")
     ax_txt.text(0, 1, "\n".join(lines[:50] + ["  ..."]), va="top", family="monospace", fontsize=8.2, color="#1f2328")
     fig.savefig(ASSETS / "example.png", dpi=110)
     plt.close(fig)

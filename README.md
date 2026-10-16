@@ -1,6 +1,6 @@
 <h1 align="center">tiny-resume-parser</h1>
 
-<p align="center">Small vision-language models (0.26B–0.94B parameters) that read a CV page image and write its content as JSON. They run on a laptop CPU.</p>
+<p align="center">Small vision-language models (0.26B–0.87B parameters) that read a CV page image and write its content as JSON. They run on a laptop CPU.</p>
 
 <p align="center">
   <a href="LICENSE.md"><img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue"></a>
@@ -9,8 +9,8 @@
   <a href="https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/quickstart.ipynb"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg"></a>
 </p>
 
-<p align="center"><img src="docs/assets/example.png" alt="Left: a two-column designer CV page with a photo. Right: the JSON the 0.94B model wrote for it, with name, contact details, work, education and skills in separate fields." width="900"></p>
-<p align="center"><sub>A validation page the model never trained on, and part of the JSON the 0.94B model wrote for it.</sub></p>
+<p align="center"><img src="docs/assets/example.png" alt="Left: a two-column designer CV page with a photo. Right: the JSON ResuVL-L (0.87B) wrote for it, with name, contact details, work, education and skills in separate fields." width="900"></p>
+<p align="center"><sub>A validation page the model never trained on, and part of the JSON ResuVL-L (0.87B) wrote for it.</sub></p>
 
 Most resume parsers read the text layer of a PDF. That layer can differ from what a recruiter sees: hidden text is
 extracted like visible text, two-column layouts come out interleaved, scanned pages have no text layer at all, and
@@ -18,17 +18,18 @@ some PDFs store text without a usable character mapping. These models read the r
 is handled the same way, whether it is a born-digital PDF, a scan or a photo.
 
 > Weights on Hugging Face: [ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S) (0.26B), [ResuVL-M](https://huggingface.co/furkankucuk/ResuVL-M) (0.51B) and
-> [ResuVL-L](https://huggingface.co/furkankucuk/ResuVL-L) (0.94B).
+> [ResuVL-L](https://huggingface.co/furkankucuk/ResuVL-L) (0.87B).
 
 ## Results
 
-<img alt="Bar charts of lenient field F1 and content F1 on the 204 held-out test pages: InternVL3-1B 0.735 and 0.840, SmolVLM-500M 0.677 and 0.788, granite-docling-258M 0.633 and 0.752; the dashed line is the labelling model run a second time on 50 reviewed development pages, 0.912 and 0.967." src="docs/assets/results.svg" width="900">
+<img alt="Bar charts of lenient field F1 and content F1 on the 204 held-out test pages: Qwen3.5-0.8B 0.845 and 0.916, InternVL3-1B 0.735 and 0.840, SmolVLM-500M 0.681 and 0.791, granite-docling-258M 0.652 and 0.777; the dashed line is the labelling model run a second time on 50 reviewed development pages, 0.912 and 0.967." src="docs/assets/results.svg" width="900">
 
 | Model | Parameters | Field F1 | Content F1 | CPU seconds per page |
 |---|---|---|---|---|
-| ResuVL-L (InternVL3-1B) | 0.94B | **0.735** | **0.840** | 62 |
-| ResuVL-M (SmolVLM-500M) | 0.51B | 0.677 | 0.788 | 68 |
-| ResuVL-S (granite-docling-258M) | 0.26B | 0.633 | 0.752 | 30 |
+| ResuVL-L (Qwen3.5-0.8B) | 0.87B | **0.845** | **0.916** | 128 |
+| ResuVL-L v0.1 (InternVL3-1B) | 0.94B | 0.735 | 0.840 | 62 |
+| ResuVL-M (SmolVLM-500M) | 0.51B | 0.681 | 0.791 | 68 |
+| ResuVL-S (granite-docling-258M) | 0.26B | 0.652 | 0.777 | 30 |
 
 Scores are on 204 human-reviewed test pages that were not used for any decision. Field F1 counts a value as correct
 when it matches the reviewed label apart from case, spacing and punctuation. Content F1 also accepts correct text
@@ -36,6 +37,7 @@ placed under another field of the same section. When the labelling model labels 
 it scores 0.912 field F1 against them: its labels vary between runs, which limits what models trained on them can
 reach. Definitions and development scores are in
 [docs/evaluation.md](docs/evaluation.md); CPU times are medians over 10 validation pages on an Apple M2 Max in float32.
+The earlier ResuVL-L, built on InternVL3-1B, stays available as revision `v0.1.0` of the same repository.
 
 ## Limits of the data
 
@@ -48,8 +50,8 @@ reviewed model labels, not with labels written independently by people. Run a se
 
 **English-trained base models, a small and narrow sample of French.** The base models learned to read mostly on
 English text. SmolVLM-500M and granite-docling-258M list English as their only language; InternVL3-1B is listed as
-multilingual, but its model card gives no share per language, and French is likely a small part of its training data
-next to English. The training set here gives about 330,000 words of French from 1,116 CV pages, and it is narrow
+multilingual and Qwen3.5-0.8B as covering 201 languages and dialects, but neither model card gives a share per
+language, and French is likely a small part of their training data next to English. The training set here gives about 330,000 words of French from 1,116 CV pages, and it is narrow
 French: names, job titles, school names, dates and short skill lists, with half of all values one word long and few
 full sentences. Fine-tuning therefore asks models that read English well to learn to read French from a small and
 narrow sample, which covers little of French spelling, accents and vocabulary, while long training on it may weaken
@@ -69,7 +71,7 @@ tiny-resume-parser parse cv.pdf --model furkankucuk/ResuVL-L
 [{"file": "cv.pdf", "page": 1, "valid": true, "record": {"basics": {"name": "Josephine Meyers", "emails": ["josephine.meyers@me.com"]}, "work": [...]}}]
 ```
 
-PDF pages are rendered at 120 dpi; PNG and JPEG files are read as they are. Until weights are published, `--model`
+PDF pages are rendered at 120 dpi; PNG and JPEG files are read as they are. `--model` also
 takes a model trained with [docs/training.md](docs/training.md).
 
 To see training and scoring end to end without the full dataset, [examples/quickstart.ipynb](examples/quickstart.ipynb)
@@ -97,8 +99,11 @@ one model of the same size. [docs/how-it-works.md](docs/how-it-works.md) describ
 
 ## Findings
 
-For the 0.94B model, three changes raised the score most: fine-tuning all weights instead of LoRA adapters, adding image noise while
-also training the vision encoder, and averaging the weights of several fine-tuned models. Preference training
+The largest gain came from the base model. With the training recipe unchanged, Qwen3.5-0.8B scores 0.845 on the test
+pages against 0.735 for InternVL3-1B, although it is smaller (0.87B against 0.94B), and above an 8B InternVL3 model
+fine-tuned with LoRA adapters on the development pages. Within one base model, three changes raised the score most:
+fine-tuning all weights instead of LoRA adapters, adding image noise while also training the vision encoder, and
+averaging the weights of several fine-tuned models. Distilling the 8B model's output probabilities into the 1B model did not help. Preference training
 (DPO), reinforcement learning on the F1 score (GRPO), generating one JSON key at a time and constrained decoding
 did not improve it; GRPO stayed within the seed spread both on training pages and on 974 pages the model had not seen. The largest group of remaining errors is values the model leaves out; misread characters are one of the smallest.
 [docs/findings.md](docs/findings.md) gives the measured effect of each change.
@@ -139,6 +144,7 @@ were deduplicated and grouped into CVs; the dataset's bounding boxes were not us
 
 Code: [PolyForm Noncommercial 1.0.0](LICENSE.md), free for personal, research, educational and nonprofit use, not for
 commercial use. Weights and documentation, once released: CC BY-NC 4.0. Each base model
-([InternVL3-1B-hf](https://huggingface.co/OpenGVLab/InternVL3-1B-hf),
+([Qwen3.5-0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B),
+[InternVL3-1B-hf](https://huggingface.co/OpenGVLab/InternVL3-1B-hf),
 [SmolVLM-500M-Instruct](https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct),
 [granite-docling-258M](https://huggingface.co/ibm-granite/granite-docling-258M)) keeps its own licence.

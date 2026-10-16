@@ -7,7 +7,10 @@ git clone https://github.com/iamkucuk/tiny-resume-parser && cd tiny-resume-parse
 pip install -e ".[train,dev]"
 ```
 
-Python ≥ 3.11. Reported runs used torch 2.6.0 (CUDA) and transformers 4.57.6 on one H100 or H200.
+Python ≥ 3.11. Reported runs used torch 2.6.0 (CUDA) on one H100 or H200, with transformers 4.57.6 for the three
+original students and 5.5.4 for Qwen3.5-0.8B. On GPU, Qwen3.5-0.8B trains about 7× faster with its linear-attention
+kernels installed: `flash-linear-attention` and `fla-core` 0.4.2 (0.5 needs torch 2.7) and `causal-conv1d` 1.7.0,
+built from source (`CAUSAL_CONV1D_FORCE_BUILD=TRUE`) when no prebuilt wheel matches the installed torch.
 
 ## Data
 
@@ -37,16 +40,17 @@ To try the pipeline first, [examples/](../examples) holds eight labelled pages i
 ## Train one student
 
 ```bash
-tiny-resume-parser train --config configs/internvl3-1b.toml --seed 42 --out runs/internvl_s42
+tiny-resume-parser train --config configs/qwen3.5-0.8b.toml --seed 42 --out runs/qwen_s42
 ```
 
 | Config | Base model | Epochs | lr | Tiles | Time per seed (1 × H100, incl. scoring) |
 |---|---|---|---|---|---|
+| [`qwen3.5-0.8b.toml`](../configs/qwen3.5-0.8b.toml) | Qwen/Qwen3.5-0.8B | 6 | 1e-5 | 12 | ~1.3 h |
 | [`internvl3-1b.toml`](../configs/internvl3-1b.toml) | OpenGVLab/InternVL3-1B-hf | 6 | 1e-5 | 12 | ~1 h |
 | [`smolvlm-500m.toml`](../configs/smolvlm-500m.toml) | HuggingFaceTB/SmolVLM-500M-Instruct | 10 | 6e-5 | 30 | ~2.5 h |
 | [`granite-docling-258m.toml`](../configs/granite-docling-258m.toml) | ibm-granite/granite-docling-258M | 10 | 1e-4 | 12 | ~1.5 h |
 
-All three: full fine-tune with the vision encoder, image noise p = 0.5, effective batch 16, cosine schedule,
+All four: full fine-tune with the vision encoder, image noise p = 0.5, effective batch 16, cosine schedule,
 3 % warm-up, weight decay 0.01, bf16. A flag on the command line overrides the config.
 
 ## Choose the epoch and average the seeds
@@ -56,10 +60,11 @@ All three: full fine-tune with the vision encoder, image noise p = 0.5, effectiv
 3. Average those models:
 
 ```bash
-tiny-resume-parser soup --out runs/internvl_avg/model runs/internvl_s42/checkpoint-440 runs/internvl_s1/model ...
+tiny-resume-parser soup --out runs/qwen_avg/model runs/qwen_s42/model runs/qwen_s1/checkpoint-440 runs/qwen_s2/model
 ```
 
-The InternVL model averages 10 runs, SmolVLM 3 and granite-docling 4.
+ResuVL-L averages 3 Qwen3.5-0.8B runs (seeds 42, 1, 2), ResuVL-M 3 SmolVLM runs and ResuVL-S 4 granite-docling runs;
+the earlier InternVL3-1B average used 10.
 
 ## On a SLURM cluster
 
