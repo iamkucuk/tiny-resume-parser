@@ -1539,3 +1539,6 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - 23:55 CPU speed test of ResuVL-L v2 with the depthwise fix (same 10 val pages, M2 Max, float32, batch 1, transformers
   5.5.4): median 127.5 s/page (67–205), 7.1 tokens/s, peak RAM 5.8 GB, 10/10 valid, F1 0.816 on these pages. InternVL3-1B
   average on 2026-10-14: 62 s, 15.6 tokens/s, 4.9 GB. About 2x slower on CPU; docs say 128 s.
+- 00:20 Published: furkankucuk/ResuVL-L tagged v0.1.0 at the InternVL3-1B commit (70339aa684), then replaced by the
+  Qwen3.5-0.8B bf16 average (commit 2d43574cc4, sha256 d0fb3069…; old InternVL processor files removed). ResuVL-S and
+  ResuVL-M cards updated. parse --model furkankucuk/ResuVL-L tested from an empty cache on CPU: valid record.
