@@ -111,7 +111,7 @@ beats the greedy answer remains untested.
 ## Base models and larger teachers
 
 A literature search in October 2026 ranked a newer base model inside the 1B limit first, ahead of more data and of
-transfer from a larger model. Three base models were trained with the InternVL3-1B recipe unchanged, three seeds each.
+transfer from a larger model. Five base models were trained with the InternVL3-1B recipe unchanged, three seeds each.
 
 **Qwen3.5-0.8B (0.87B) is the largest single gain.** Its three runs averaged 0.835 / 0.806 against 0.711 / 0.707 for
 InternVL3-1B, about six times the seed spread on both sets, and every epoch from the fourth on scored at least 0.826 on
@@ -122,6 +122,20 @@ describes training on image and text tokens together from early on; which of the
 
 **InternVL3.5-1B (1.06B) did not help.** Its newer Qwen3-0.6B language model gave 0.712 / 0.708, the same as
 InternVL3-1B.
+
+**Versions of Qwen3.5-0.8B trained further for OCR did not help.** Three published models share its architecture
+and were post-trained to turn page images into text. LightOnOCR-3-0.8B gave 0.830 / 0.817 (an average of its three
+runs 0.847 / 0.829), a tie within the seed spread. OvisOCR2 gave 0.825 / 0.796, slightly lower. Xiaomi-OCR-0 gave
+0.539 / 0.478 in its first run: in 44 of 79 validation answers it wrote JSON punctuation in place of a word inside
+copied text, which breaks the answer, so its other runs were stopped. Training to transcribe pages into markdown does
+not carry over to reading French CVs into JSON with this amount of data.
+
+**The Qwen3.5-0.8B recipe was not improved by further tuning.** The InternVL3-1B settings were kept after three
+checks against the five-seed mean of 0.836 / 0.808. A 2× higher learning rate gave 0.840 / 0.799. Ten epochs instead of
+six gave 0.829 / 0.809; validation stayed between 0.80 and 0.82 from the fifth to the tenth epoch, so the model has
+converged by the sixth. Larger page images help on validation only: up to 20 tiles gave 0.842 / 0.820 over five
+seeds, and 30 tiles gave 0.845 / 0.814. The validation gain is at the edge of the seed spread and the gold gain inside
+it, and the larger images cost up to 1.7 times the image tokens on a CPU, so 12 tiles were kept.
 
 **Distilling an 8B model did not help.** InternVL3-8B fine-tuned with LoRA (0.780 / 0.786) was used as a teacher:
 the 1B student learned from the teacher's output probabilities as well as from the labels (equal weight, temperature
