@@ -1580,3 +1580,10 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - 03:50 Queue was empty behind the three 10-epoch runs. Queued Q35e10p20_seed42 (10 epochs + max-patches 20,
   a combined candidate, labelled as such) with afterany on Q35e10_seed42: disk is 1,885 GiB of 2,000 and each 10-epoch
   job holds up to ~32 GB of checkpoints (3.2 GB each) until training ends, so a fourth concurrent job could hit the quota.
+- 05:37 Q35e10_seed42/1/2 (10 epochs, 1609910–12) done. Val-chosen: seed42 ep10 0.836 / 0.817, seed1 ep8
+  0.835 / 0.805, seed2 ep8 0.817 / 0.806; mean 0.829 / 0.809 vs 6 epochs 0.835 / 0.806 (-0.006 / +0.003): no gain.
+  Validation is flat at 0.80-0.82 from epoch 5 to 10 in all three runs; unlike InternVL3-1B (ZL10), Qwen3.5-0.8B has
+  converged by epoch 6. The combined candidate Q35e10p20_seed42 (1610238) failed in 53 s: submitted without
+  EXTRA_PYTHONPATH=venv/tf5_pkgs, so transformers 4.x did not know qwen3_5. Not resubmitted, since 10 epochs gave
+  nothing to combine. Queued instead Q35p20_seed3/4 (1610283/84, max-patches 20, seeds 3 and 4) to narrow the
+  max-patches-20 estimate (3 seeds: +0.002 / +0.014, validation at the edge of the spread).

@@ -494,3 +494,7 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 - InternVL3-1B recipe on train_v6_synth1k.jsonl (1,472 real + 1,000 synthetic pages from experiments/synth_cvs.py).
   Val-chosen: seed42 ep6 0.740 / 0.715, seed1 ep6 0.747 / 0.716, seed2 ep6 0.736 / 0.742; mean 0.741 / 0.724 vs
   singles 0.711 / 0.707. 882 steps in total vs 528.
+
+## Q35e10_seed42 / _seed1 / _seed2 (2026-10-17, jobs 1609910–12, ~2 h 05 min each) — no gain
+- Qwen3.5-0.8B recipe, 10 epochs instead of 6, max-patches 12, epochs 5–10 scored. Val-chosen: seed42 ep10
+  0.836 / 0.817, seed1 ep8 0.835 / 0.805, seed2 ep8 0.817 / 0.806; mean 0.829 / 0.809 vs 6 epochs 0.835 / 0.806.
