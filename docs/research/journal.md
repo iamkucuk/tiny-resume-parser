@@ -1574,3 +1574,6 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   0.845 / 0.820, seed1 ep5 0.818 / 0.816, seed2 ep6 0.849 / 0.824; mean 0.837 / 0.820 vs max-patches 12 0.835 / 0.806
   (+0.002 / +0.014): validation at the edge of the spread, gold unchanged, so not adopted on its own. Queued
   Q35p20_soup3 (average of the three, scored at max-patches 20) for comparison with Q35_soup3 (0.858 / 0.822).
+- 03:41 Q35p20_soup3 (1610212): dev 0.864 / 0.835 at max-patches 20 vs released Q35_soup3 0.858 / 0.822 (+0.006 /
+  +0.013). Both positive, but gold is inside the spread and validation at its edge: not a release change by the
+  rule. It would also cost CPU time (up to ~1.7x the image tokens). Kept for a later combination (e.g. with 10 epochs).
