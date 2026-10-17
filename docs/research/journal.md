@@ -1570,3 +1570,7 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   seed2 ep6 0.843 / 0.798; mean 0.840 / 0.799 vs lr 1e-5 0.835 / 0.806 (+0.005 / -0.007): no gain, lr 1e-5 stays.
   Queued Q35e10_seed42/1/2 = Qwen3.5-0.8B, 10 epochs (ZL10 showed InternVL3-1B gains +0.005 / +0.016 from 6 -> 10
   epochs on real pages), min scored epoch 5.
+- 03:30 Q35p20_seed42/1/2 (max-patches 20 = 4.0 Mpx cap, 1609737/39/41, ~1 h 25 min each). Val-chosen: seed42 ep5
+  0.845 / 0.820, seed1 ep5 0.818 / 0.816, seed2 ep6 0.849 / 0.824; mean 0.837 / 0.820 vs max-patches 12 0.835 / 0.806
+  (+0.002 / +0.014): validation at the edge of the spread, gold unchanged, so not adopted on its own. Queued
+  Q35p20_soup3 (average of the three, scored at max-patches 20) for comparison with Q35_soup3 (0.858 / 0.822).
