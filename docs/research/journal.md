@@ -1609,3 +1609,13 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   gain, not adopted by the rule; it would also cost up to ~1.7x the image tokens on CPU. Max-patches stays 12.
   Qwen3.5 track settled on lr, epochs and image detail; the next step needs a new idea (OvisOCR2 base awaits download
   approval). No job queued until then.
+
+## 2026-10-17 10:29 — OvisOCR2 as base (user approved the download)
+- Source: literature search 2026-10-16 (docs/research/literature-2026-10-16/A_models.md): OvisOCR2 (ATH-MaaS/OvisOCR2,
+  852,985,920 parameters, Apache-2.0, arXiv 2607.13639) is Qwen3.5-0.8B post-trained for page reading (SFT + RL +
+  on-policy distillation; OmniDocBench v1.6 96.58), no layout detector. Same architecture and code path as Qwen3.5-0.8B.
+- Hypothesis: OCR post-training of the same architecture reduces misread values (letters, digits, accents) and raises
+  F1 over plain Qwen3.5-0.8B. Risk: evidence is English/Chinese; LightOnOCR-3 (also OCR-trained Qwen3.5) tied
+  (0.830 / 0.817 vs 0.835 / 0.806), and Xiaomi-OCR-0 failed (~0.5).
+- Run: OV2_seed42/1/2 (1610433-35), released Qwen3.5 recipe with --model ATH-MaaS/OvisOCR2, max-patches 12.
+  Reference: Qwen3.5-0.8B five seeds 0.836 / 0.808.
