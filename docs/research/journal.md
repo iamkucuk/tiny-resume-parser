@@ -1595,3 +1595,6 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - 07:07 Three daytime slots free. Queued Q35p30_seed42/1/2 (max-patches 30, train and score; one change against
   the max-patches-20 runs, 0.842 / 0.820 over five seeds) to see whether the validation gain from more image detail
   continues. Literature-backed next step for this track (OvisOCR2, an OCR-trained Qwen3.5 variant, 853M) awaits download approval.
+- 07:17 Q35p20_soup5 (1610317, average of the five max-patches-20 val-chosen checkpoints): dev 0.860 / 0.832 vs
+  Q35p20_soup3 0.864 / 0.835 and released Q35_soup3 0.858 / 0.822. Five members add nothing over three; against the
+  release +0.002 / +0.010, gold inside the spread: not a release change. Max-patches 20 stays a validation-only gain.
