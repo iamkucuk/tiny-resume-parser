@@ -247,12 +247,12 @@ def to_record(data: dict) -> dict:
     return CVRecord.model_validate(data).model_dump()
 
 
-def _drop_empty(x):
+def drop_empty(x):
     if isinstance(x, dict):
-        kept = {k: _drop_empty(v) for k, v in x.items()}
+        kept = {k: drop_empty(v) for k, v in x.items()}
         return {k: v for k, v in kept.items() if v not in (None, [], {})}
     if isinstance(x, list):
-        return [_drop_empty(v) for v in x]
+        return [drop_empty(v) for v in x]
     return x
 
 
@@ -261,7 +261,7 @@ def to_target(record: dict) -> str:
 
     ~26% fewer tokens than the full record; to_record() refills the left-out keys.
     """
-    return json.dumps(_drop_empty(to_record(record)), ensure_ascii=False, separators=(",", ":"))
+    return json.dumps(drop_empty(to_record(record)), ensure_ascii=False, separators=(",", ":"))
 
 
 if __name__ == "__main__":

@@ -19,8 +19,10 @@ import unicodedata
 from collections import Counter
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from .models import STUDENT_SKIP
-from .schema import _drop_empty, to_record
+from .schema import drop_empty, to_record
 
 
 def pairs(record: dict) -> Counter:
@@ -37,23 +39,13 @@ def pairs(record: dict) -> Counter:
         else:
             out[(path, str(x).strip())] += 1
 
-    walk(_drop_empty({k: v for k, v in record.items() if k not in STUDENT_SKIP}), "")
+    walk(drop_empty({k: v for k, v in record.items() if k not in STUDENT_SKIP}), "")
     return out
 
 
 def score(answer: str, gold: dict) -> dict:
     """status: valid (passes the schema), schema_error (JSON but not the schema; still scored), unparsed (scored as 0)."""
-    try:
-        pred = json.loads(answer)
-    except (json.JSONDecodeError, RecursionError):  # RecursionError: brackets nested past Python's limit
-        pred, status = {}, "unparsed"
-    else:
-        try:
-            pred, status = to_record(pred), "valid"
-        except Exception:
-            status = "schema_error"
-        if not isinstance(pred, dict):
-            pred, status = {}, "unparsed"
+    pred, status = read_answer(answer)
     p, g = pairs(pred), pairs(to_record(gold))
     hit = sum((p & g).values())
     return {"status": status, "pred": sum(p.values()), "gold": sum(g.values()), "hit": hit}
@@ -137,18 +129,23 @@ def content(c: Counter) -> Counter:
     return out
 
 
-def parse(answer: str, fix: bool = False) -> dict:
-    """Answer text -> record dict ({} if it does not parse); with fix, broken answers are repaired first."""
+def read_answer(answer: str, fix: bool = False) -> tuple[dict, str]:
+    """Answer text -> (record, status), the one place an answer is decoded for scoring and for parsing CVs.
+
+    valid         a JSON object that passes the schema; the record is the full template (to_record).
+    schema_error  a JSON object that does not pass the schema; the record is the raw JSON, still scored.
+    unparsed      no JSON object; the record is {}. With fix, a broken answer is repaired first (repair()).
+    """
     try:
         pred = json.loads(answer)
-    except (json.JSONDecodeError, RecursionError):
+    except (json.JSONDecodeError, RecursionError):  # RecursionError: brackets nested past Python's limit
         pred = repair(answer) if fix else None
     if not isinstance(pred, dict):
-        return {}
+        return {}, "unparsed"
     try:
-        return to_record(pred)
-    except Exception:
-        return pred  # schema error: scored on its raw JSON, as evaluate.score does
+        return to_record(pred), "valid"
+    except ValidationError:
+        return pred, "schema_error"
 
 
 def f1(h: int, p: int, g: int) -> tuple[float, float, float]:
@@ -164,7 +161,7 @@ def rescore(eval_dir: Path, labels: dict, fix: bool = False) -> dict:
     sec = {"strict": Counter(), "lenient": Counter(), "content": Counter()}
     for line in (eval_dir / "pages.jsonl").read_text().splitlines():
         r = json.loads(line)
-        g, p = to_record(labels[(r["cv_id"], r["page"])]), parse(r["answer"], fix)
+        g, p = to_record(labels[(r["cv_id"], r["page"])]), read_answer(r["answer"], fix)[0]
         g, p = pairs(g), pairs(p)
         for name, (pp, gg) in {
             "strict": (p, g),

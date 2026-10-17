@@ -30,3 +30,21 @@ def test_every_config_key_is_a_training_option():
     for path in CONFIGS:
         unknown = set(tomllib.loads(path.read_text())) - options
         assert not unknown, f"{path.name}: {sorted(unknown)}"
+
+
+def test_parse_command_flags_unreadable_pages(tmp_path, monkeypatch):
+    # read_cv end to end with the model replaced by stored answers: a cut-off answer keeps its complete values and
+    # counts as valid, a page with no JSON is reported as not valid instead of as an empty CV.
+    from PIL import Image
+
+    import tiny_resume_parser.parse as p
+
+    answers = iter(['{"basics": {"name": "Jean Picard", "emails": ["jean@exa', "I cannot read this page."])
+    monkeypatch.setattr(p, "load_model", lambda model, device=None: (None, None, "cpu"))
+    monkeypatch.setattr(p, "generate_pages", lambda *a, **k: [(next(answers), 0)])
+    files = [tmp_path / "a.png", tmp_path / "b.png"]
+    for f in files:
+        Image.new("RGB", (8, 8), "white").save(f)
+    first, second = p.read_cv(files, "any-model", max_patches=12)
+    assert first["valid"] and first["record"]["basics"]["name"] == "Jean Picard"
+    assert not second["valid"] and second["record"] == {}

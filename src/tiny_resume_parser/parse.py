@@ -18,9 +18,8 @@ from pathlib import Path
 from PIL import Image
 
 from .generate import generate_pages, load_model
-from .metrics import parse as parse_answer
+from .metrics import read_answer
 from .models import TRAINED_PATCHES, family_name
-from .schema import to_record
 
 PDF_DPI = 120
 
@@ -45,12 +44,8 @@ def read_cv(
     for path in paths:
         for i, image in enumerate(page_images(path), 1):
             answer, _ = generate_pages(m, processor, [image], max_patches, max_new_tokens)[0]
-            record = parse_answer(answer, fix=True)
-            try:
-                record, valid = to_record(record), True
-            except Exception:
-                valid = False
-            out.append({"file": str(path), "page": i, "valid": valid, "record": record})
+            record, status = read_answer(answer, fix=True)
+            out.append({"file": str(path), "page": i, "valid": status == "valid", "record": record})
     return out
 
 

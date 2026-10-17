@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- `tiny-resume-parser parse` no longer reports a page as valid when the model's answer contains no JSON: such pages
+  were returned as `"valid": true` with an empty record. Answers are now decoded in one function,
+  `metrics.read_answer`, for scoring and for parsing; scores are unchanged.
+- Tests for the training labels (only the answer and its end token are learnt; perturbation never changes labels)
+  and for the parse command on stored answers.
+
 ## 0.2.1 — 2026-10-17
 
 - On a CPU with bf16 instructions (Apple M2 and later, AVX512-BF16, AMX, Arm bf16), Qwen3.5's language model runs in

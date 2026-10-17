@@ -4,7 +4,7 @@ re-placed text within a section; repair keeps only complete values. Run: pytest,
 
 from collections import Counter
 
-from tiny_resume_parser.metrics import content, f1, lenient, pairs, parse, repair, score
+from tiny_resume_parser.metrics import content, f1, lenient, pairs, read_answer, repair, score
 
 
 def matched(pred: Counter, gold: Counter) -> int:
@@ -72,4 +72,13 @@ def test_answer_nested_past_the_recursion_limit_scores_as_unparsed(monkeypatch):
     deep = '{"skills": [[[[1]]]]}'
     assert score(deep, {})["status"] == "unparsed"
     assert repair(deep) is None
-    assert parse(deep, fix=True) == {}
+    assert read_answer(deep, fix=True) == ({}, "unparsed")
+
+
+def test_read_answer_status_follows_the_answer_not_the_empty_template():
+    # An empty record passes the schema, so an answer that is not JSON must not come back as a valid empty CV:
+    # the parse command reported such pages as valid before read_answer kept the status.
+    assert read_answer("Sorry, I cannot read this page.", fix=True) == ({}, "unparsed")
+    record, status = read_answer('{"basics": {"name": "Jean Picard"}}')
+    assert status == "valid" and record["basics"]["name"] == "Jean Picard"
+    assert read_answer('{"basics": {"nom": "Jean"}}') == ({"basics": {"nom": "Jean"}}, "schema_error")

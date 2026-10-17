@@ -12,6 +12,11 @@
 <p align="center"><img src="docs/assets/example.png" alt="Left: a two-column designer CV page with a photo. Right: the JSON ResuVL-L (0.87B) wrote for it, with name, contact details, work, education and skills in separate fields." width="900"></p>
 <p align="center"><sub>A validation page the model never trained on, and part of the JSON ResuVL-L (0.87B) wrote for it.</sub></p>
 
+**In short:** on 204 held-out CV pages, 86 % of the values ResuVL-L writes match the human-reviewed labels and it
+finds 83 % of the values in those labels (field F1 0.845). The model that made the training labels, run a second time
+on 50 reviewed pages, scores 0.912, which is the practical ceiling for models trained on its labels. ResuVL-L reads one
+page in about a minute on a laptop CPU, with no GPU and no PDF text layer.
+
 Most resume parsers read the text layer of a PDF. That layer can differ from what a recruiter sees: hidden text is
 extracted like visible text, two-column layouts come out interleaved, scanned pages have no text layer at all, and
 some PDFs store text without a usable character mapping. These models read the rendered page instead, so every CV
