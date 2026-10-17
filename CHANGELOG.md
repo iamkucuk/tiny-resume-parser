@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.2.2 — 2026-10-17
 
 - `tiny-resume-parser parse` no longer reports a page as valid when the model's answer contains no JSON: such pages
   were returned as `"valid": true` with an empty record. Answers are now decoded in one function,

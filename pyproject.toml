@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tiny-resume-parser"
-version = "0.2.1"
+version = "0.2.2"
 description = "Fine-tuned sub-1B vision-language models that read a CV page image and write ATS JSON; runs on a laptop CPU"
 readme = "README.md"
 requires-python = ">=3.11"
