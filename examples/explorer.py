@@ -28,8 +28,7 @@ from PIL import Image
 
 from tiny_resume_parser.data import page_image
 from tiny_resume_parser.generate import generate_pages, load_model, prompt_text
-from tiny_resume_parser.metrics import content, f1, lenient, pairs
-from tiny_resume_parser.metrics import parse as parse_answer
+from tiny_resume_parser.metrics import content, f1, lenient, pairs, read_answer
 from tiny_resume_parser.models import TRAINED_PATCHES, family, family_name
 from tiny_resume_parser.parse import page_images
 
@@ -184,7 +183,7 @@ class Explorer:
             t0 = time.time()
             answer, n_tokens = generate_pages(self.model, self.processor, [image], self.patches, self.tokens.value)[0]
             seconds = time.time() - t0
-            record = parse_answer(answer, fix=True)
+            record = read_answer(answer, fix=True)[0]
             self.render(title, image, label, answer, record, n_tokens, seconds)
             self.status.value = f"<span class='tx muted'>{n_tokens} tokens in {seconds:.1f} s</span>"
         except Exception as e:  # shown in the panel, then raised so the cell output has the traceback
