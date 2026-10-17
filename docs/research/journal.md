@@ -1587,3 +1587,8 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   EXTRA_PYTHONPATH=venv/tf5_pkgs, so transformers 4.x did not know qwen3_5. Not resubmitted, since 10 epochs gave
   nothing to combine. Queued instead Q35p20_seed3/4 (1610283/84, max-patches 20, seeds 3 and 4) to narrow the
   max-patches-20 estimate (3 seeds: +0.002 / +0.014, validation at the edge of the spread).
+- 07:05 Q35p20_seed3/4 done. Val-chosen: seed3 ep5 0.844 / 0.825, seed4 ep5 0.853 / 0.813. Five-seed mean at
+  max-patches 20: 0.842 / 0.820 vs max-patches 12 (3 seeds) 0.835 / 0.806 (+0.007 / +0.014). Validation gain holds with
+  five seeds (all five 0.813-0.825, above the max-patches-12 mean); gold stays inside the spread. Queued Q35p20_soup5
+  (average of the five val-chosen checkpoints, scored at max-patches 20) to compare with Q35p20_soup3 (0.864 / 0.835)
+  and the released Q35_soup3 (0.858 / 0.822).

@@ -498,3 +498,7 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 ## Q35e10_seed42 / _seed1 / _seed2 (2026-10-17, jobs 1609910–12, ~2 h 05 min each) — no gain
 - Qwen3.5-0.8B recipe, 10 epochs instead of 6, max-patches 12, epochs 5–10 scored. Val-chosen: seed42 ep10
   0.836 / 0.817, seed1 ep8 0.835 / 0.805, seed2 ep8 0.817 / 0.806; mean 0.829 / 0.809 vs 6 epochs 0.835 / 0.806.
+
+## Q35p20_seed3 / _seed4 (2026-10-17, jobs 1610283–84, ~1 h 26 min each) — validation gain only
+- Qwen3.5-0.8B recipe at max-patches 20 (train and score), seeds 3 and 4. Val-chosen: seed3 ep5 0.844 / 0.825,
+  seed4 ep5 0.853 / 0.813. Five seeds (42, 1, 2, 3, 4): mean 0.842 / 0.820 vs max-patches 12 0.835 / 0.806.
