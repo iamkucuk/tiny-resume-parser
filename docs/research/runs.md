@@ -510,3 +510,8 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 ## Q35_seed3 / _seed4 (2026-10-17, jobs 1610337–38, ~1 h 19 min each) — baseline seeds
 - Released Qwen3.5-0.8B recipe (max-patches 12), seeds 3 and 4. Val-chosen: seed3 ep4 0.839 / 0.815, seed4 ep6
   0.837 / 0.806. Five seeds (42, 1, 2, 3, 4): mean 0.836 / 0.808.
+
+## OV2_seed42 / _seed1 / _seed2 (2026-10-17, jobs 1610433–35, ~1 h 18 min each) — not adopted
+- Released Qwen3.5-0.8B recipe with --model ATH-MaaS/OvisOCR2 (853M, OCR post-trained Qwen3.5-0.8B), max-patches 12.
+  Val-chosen: seed42 ep5 0.835 / 0.810, seed1 ep5 0.835 / 0.786, seed2 ep4 0.805 / 0.791; mean 0.825 / 0.796 vs
+  Qwen3.5-0.8B five seeds 0.836 / 0.808.

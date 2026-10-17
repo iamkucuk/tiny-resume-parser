@@ -1619,3 +1619,8 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   (0.830 / 0.817 vs 0.835 / 0.806), and Xiaomi-OCR-0 failed (~0.5).
 - Run: OV2_seed42/1/2 (1610433-35), released Qwen3.5 recipe with --model ATH-MaaS/OvisOCR2, max-patches 12.
   Reference: Qwen3.5-0.8B five seeds 0.836 / 0.808.
+- 11:51 OV2_seed42/1/2 done. Val-chosen: seed42 ep5 0.835 / 0.810, seed1 ep5 0.835 / 0.786, seed2 ep4 0.805 /
+  0.791; mean 0.825 / 0.796 vs Qwen3.5-0.8B five seeds 0.836 / 0.808 (-0.011 / -0.012): no gain, if anything lower.
+  Not adopted. Third OCR post-training of the same architecture that does not beat the plain base (LightOnOCR-3 tie,
+  Xiaomi-OCR-0 ~0.5): page-to-markdown OCR training does not transfer to this French CV-to-JSON task at this data size.
+  The base-model axis inside 1B is exhausted for the approved candidates.
