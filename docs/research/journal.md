@@ -1598,3 +1598,8 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - 07:17 Q35p20_soup5 (1610317, average of the five max-patches-20 val-chosen checkpoints): dev 0.860 / 0.832 vs
   Q35p20_soup3 0.864 / 0.835 and released Q35_soup3 0.858 / 0.822. Five members add nothing over three; against the
   release +0.002 / +0.010, gold inside the spread: not a release change. Max-patches 20 stays a validation-only gain.
+- 08:52 Q35p30_seed42/1/2 (max-patches 30, 1610318-20, ~1 h 43 min each) done. Val-chosen: seed42 ep6 0.846 /
+  0.811, seed1 ep5 0.855 / 0.816, seed2 ep6 0.835 / 0.816; mean 0.845 / 0.814 vs max-patches 20 (five seeds) 0.842 /
+  0.820 (+0.003 / -0.006): no gain; more image detail stops helping at max-patches 20. Queued Q35_seed3/4 (released
+  recipe, max-patches 12, seeds 3 and 4) so the max-patches 12 vs 20 comparison is five seeds against five; the
+  12-vs-20 validation gap (+0.014) is at the edge of the spread with only three max-patches-12 seeds.
