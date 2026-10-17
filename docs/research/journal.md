@@ -1577,3 +1577,6 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
 - 03:41 Q35p20_soup3 (1610212): dev 0.864 / 0.835 at max-patches 20 vs released Q35_soup3 0.858 / 0.822 (+0.006 /
   +0.013). Both positive, but gold is inside the spread and validation at its edge: not a release change by the
   rule. It would also cost CPU time (up to ~1.7x the image tokens). Kept for a later combination (e.g. with 10 epochs).
+- 03:50 Queue was empty behind the three 10-epoch runs. Queued Q35e10p20_seed42 (10 epochs + max-patches 20,
+  a combined candidate, labelled as such) with afterany on Q35e10_seed42: disk is 1,885 GiB of 2,000 and each 10-epoch
+  job holds up to ~32 GB of checkpoints (3.2 GB each) until training ends, so a fourth concurrent job could hit the quota.
