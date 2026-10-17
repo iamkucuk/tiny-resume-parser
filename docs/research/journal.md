@@ -1603,3 +1603,9 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   0.820 (+0.003 / -0.006): no gain; more image detail stops helping at max-patches 20. Queued Q35_seed3/4 (released
   recipe, max-patches 12, seeds 3 and 4) so the max-patches 12 vs 20 comparison is five seeds against five; the
   12-vs-20 validation gap (+0.014) is at the edge of the spread with only three max-patches-12 seeds.
+- 10:14 Q35_seed3/4 (released recipe, max-patches 12) done. Val-chosen: seed3 ep4 0.839 / 0.815, seed4 ep6
+  0.837 / 0.806. Five seeds each: max-patches 12 0.836 / 0.808 (val range 0.797-0.821), max-patches 20 0.842 / 0.820
+  (val range 0.813-0.825): +0.006 / +0.012. Gold inside the spread, validation at its edge: still a validation-only
+  gain, not adopted by the rule; it would also cost up to ~1.7x the image tokens on CPU. Max-patches stays 12.
+  Qwen3.5 track settled on lr, epochs and image detail; the next step needs a new idea (OvisOCR2 base awaits download
+  approval). No job queued until then.
