@@ -1,4 +1,4 @@
-"""Interactive page explorer for the quickstart notebook: read one CV page with a trained model and see why it scores
+"""Interactive page explorer for the example notebooks: read one CV page with a trained model and see why it scores
 what it scores.
 
     from explorer import Explorer

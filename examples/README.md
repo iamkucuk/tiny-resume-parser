@@ -1,6 +1,7 @@
 # Example pages
 
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/quickstart.ipynb)
+[![Try the models in Colab](https://img.shields.io/badge/Colab-try%20the%20models-F9AB00?logo=googlecolab)](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/try_resuvl.ipynb)
+[![Train on eight pages in Colab](https://img.shields.io/badge/Colab-train%20on%208%20pages-F9AB00?logo=googlecolab)](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/train_on_eight_pages.ipynb)
 
 Eight labelled CV pages for trying the code without the full dataset. The files use the same format as the full
 label files ([docs/training.md](../docs/training.md#data)), so every command runs on them when
@@ -12,9 +13,9 @@ label files ([docs/training.md](../docs/training.md#data)), so every command run
 
 The labels were written by the teacher model and were not reviewed by hand, so they contain the teacher's errors.
 Six pages are enough to see the whole pipeline run and the model memorise them (field F1 0.78 and 1.00 on those pages in
-two test runs), but not to read new CVs (0.16 and 0.01 on the two unseen pages): [quickstart.ipynb](quickstart.ipynb) shows both.
-[quickstart_executed.ipynb](quickstart_executed.ipynb) is the same notebook after a full run on an Apple M2 Max, with
-all outputs saved ([open it in Colab](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/quickstart_executed.ipynb)); its widgets show only after running it again.
+two test runs), but not to read new CVs (0.16 and 0.01 on the two unseen pages): [train_on_eight_pages.ipynb](train_on_eight_pages.ipynb) shows both.
+[train_on_eight_pages_executed.ipynb](train_on_eight_pages_executed.ipynb) is the same notebook after a full run on an Apple M2 Max, with
+all outputs saved ([open it in Colab](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/train_on_eight_pages_executed.ipynb)); its widgets show only after running it again.
 
 ## Quickstart
 

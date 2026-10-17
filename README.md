@@ -6,7 +6,8 @@
   <a href="LICENSE.md"><img alt="License: PolyForm Noncommercial" src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-blue"></a>
   <img alt="Python 3.11+" src="https://img.shields.io/badge/python-3.11%2B-blue">
   <a href="https://github.com/iamkucuk/tiny-resume-parser/actions/workflows/tests.yml"><img alt="tests" src="https://github.com/iamkucuk/tiny-resume-parser/actions/workflows/tests.yml/badge.svg"></a>
-  <a href="https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/quickstart.ipynb"><img alt="Open In Colab" src="https://colab.research.google.com/assets/colab-badge.svg"></a>
+  <a href="https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/try_resuvl.ipynb"><img alt="Try the models in Colab" src="https://img.shields.io/badge/Colab-try%20the%20models-F9AB00?logo=googlecolab"></a>
+  <a href="https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/train_on_eight_pages.ipynb"><img alt="Train on eight pages in Colab" src="https://img.shields.io/badge/Colab-train%20on%208%20pages-F9AB00?logo=googlecolab"></a>
 </p>
 
 <p align="center"><img src="docs/assets/example.png" alt="Left: a two-column designer CV page with a photo. Right: the JSON ResuVL-L (0.87B) wrote for it, with name, contact details, work, education and skills in separate fields." width="900"></p>
@@ -80,11 +81,13 @@ tiny-resume-parser parse cv.pdf --model furkankucuk/ResuVL-L
 PDF pages are rendered at 120 dpi; PNG and JPEG files are read as they are. `--model` also
 takes a model trained with [docs/training.md](docs/training.md).
 
-To see training and scoring end to end without the full dataset, [examples/quickstart.ipynb](examples/quickstart.ipynb)
-([open in Colab](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/quickstart.ipynb))
-trains a ResuVL-S model on the eight pages in [examples/](examples) on Colab or a local machine.
-A copy with all outputs from a finished run is
-[examples/quickstart_executed.ipynb](examples/quickstart_executed.ipynb). [docs/code-tour.md](docs/code-tour.md) walks through the code in the order a page travels.
+Two notebooks run on Colab or a local machine. [examples/try_resuvl.ipynb](examples/try_resuvl.ipynb)
+([open in Colab](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/try_resuvl.ipynb)) reads an example page or your own CV with a released model and shows field
+by field what it got right, in about 5 minutes without a GPU.
+[examples/train_on_eight_pages.ipynb](examples/train_on_eight_pages.ipynb)
+([open in Colab](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/train_on_eight_pages.ipynb)) trains a ResuVL-S model on the eight pages in
+[examples/](examples) to show every training step; a copy with all outputs is
+[examples/train_on_eight_pages_executed.ipynb](examples/train_on_eight_pages_executed.ipynb). [docs/code-tour.md](docs/code-tour.md) walks through the code in the order a page travels.
 
 ## How it works
 
