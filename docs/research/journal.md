@@ -1561,12 +1561,12 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   6x slower when the whole model is bf16. Language model + lm_head in bf16, vision encoder fp32: 10 val pages median
   58.5 s (wrapper) and 54.5 s (default path) vs 127.5 s, F1 0.811 vs 0.816 (827 vs 826 matched values), 10/10 valid.
   generate.py now does this on CPUs with bf16 instructions (cpu_has_bf16). Released as 0.2.1.
-- 02:20 Training-length control ZL10_seed42/1/2 (1609192–94; InternVL3-1B, real pages only, 10 epochs = 880 steps,
+- 02:04 Training-length control ZL10_seed42/1/2 (1609192–94; InternVL3-1B, real pages only, 10 epochs = 880 steps,
   ~1 h 35 min each). Val-chosen: seed42 ep10 0.724 / 0.732, seed1 ep8 0.725 / 0.721, seed2 ep9 0.700 / 0.717; mean
   0.716 / 0.723. vs SY1k (882 steps) 0.741 / 0.724: synthetic pages add +0.025 gold, +0.001 val at matched length.
   The SY1k gain was mostly training length; not adopted. SY3k (0.750 / 0.742, ~1,650 steps) has no matched control.
   docs/findings.md corrected. Q35lr2 seed1 ep4 0.835 / 0.798, seed2 ep6 0.843 / 0.798 so far (seed42 pending).
-- 02:35 Q35lr2_seed42/1/2 (lr 2e-5, 1609736/38/40) done. Val-chosen: seed42 ep6 0.841 / 0.802, seed1 ep4 0.835 / 0.798,
+- 02:05 Q35lr2_seed42/1/2 (lr 2e-5, 1609736/38/40) done. Val-chosen: seed42 ep6 0.841 / 0.802, seed1 ep4 0.835 / 0.798,
   seed2 ep6 0.843 / 0.798; mean 0.840 / 0.799 vs lr 1e-5 0.835 / 0.806 (+0.005 / -0.007): no gain, lr 1e-5 stays.
   Queued Q35e10_seed42/1/2 = Qwen3.5-0.8B, 10 epochs (ZL10 showed InternVL3-1B gains +0.005 / +0.016 from 6 -> 10
   epochs on real pages), min scored epoch 5.
