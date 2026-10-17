@@ -128,11 +128,13 @@ the 1B student learned from the teacher's output probabilities as well as from t
 2). Three runs gave 0.706 / 0.712 against 0.711 / 0.707. The student already fits its training pages closely, so
 softer targets on the same pages add little; distilling on pages the student has not seen remains untested.
 
-**Synthetic pages: a likely gain, not yet separated from training length.** 1,000 pages were rendered from training
-labels with new names and contact details, four layouts, nine fonts and nine colours, so their labels are exact.
-Added to the training pages, they gave 0.741 / 0.724 for InternVL3-1B (+0.030 / +0.017). The runs also took 882
-training steps instead of 528, and all three peaked at the last epoch, so part of the gain may come from longer
-training.
+**Synthetic pages: the gain was mostly longer training.** 1,000 pages were rendered from training labels with new
+names and contact details, four layouts, nine fonts and nine colours, so their labels are exact. Added to the training
+pages, they gave 0.741 / 0.724 for InternVL3-1B, against 0.711 / 0.707. Those runs also took 882 training steps
+instead of 528, so InternVL3-1B was trained on the real pages alone for the same number of steps (10 epochs): it
+reached 0.716 / 0.723. With training length matched, the synthetic pages add +0.025 on the gold pages and nothing on
+validation, so they were not adopted. 3,000 synthetic pages gave 0.750 / 0.742 after about 1,650 steps; no run on the
+real pages alone matches that length. For Qwen3.5-0.8B, 1,000 synthetic pages gave 0.843 / 0.812 against 0.835 / 0.806.
 
 ## Where the errors are
 
