@@ -23,7 +23,7 @@ GRANITE_ID = "ibm-granite/granite-docling-258M"  # also Idefics3; told apart fro
 QWEN35_ID = "Qwen/Qwen3.5-0.8B"  # also LightOnOCR-3-0.8B and Xiaomi-OCR-0: same processor and chat template
 MODEL_ID = INTERNVL_ID
 PROMPT = "Extract this CV page as JSON."
-MAX_PATCHES = 12  # InternVL3-1B recipe; SmolVLM uses 30 (configs/*.toml)
+MAX_PATCHES = 12  # ResuVL-L recipe; ResuVL-M uses 30 (configs/*.toml)
 # Tile cap each released recipe was trained with; inference must use the same value (configs/*.toml).
 TRAINED_PATCHES = {"InternVLProcessor": 12, "Idefics3Processor": 30, "GraniteDocling": 12, "Qwen3VLProcessor": 12}
 IDEFICS3_EDGE = {12: 2048, 20: 2560, 30: 3072, 48: 4096}  # tiles on an A4 page -> longest_edge in px

@@ -3,7 +3,7 @@
     python docs/assets/make_figures.py
 
 Numbers come from the research record (docs/research/journal.md, 2026-10-15 and 2026-10-16) and are written out below so a
-change is one edit here. The example figure uses docs/assets/example_page.jpg and ResuVL-L's (Qwen3.5-0.8B) answer
+change is one edit here. The example figure uses docs/assets/example_page.jpg and ResuVL-L's answer
 for that page (docs/assets/example_answer.json).
 """
 
@@ -21,13 +21,13 @@ ASSETS = Path(__file__).resolve().parent
 
 # Lenient and content field F1 on the 204 held-out test pages, raw answers, transformers 5.5.4 (slurm/test.slurm, 2026-10-16).
 RESULTS = [  # (student, parameters, lenient F1, content F1)
-    ("Qwen3.5-0.8B", "0.87B", 0.845, 0.916),
-    ("InternVL3-1B", "0.94B", 0.735, 0.840),
-    ("SmolVLM-500M", "0.51B", 0.681, 0.791),
-    ("granite-docling-258M", "0.26B", 0.652, 0.777),
+    ("ResuVL-L", "0.87B", 0.845, 0.916),
+    ("ResuVL-L v0.1", "0.94B", 0.735, 0.840),
+    ("ResuVL-M", "0.51B", 0.681, 0.791),
+    ("ResuVL-S", "0.26B", 0.652, 0.777),
 ]
 TEACHER = {"lenient": 0.912, "content": 0.967}  # a second GLM-5.3-Flash labelling run vs the 50 reviewed dev gold pages
-# Where the best InternVL model loses gold values (share of all gold values; journal 2026-10-15 ~12:50).
+# Where ResuVL-L v0.1 loses gold values (share of all gold values; journal 2026-10-15 ~12:50).
 LOST = [
     ("left out", 10.6),
     ("page not parsed", 6.7),
@@ -88,7 +88,7 @@ def lost_chart(theme: str) -> None:
         ax.text(v + 0.2, y, f"{v:.1f} %", va="center", fontsize=10, color=t["text"])
     ax.set_xlim(0, 13)
     ax.set_title(
-        "Gold values the earlier InternVL average loses (share of all gold values)",
+        "Gold values ResuVL-L v0.1 loses (share of all gold values)",
         loc="left",
         fontsize=11,
         color=t["text"],

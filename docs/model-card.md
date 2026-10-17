@@ -1,13 +1,11 @@
 # Model card
 
 The three models are released on Hugging Face as [ResuVL-L](https://huggingface.co/furkankucuk/ResuVL-L), [ResuVL-M](https://huggingface.co/furkankucuk/ResuVL-M) and
-[ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S). From version 0.2.0, ResuVL-L is built on Qwen3.5-0.8B; the
-earlier ResuVL-L, built on InternVL3-1B (0.94B, 0.735 on the test pages), stays available as revision `v0.1.0` of the
-same repository. ResuVL-L needs transformers 5.2 or later.
+[ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S). ResuVL-L v0.1 (0.94B, 0.735 on the test pages), the
+ResuVL-L of version 0.1.0, stays available as revision `v0.1.0` of the ResuVL-L repository. ResuVL-L needs transformers 5.2 or later.
 
 | | ResuVL-L | ResuVL-M | ResuVL-S |
 |---|---|---|---|
-| Base model | Qwen/Qwen3.5-0.8B | HuggingFaceTB/SmolVLM-500M-Instruct | ibm-granite/granite-docling-258M |
 | Parameters | 0.87B | 0.51B | 0.26B |
 | Training | full fine-tune, average of 3 runs | full fine-tune, average of 3 runs | full fine-tune, average of 4 runs |
 | Lenient F1, 204 test pages | 0.845 | 0.681 | 0.652 |
@@ -40,9 +38,9 @@ hand starting from those labels, and the review changed fewer than 1 % of values
 reviewed model labels, not with labels written independently by people. Run a second time, the labelling model scores
 0.912 against the reviewed labels, which limits what models trained on its labels can reach.
 
-**English-trained base models, a small and narrow sample of French.** The base models learned to read mostly on
-English text. SmolVLM-500M and granite-docling-258M list English as their only language; InternVL3-1B is listed as
-multilingual and Qwen3.5-0.8B as covering 201 languages and dialects, but neither model card gives a share per
+**English-trained base models, a small and narrow sample of French.** The base models that ResuVL was fine-tuned
+from learned to read mostly on English text. Those of ResuVL-S and ResuVL-M list English as their only language;
+those of ResuVL-L and ResuVL-L v0.1 are listed as multilingual, but neither model card gives a share per
 language, and French is likely a small part of their training data next to English. The training set here gives about 330,000 words of French from 1,116 CV pages, and it is narrow
 French: names, job titles, school names, dates and short skill lists, with half of all values one word long and few
 full sentences. Fine-tuning therefore asks models that read English well to learn to read French from a small and

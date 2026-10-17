@@ -1,7 +1,7 @@
 """Fine-tune a student model on teacher-labelled CV pages: page image -> JSON.
 
-    python -m tiny_resume_parser.train --config configs/internvl3-1b.toml --out runs/NAME   # adopted recipe
-    python -m tiny_resume_parser.train --config configs/granite-docling-258m.toml --seed 1 --out runs/NAME
+    python -m tiny_resume_parser.train --config configs/resuvl-l.toml --out runs/NAME
+    python -m tiny_resume_parser.train --config configs/resuvl-s.toml --seed 1 --out runs/NAME
     python -m tiny_resume_parser.train --limit 20 --epochs 1 --out runs/smoke                     # quick check
 
 Every weight is trained, the vision encoder included. Reads the training labels (data.LABELS or --train-file) minus
@@ -117,7 +117,7 @@ class Collator:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Defaults are the InternVL3-1B recipe; configs/*.toml set each model's recipe."""
+    """Defaults are the ResuVL-L v0.1 recipe; configs/*.toml set each model's recipe."""
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument(
         "--config", type=Path, help="TOML file of defaults (configs/*.toml); command-line flags override it"

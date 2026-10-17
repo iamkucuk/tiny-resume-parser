@@ -16,8 +16,8 @@ SLURM scripts for the reported runs. They contain no cluster-specific settings:
 
 ```bash
 sbatch -p gpu -A myaccount --gres=gpu:1 --cpus-per-task=16 --time=03:00:00 \
-  slurm/exp.slurm granite_s1 "--config configs/granite-docling-258m.toml --seed 1" "--max-patches 12"
+  slurm/exp.slurm resuvl_s_seed1 "--config configs/resuvl-s.toml --seed 1" "--max-patches 12"
 ```
 
-A full fine-tune of InternVL3-1B takes about 1 hour on one H100, including scoring, and saves up to 6 checkpoints of
+A full fine-tune of ResuVL-L v0.1 takes about 1 hour on one H100, including scoring, and saves up to 6 checkpoints of
 3.5 GB before all but one are deleted.

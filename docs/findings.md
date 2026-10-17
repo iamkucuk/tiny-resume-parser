@@ -9,16 +9,16 @@ that were not adopted is kept in the [`archive-2026-10-15`](https://github.com/i
 
 ## How the recipe developed
 
-**Getting a valid answer at all.** The first LoRA fine-tune of InternVL3-1B reached a low training loss, yet none
+**Getting a valid answer at all.** The first LoRA fine-tune for ResuVL-L v0.1 reached a low training loss, yet none
 of 10 answers was valid JSON: every answer repeated one entry of the label's `corrections` list until the
 2,500-token limit. That list recorded spelling fixes the labelling model had made, so its content was not visible
 on the page. Removing it from the target, together with token perturbation (on about one page in ten, one input
 token of the answer is replaced by a random token while the target stays correct; Nougat, arXiv 2308.13418),
 raised valid answers to 21 of 50. A later test with the final recipe turned token perturbation off over 3 seeds:
 0.716 / 0.711 against 0.706 / 0.708 with it, and no fewer loops (8 answers hit the token limit either way), so the
-loops ended because the `corrections` list was removed. The two smaller models gave the same answer. On
-granite-docling-258M, turning perturbation off gave 0.610 / 0.618 against 0.617 / 0.611 (3-seed means), and raising
-it to Nougat's strength (about 9 replaced tokens per page) gave 0.583 / 0.608. On SmolVLM-500M the stronger setting
+loops ended because the `corrections` list was removed. The two smaller models gave the same answer. For
+ResuVL-S, turning perturbation off gave 0.610 / 0.618 against 0.617 / 0.611 (3-seed means), and raising
+it to Nougat's strength (about 9 replaced tokens per page) gave 0.583 / 0.608. For ResuVL-M the stronger setting
 raised the 3-seed mean to 0.628 / 0.665 from 0.619 / 0.654, within the seed spread, and the average of those three
 models scored 0.674 / 0.658 against 0.644 / 0.676: higher on one set, lower on the other. The recipe keeps the light
 setting. The lesson that stayed: training loss did not show the
@@ -34,10 +34,10 @@ from 0.684 / 0.671 to 0.706 / 0.708. Each change alone helped only one of the tw
 
 **Weight averaging.** Averaging the weights of 10 fine-tuned models ("model soup", arXiv 2203.05482) gave
 0.732 / 0.724, +0.023 / +0.017 over the mean of the single models (0.709 / 0.707), at no extra inference cost. In an
-earlier set of runs, larger averages (13 to 19 models) did not score higher on validation. The released InternVL model
-averages 10 runs trained only on the licensed pages (ResuVL-L up to version 0.1.0).
+earlier set of runs, larger averages (13 to 19 models) did not score higher on validation. ResuVL-L v0.1
+averages 10 runs trained only on the licensed pages.
 
-**Answer repair.** On 1 of the 50 gold pages the InternVL average writes no valid JSON (broken answers come
+**Answer repair.** On 1 of the 50 gold pages ResuVL-L v0.1 writes no valid JSON (broken answers come
 from a loop, a bad escape or a missing comma). Repairing the answer after generation (fix escapes, keep the complete
 values before the break, drop repeated list items) raises gold from 0.732 to 0.739 and leaves validation unchanged. Development decisions compare unrepaired answers; the `parse` command returns repaired ones.
 
@@ -45,12 +45,12 @@ values before the break, drop repeated list items) raises gold from 0.732 to 0.7
 distinct pages matters. Adding 993 pages from a second dataset gave +0.011 / +0.013 over 6 seeds, which is within
 noise; its licence is unknown, so released weights do not use it.
 
-**The two smaller models.** The InternVL recipe did not transfer. SmolVLM-500M with it scored 0.370 / 0.460, and 10
+**The two smaller models.** The ResuVL-L v0.1 recipe did not transfer. ResuVL-M's base model with it scored 0.370 / 0.460, and 10
 of its 50 gold answers looped to the token limit. A 6× higher learning rate and 10 epochs gave 0.596 / 0.627; 30
 image tiles instead of 12 added +0.043 / +0.032 (20 tiles scored the same over 3 seeds and was only 4 % faster on
-CPU); averaging 3 seeds gave 0.644 / 0.676. granite-docling-258M needed
+CPU); averaging 3 seeds gave 0.644 / 0.676 (ResuVL-M). ResuVL-S needed
 an even higher learning rate (1e-4: +0.024 / +0.031 over 6e-5), did worse with more than 12 tiles, and its 4-seed
-average reached 0.660 / 0.649, +0.044 / +0.033 over a single model.
+average reached 0.660 / 0.649, +0.044 / +0.033 over a single model (ResuVL-S).
 
 ## What did not help
 
@@ -60,17 +60,17 @@ average reached 0.660 / 0.649, +0.044 / +0.033 over a single model.
 | Reinforcement learning (GRPO) with field F1 as the reward, 4 settings | 0.705–0.718 / 0.704–0.718, starting from 0.705 / 0.719 |
 | Generating one JSON key per call (29 calls per page) | at best 0.728 / 0.710 against 0.728 / 0.732 |
 | Decoding constrained to the schema | 0.694 against 0.693 and 5.4× slower; useful only to guarantee valid JSON |
-| Stopping loops at generation time (repetition penalty, banning repeated word sequences) | no gain on InternVL, lower on SmolVLM; the ban also broke normal JSON |
+| Stopping loops at generation time (repetition penalty, banning repeated word sequences) | no gain on ResuVL-L v0.1, lower on ResuVL-M; the ban also broke normal JSON |
 
 Smaller changes that did not help either: training on labels rewritten into a canonical form (−0.01), 24 image tiles
-for InternVL (−0.05 on gold), 2 pages per step (−0.02), other learning rates and epoch counts, NEFTune noise on text
+for ResuVL-L v0.1 (−0.05 on gold), 2 pages per step (−0.02), other learning rates and epoch counts, NEFTune noise on text
 embeddings, a 10× lower learning rate for the vision encoder, a first training stage on page transcripts, and a
 second model that checks and fixes the labels (it fixed 14 real errors on 30 pages and introduced about 8 new ones).
 Their numbers are in the [research log](research/journal.md).
 
 ## Why reinforcement learning did not help
 
-GRPO started from the fully fine-tuned InternVL model (0.705 / 0.719). For each training page it sampled 4 answers at
+GRPO started from a fully fine-tuned ResuVL-L v0.1 model (0.705 / 0.719). For each training page it sampled 4 answers at
 temperature 1 and rewarded each with its field F1 against the label, for about 350 steps of 4 pages. Four settings
 (learning rate 1e-6 and 3e-6, temperature 0.7, a KL penalty) all ended within the seed spread. The training logs, the
 answers before and after, and 8 new samples per page from the starting model show why
@@ -108,63 +108,44 @@ beat the greedy answer on 27 of 50, against 8 of 40 training pages) gave 0.708 /
 reward, against 0.705 / 0.719 for the starting model: again within the seed spread. Keeping only pages where a sample
 beats the greedy answer remains untested.
 
-## Base models and larger teachers
+## A newer base model: ResuVL-L
 
 A literature search in October 2026 ranked a newer base model inside the 1B limit first, ahead of more data and of
-transfer from a larger model. Five base models were trained with the InternVL3-1B recipe unchanged, three seeds each.
+transfer from a larger model. ResuVL-L was trained with the ResuVL-L v0.1 recipe unchanged, on a newer and smaller
+base model.
 
-**Qwen3.5-0.8B (0.87B) is the largest single gain.** Its three runs averaged 0.835 / 0.806 against 0.711 / 0.707 for
-InternVL3-1B, about six times the seed spread on both sets, and every epoch from the fourth on scored at least 0.826 on
-the gold pages. Averaging the three runs gave 0.858 / 0.822, and this average is the released ResuVL-L. It also scores
-above InternVL3-8B fine-tuned with LoRA adapters (0.780 / 0.786), although that comparison is uneven: the 8B model
-had three epochs of LoRA training, not a full fine-tune. Qwen3.5-0.8B has a newer and larger language model, and its model card
-describes training on image and text tokens together from early on; which of these causes the gain was not tested.
+**The new base model is the largest single gain.** Three runs averaged 0.835 / 0.806 against 0.711 / 0.707 for
+ResuVL-L v0.1, about six times the seed spread on both sets, and every epoch from the fourth on scored at least 0.826
+on the gold pages. Averaging the three runs gave 0.858 / 0.822, and this average is the released ResuVL-L. Its base
+model has a newer and larger language model, and its model card describes training on image and text tokens together
+from early on; which of these causes the gain was not tested.
 
-**InternVL3.5-1B (1.06B) did not help.** Its newer Qwen3-0.6B language model gave 0.712 / 0.708, the same as
-InternVL3-1B.
-
-**Versions of Qwen3.5-0.8B trained further for OCR did not help.** Three published models share its architecture
-and were post-trained to turn page images into text. LightOnOCR-3-0.8B gave 0.830 / 0.817 (an average of its three
-runs 0.847 / 0.829), a tie within the seed spread. OvisOCR2 gave 0.825 / 0.796, slightly lower. Xiaomi-OCR-0 gave
-0.539 / 0.478 in its first run: in 44 of 79 validation answers it wrote JSON punctuation in place of a word inside
-copied text, which breaks the answer, so its other runs were stopped. Training to transcribe pages into markdown does
-not carry over to reading French CVs into JSON with this amount of data.
-
-**The Qwen3.5-0.8B recipe was not improved by further tuning.** The InternVL3-1B settings were kept after three
-checks against the five-seed mean of 0.836 / 0.808. A 2× higher learning rate gave 0.840 / 0.799. Ten epochs instead of
+**The ResuVL-L recipe was not improved by further tuning.** The ResuVL-L v0.1 settings were kept after three checks
+against the five-seed mean of 0.836 / 0.808. A 2× higher learning rate gave 0.840 / 0.799. Ten epochs instead of
 six gave 0.829 / 0.809; validation stayed between 0.80 and 0.82 from the fifth to the tenth epoch, so the model has
 converged by the sixth. Larger page images help on validation only: up to 20 tiles gave 0.842 / 0.820 over five
 seeds, and 30 tiles gave 0.845 / 0.814. The validation gain is at the edge of the seed spread and the gold gain inside
 it, and the larger images cost up to 1.7 times the image tokens on a CPU, so 12 tiles were kept.
 
-**Distilling an 8B model did not help.** InternVL3-8B fine-tuned with LoRA (0.780 / 0.786) was used as a teacher:
-the 1B student learned from the teacher's output probabilities as well as from the labels (equal weight, temperature
-2). Three runs gave 0.706 / 0.712 against 0.711 / 0.707. The student already fits its training pages closely, so
-softer targets on the same pages add little; distilling on pages the student has not seen remains untested.
-
 **Synthetic pages: the gain was mostly longer training.** 1,000 pages were rendered from training labels with new
 names and contact details, four layouts, nine fonts and nine colours, so their labels are exact. Added to the training
-pages, they gave 0.741 / 0.724 for InternVL3-1B, against 0.711 / 0.707. Those runs also took 882 training steps
-instead of 528, so InternVL3-1B was trained on the real pages alone for the same number of steps (10 epochs): it
+pages, they gave 0.741 / 0.724 for ResuVL-L v0.1, against 0.711 / 0.707. Those runs also took 882 training steps
+instead of 528, so ResuVL-L v0.1 was trained on the real pages alone for the same number of steps (10 epochs): it
 reached 0.716 / 0.723. With training length matched, the synthetic pages add +0.025 on the gold pages and nothing on
 validation, so they were not adopted. 3,000 synthetic pages gave 0.750 / 0.742 after about 1,650 steps; no run on the
-real pages alone matches that length. For Qwen3.5-0.8B, 1,000 synthetic pages gave 0.843 / 0.812 against 0.835 / 0.806.
+real pages alone matches that length. For ResuVL-L, 1,000 synthetic pages gave 0.843 / 0.812 against 0.835 / 0.806.
 
 ## Where the errors are
 
-<img alt="Bar chart of gold values the earlier InternVL average loses: left out 10.6 %, page not parsed 6.7 %, joined with other text 4.6 %, written in part 3.1 %, misread characters 2.9 %, under another field 1.8 %." src="assets/lost-values.svg" width="700">
+<img alt="Bar chart of gold values ResuVL-L v0.1 loses: left out 10.6 %, page not parsed 6.7 %, joined with other text 4.6 %, written in part 3.1 %, misread characters 2.9 %, under another field 1.8 %." src="assets/lost-values.svg" width="700">
 
-The breakdown is of the earlier InternVL average on the 50 gold pages, before it was rebuilt without the pages
-of unknown licence; the rebuilt InternVL average scores within 0.01 of it. The largest loss is values the model does not write at all. Misread characters are one of the smallest. Part of the
+The breakdown is of an earlier ResuVL-L v0.1 average on the 50 gold pages, before it was rebuilt without the pages
+of unknown licence; the released ResuVL-L v0.1 scores within 0.01 of it. The largest loss is values the model does not write at all. Misread characters are one of the smallest. Part of the
 remaining gap is in the labels themselves. When the labelling model labels 50 reviewed pages a second time, it
 scores 0.912 field F1 against them; about half of the disagreements are the same text split into fields
 differently. Measured by content F1, which ignores how text is split, the second run reaches 0.967.
 
-Within one model family, size is a strong lever but is outside this project's limit of 1B parameters: with LoRA,
-InternVL3-2B reached 0.754 / 0.716 and InternVL3-8B 0.824 / 0.812, both with the epoch chosen on the gold pages,
-which overstates them. The newer base model above reaches more at 0.87B.
-
 ## Open questions
 
-- Why granite-docling loses accuracy above 12 tiles, and why 2 pages per step scored lower.
+- Why ResuVL-S loses accuracy above 12 tiles, and why 2 pages per step scored lower.
 - Merging the pages of one CV, and faster CPU inference through quantisation.

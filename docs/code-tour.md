@@ -26,12 +26,13 @@ The data folder is `data/` at the repository root, or the folder named by `TINY_
 
 ## 3. Four model families, one prompt: `models.py`
 
-[`models.py`](../src/tiny_resume_parser/models.py) holds what differs between Qwen3.5-0.8B, InternVL3-1B, SmolVLM-500M and
-granite-docling-258M: the text that opens the assistant's answer, the token that ends it, and how the page is cut
-into image tiles. InternVL takes a tile count; the two Idefics3 models take a longest edge in pixels, so
-`--max-patches 12` becomes 2,048 px; Qwen3.5 takes a pixel budget, 12 × 448 × 448. Qwen3.5's answer opens after an
-empty thinking block, which belongs to the header, so the model neither learns nor writes it. Each tile becomes 64 (Idefics3) or 256 (InternVL) image tokens, which is most of
-the input: the first example page, read by granite-docling at 12 tiles, is 832 image tokens and 489 answer
+[`models.py`](../src/tiny_resume_parser/models.py) holds what differs between the base models of ResuVL-L, ResuVL-L v0.1, ResuVL-M and
+ResuVL-S, keyed by the name of their processor class: the text that opens the assistant's answer, the token that ends
+it, and how the page is cut into image tiles. ResuVL-L v0.1 takes a tile count; ResuVL-M and ResuVL-S take a longest
+edge in pixels, so `--max-patches 12` becomes 2,048 px; ResuVL-L takes a pixel budget, 12 × 448 × 448. ResuVL-L's
+answer opens after an empty thinking block, which belongs to the header, so the model neither learns nor writes it.
+Each tile becomes 64 (ResuVL-M, ResuVL-S) or 256 (ResuVL-L v0.1) image tokens, which is most of
+the input: the first example page, read by ResuVL-S at 12 tiles, is 832 image tokens and 489 answer
 tokens.
 
 `STUDENT_SKIP` removes the `corrections` list from the student's target. The teacher fixes spelling mistakes and
@@ -91,7 +92,7 @@ file again and computes the other variants without running the model.
 
 Several fine-tunes of the same base model, trained with different seeds, are averaged weight by weight (a uniform
 model soup, arXiv 2203.05482). The soup paper's explanation is that fine-tunes from one starting point stay in one low-loss region,
-so their average lands inside it. Here the average of 10 InternVL models beat the mean single model by about 0.02 F1
+so their average lands inside it. Here the average of 10 ResuVL-L v0.1 models beat the mean single model by about 0.02 F1
 ([findings.md](findings.md)), at no extra inference cost.
 
 ## 8. Using a model: `parse.py` and `cli.py`

@@ -27,14 +27,14 @@ is handled the same way, whether it is a born-digital PDF, a scan or a photo.
 
 ## Results
 
-<img alt="Bar charts of lenient field F1 and content F1 on the 204 held-out test pages: Qwen3.5-0.8B 0.845 and 0.916, InternVL3-1B 0.735 and 0.840, SmolVLM-500M 0.681 and 0.791, granite-docling-258M 0.652 and 0.777; the dashed line is the labelling model run a second time on 50 reviewed development pages, 0.912 and 0.967." src="docs/assets/results.svg" width="900">
+<img alt="Bar charts of lenient field F1 and content F1 on the 204 held-out test pages: ResuVL-L 0.845 and 0.916, ResuVL-L v0.1 0.735 and 0.840, ResuVL-M 0.681 and 0.791, ResuVL-S 0.652 and 0.777; the dashed line is the labelling model run a second time on 50 reviewed development pages, 0.912 and 0.967." src="docs/assets/results.svg" width="900">
 
 | Model | Parameters | Field F1 | Content F1 | CPU seconds per page |
 |---|---|---|---|---|
-| ResuVL-L (Qwen3.5-0.8B) | 0.87B | **0.845** | **0.916** | 55 |
-| ResuVL-L v0.1 (InternVL3-1B) | 0.94B | 0.735 | 0.840 | 62 |
-| ResuVL-M (SmolVLM-500M) | 0.51B | 0.681 | 0.791 | 68 |
-| ResuVL-S (granite-docling-258M) | 0.26B | 0.652 | 0.777 | 30 |
+| ResuVL-L | 0.87B | **0.845** | **0.916** | 55 |
+| ResuVL-L v0.1 | 0.94B | 0.735 | 0.840 | 62 |
+| ResuVL-M | 0.51B | 0.681 | 0.791 | 68 |
+| ResuVL-S | 0.26B | 0.652 | 0.777 | 30 |
 
 Scores are on 204 human-reviewed test pages that were not used for any decision. Field F1 counts a value as correct
 when it matches the reviewed label apart from case, spacing and punctuation. Content F1 also accepts correct text
@@ -43,7 +43,7 @@ it scores 0.912 field F1 against them: its labels vary between runs, which limit
 reach. Definitions and development scores are in
 [docs/evaluation.md](docs/evaluation.md); CPU times are medians over 10 validation pages on an Apple M2 Max, in float32 except for ResuVL-L, whose language
 model runs in bf16 on CPUs that support it.
-The earlier ResuVL-L, built on InternVL3-1B, stays available as revision `v0.1.0` of the same repository.
+ResuVL-L v0.1 stays available as revision `v0.1.0` of the ResuVL-L repository.
 
 ## Limits of the data
 
@@ -54,10 +54,10 @@ hand starting from those labels, and the review changed fewer than 1 % of values
 reviewed model labels, not with labels written independently by people. Run a second time, the labelling model scores
 0.912 against the reviewed labels, which limits what models trained on its labels can reach.
 
-**English-trained base models, a small and narrow sample of French.** The base models learned to read mostly on
-English text. SmolVLM-500M and granite-docling-258M list English as their only language; InternVL3-1B is listed as
-multilingual and Qwen3.5-0.8B as covering 201 languages and dialects, but neither model card gives a share per
-language, and French is likely a small part of their training data next to English. The training set here gives about 330,000 words of French from 1,116 CV pages, and it is narrow
+**English-trained base models, a small and narrow sample of French.** The base models that ResuVL was fine-tuned
+from learned to read mostly on English text. Those of ResuVL-S and ResuVL-M list English as their only language;
+those of ResuVL-L and ResuVL-L v0.1 are listed as multilingual, but neither model card gives a share per language,
+and French is likely a small part of their training data next to English. The training set here gives about 330,000 words of French from 1,116 CV pages, and it is narrow
 French: names, job titles, school names, dates and short skill lists, with half of all values one word long and few
 full sentences. Fine-tuning therefore asks models that read English well to learn to read French from a small and
 narrow sample, which covers little of French spelling, accents and vocabulary, while long training on it may weaken
@@ -82,7 +82,7 @@ takes a model trained with [docs/training.md](docs/training.md).
 
 To see training and scoring end to end without the full dataset, [examples/quickstart.ipynb](examples/quickstart.ipynb)
 ([open in Colab](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/quickstart.ipynb))
-fine-tunes granite-docling-258M on the eight pages in [examples/](examples) on Colab or a local machine.
+trains a ResuVL-S model on the eight pages in [examples/](examples) on Colab or a local machine.
 A copy with all outputs from a finished run is
 [examples/quickstart_executed.ipynb](examples/quickstart_executed.ipynb). [docs/code-tour.md](docs/code-tour.md) walks through the code in the order a page travels.
 
@@ -105,11 +105,11 @@ one model of the same size. [docs/how-it-works.md](docs/how-it-works.md) describ
 
 ## Findings
 
-The largest gain came from the base model. With the training recipe unchanged, Qwen3.5-0.8B scores 0.845 on the test
-pages against 0.735 for InternVL3-1B, although it is smaller (0.87B against 0.94B), and above an 8B InternVL3 model
-fine-tuned with LoRA adapters on the development pages. Within one base model, three changes raised the score most:
+The largest gain came from the base model. ResuVL-L and ResuVL-L v0.1 use the same training recipe and differ only
+in the base model they were fine-tuned from: ResuVL-L scores 0.845 on the test pages against 0.735, although it is
+smaller (0.87B against 0.94B). Within one base model, three changes raised the score most:
 fine-tuning all weights instead of LoRA adapters, adding image noise while also training the vision encoder, and
-averaging the weights of several fine-tuned models. Distilling the 8B model's output probabilities into the 1B model did not help. Preference training
+averaging the weights of several fine-tuned models. Preference training
 (DPO), reinforcement learning on the F1 score (GRPO), generating one JSON key at a time and constrained decoding
 did not improve it; GRPO stayed within the seed spread both on training pages and on 974 pages the model had not seen. The largest group of remaining errors is values the model leaves out; misread characters are one of the smallest.
 [docs/findings.md](docs/findings.md) gives the measured effect of each change.
@@ -149,8 +149,8 @@ were deduplicated and grouped into CVs; the dataset's bounding boxes were not us
 ## Licence
 
 Code: [PolyForm Noncommercial 1.0.0](LICENSE.md), free for personal, research, educational and nonprofit use, not for
-commercial use. Weights and documentation, once released: CC BY-NC 4.0. Each base model
-([Qwen3.5-0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B),
-[InternVL3-1B-hf](https://huggingface.co/OpenGVLab/InternVL3-1B-hf),
+commercial use. Weights and documentation: CC BY-NC 4.0. ResuVL-S, ResuVL-M, ResuVL-L and ResuVL-L v0.1 are fine-tuned from
+[granite-docling-258M](https://huggingface.co/ibm-granite/granite-docling-258M),
 [SmolVLM-500M-Instruct](https://huggingface.co/HuggingFaceTB/SmolVLM-500M-Instruct),
-[granite-docling-258M](https://huggingface.co/ibm-granite/granite-docling-258M)) keeps its own licence.
+[Qwen3.5-0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B) and
+[InternVL3-1B-hf](https://huggingface.co/OpenGVLab/InternVL3-1B-hf), each of which keeps its own licence.

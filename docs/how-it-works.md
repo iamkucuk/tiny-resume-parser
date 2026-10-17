@@ -43,10 +43,10 @@ The page image is cut into tiles, each tile becomes a set of image tokens, and t
 
 | Model | Tiles on an A4 page | Image tokens |
 |---|---|---|
-| Qwen3.5-0.8B | no tiles: the whole page at up to 12 × 448 × 448 px, one token per 32 × 32 px | about 1,360 at 120 dpi |
-| InternVL3-1B | 12 tiles of 448 px, plus a thumbnail | about 3,300 |
-| SmolVLM-500M | 30 tiles of 512 px (longest edge 3,072 px), plus a thumbnail | about 2,000 |
-| granite-docling-258M | 12 tiles of 512 px (longest edge 2,048 px), plus a thumbnail | about 830 |
+| ResuVL-L | no tiles: the whole page at up to 12 × 448 × 448 px, one token per 32 × 32 px | about 1,360 at 120 dpi |
+| ResuVL-L v0.1 | 12 tiles of 448 px, plus a thumbnail | about 3,300 |
+| ResuVL-M | 30 tiles of 512 px (longest edge 3,072 px), plus a thumbnail | about 2,000 |
+| ResuVL-S | 12 tiles of 512 px (longest edge 2,048 px), plus a thumbnail | about 830 |
 
 The target is the record as compact JSON with empty fields left out, about 700 tokens on a typical page.
 
