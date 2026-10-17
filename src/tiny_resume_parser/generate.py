@@ -86,8 +86,12 @@ def generate_pages(
     images: list[Image.Image],
     max_patches: int = MAX_PATCHES,
     max_new_tokens: int = 3000,
+    streamer=None,
 ) -> list[tuple[str, int]]:
-    """Whole-page answers for a batch of page images: [(answer text, tokens generated)]."""
+    """Whole-page answers for a batch of page images: [(answer text, tokens generated)].
+
+    streamer: an optional transformers streamer (e.g. TextIteratorStreamer) that receives the tokens as they are made.
+    """
     inputs = processor(
         text=[prompt_text(processor)] * len(images),
         images=images,
@@ -102,6 +106,7 @@ def generate_pages(
             do_sample=False,
             use_cache=True,
             pad_token_id=processor.tokenizer.pad_token_id,
+            streamer=streamer,
         )
     pad = processor.tokenizer.pad_token_id
     return [
