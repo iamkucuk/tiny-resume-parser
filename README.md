@@ -89,7 +89,7 @@ by field what it got right, in about 5 minutes without a GPU.
 [examples/](examples) to show every training step; a copy with all outputs is
 [examples/train_on_eight_pages_executed.ipynb](examples/train_on_eight_pages_executed.ipynb). [docs/code-tour.md](docs/code-tour.md) walks through the code in the order a page travels.
 
-## How it works
+## Training pipeline
 
 ```mermaid
 flowchart LR
@@ -104,7 +104,9 @@ flowchart LR
 
 A large model (GLM-5.3-Flash) labels each page once. Each small model is then fully fine-tuned to write the same
 JSON from the page image alone, several times with different seeds, and the fine-tuned weights are averaged into
-one model of the same size. [docs/how-it-works.md](docs/how-it-works.md) describes each step.
+one model of the same size. [docs/how-it-works.md](docs/how-it-works.md) describes each step. To read a CV, the
+released model receives only the page image and writes the JSON in one pass; no large model and no PDF text layer
+are used ([reading a CV](docs/how-it-works.md#reading-a-cv)).
 
 ## Findings
 
