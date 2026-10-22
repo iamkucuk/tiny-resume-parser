@@ -1645,3 +1645,4 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   A Markdown -> JSON second step can only lose from Nemotron's 0.920, so the pipeline is unlikely to beat ResuVL-L;
   it would also be 0.63B + a text model, over the 1B limit as a product. Open: whether to build the pipeline anyway as
   the outside baseline (needs Nemotron on the 1,393 training pages, ~80 min, plus a fine-tuned text model).
+- 16:52 User chose to stop here: no pipeline baseline. Model download and NP_test deleted on TRUBA; NP_dev outputs kept (the record).
