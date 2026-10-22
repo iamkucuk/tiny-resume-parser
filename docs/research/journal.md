@@ -1624,3 +1624,24 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   Not adopted. Third OCR post-training of the same architecture that does not beat the plain base (LightOnOCR-3 tie,
   Xiaomi-OCR-0 ~0.5): page-to-markdown OCR training does not transfer to this French CV-to-JSON task at this data size.
   The base-model axis inside 1B is exhausted for the approved candidates.
+
+## 2026-10-22 16:45 — Nemotron 3.5 Parse as an outside page reader (user approved the download)
+- Model: nvidia/Nemotron-3.5-Parse (630,800,496 parameters, OpenMDW-1.1, released 2026-10-17): C-RADIOv4 encoder +
+  10-layer mBART decoder, page -> Markdown with layout classes and boxes, fixed task tokens, no JSON. Question: does a
+  dedicated page reader read our CV pages better than ResuVL-L? If yes, "page reader -> text model -> JSON" is the
+  outside baseline a reviewer would ask for (the persona review named the missing outside comparison as the main gap).
+- Measure (experiments/nemotron_parse.py coverage): share of label text found anywhere in the output, field ignored.
+  Values (lenient, spaces ignored) and words (multiset). Fields the labeller rewrites (ISO dates, hasPhoto, type,
+  kind) left out. Remaining bias toward ResuVL-L: label spelling fixes and values read from graphics (language dots,
+  icon-only network names) count as misses for Nemotron Parse, and ResuVL-L learnt them.
+- Run: NP_dev (1623824, H100, single pass, model card's default prompt, bf16, transformers 5.5.4 from tf5_pkgs; no
+  install needed). 129 pages in 8 min, median 3.4 s/page, longest 2,036 tokens.
+- Result, gold / val: values 0.920 / 0.914 (ResuVL-L 0.937 / 0.914); words 0.914 / 0.935 (ResuVL-L 0.962 / 0.949).
+  Per page (words): Nemotron Parse better by > 0.02 on 21 pages, worse on 56. Worst page (CV-Arwa-DOUIRI p2, 0.24 vs
+  1.00): it read one table and ended the output. The model card's ParseBench number uses three passes with region
+  union; a single pass was run here, so its coverage may be somewhat understated.
+- Conclusion: the dedicated reader does not read more of the page text than ResuVL-L. ResuVL-L's field recall on gold
+  (0.856) is below its own coverage (0.937): its loss is in field placement, not reading, as the error breakdown said.
+  A Markdown -> JSON second step can only lose from Nemotron's 0.920, so the pipeline is unlikely to beat ResuVL-L;
+  it would also be 0.63B + a text model, over the 1B limit as a product. Open: whether to build the pipeline anyway as
+  the outside baseline (needs Nemotron on the 1,393 training pages, ~80 min, plus a fine-tuned text model).

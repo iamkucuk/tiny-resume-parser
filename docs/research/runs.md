@@ -515,3 +515,8 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 - Released Qwen3.5-0.8B recipe with --model ATH-MaaS/OvisOCR2 (853M, OCR post-trained Qwen3.5-0.8B), max-patches 12.
   Val-chosen: seed42 ep5 0.835 / 0.810, seed1 ep5 0.835 / 0.786, seed2 ep4 0.805 / 0.791; mean 0.825 / 0.796 vs
   Qwen3.5-0.8B five seeds 0.836 / 0.808.
+
+## NP_dev (2026-10-22, job 1623824, 8 min) — outside page reader, no training
+- nvidia/Nemotron-3.5-Parse zero-shot on gold 1-50 + validation (129 pages), single pass, default prompt.
+  Label text found anywhere in the output, gold / val: values 0.920 / 0.914, words 0.914 / 0.935; released ResuVL-L
+  0.937 / 0.914 and 0.962 / 0.949. Command: experiments/nemotron_parse.py read, then coverage.
