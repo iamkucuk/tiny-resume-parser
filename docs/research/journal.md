@@ -6,15 +6,19 @@ difference in letters or digits ("09.25" vs "09.20", "Tunisie" vs "Tunasie") is 
 Each entry: hypothesis → why → what was run → what came out → what went right / wrong → next hypothesis.
 Short per-run summaries also go to `DEVLOG.md`; full result tables live here.
 
-## Tracks (kept current; read this first) — updated 2026-10-14 07:40
-Two student models are tracked separately. Scores of one are never compared with, or averaged into, the other.
-| track | base model | run-name prefix | best so far (lenient, gold / val) | reference to beat |
+## Tracks (kept current; read this first) — updated 2026-11-05 20:15
+Three student tracks are kept separately. Scores of one are never compared with, or averaged into, another.
+Main track = the model released as ResuVL-L: base Qwen3.5-0.8B since 2026-10-16 (InternVL3-1B before; its last
+average is ResuVL-L v0.1).
+| track | base model | run-name prefix | best so far (lenient, gold / val) | reference to beat / state |
 |---|---|---|---|---|
-| InternVL (main) | OpenGVLab/InternVL3-1B-hf, 0.94 B | Z*, ZH*, ZK*, S_soup* | S_soup10_vision 0.728 / 0.732 (val-chosen average) | default recipe + extra pages (ZK), 6-seed mean 0.716 / 0.721 (gain below 0.02) (old recipe 9-seed mean 0.705 / 0.708) |
-| SmolVLM (second) | HuggingFaceTB/SmolVLM-500M-Instruct, 0.51 B | SV_* (averages: SV_soup*) | SV_soup3_tiles30 (average of 3 30-tile seeds) 0.644 / 0.676; 3-seed mean 0.619 / 0.654 | 30 tiles beat 12 by +0.043 / +0.032 on 2-seed means; 20 tiles = 30; 48 no gain; key-by-key run scoring |
-| granite-docling (third) | ibm-granite/granite-docling-258M, 0.26 B | GD_* | GD_soup4_lr1e-4 (average of 4 lr 1e-4 seeds) 0.660 / 0.649; single-seed mean 0.616 / 0.616 | 4-seed average +0.044 / +0.033 over the seed mean; 30/48 tiles lower; key-by-key run queued |
-- Safeguards in code: evaluate.py picks the processor from the checkpoint's config (internvl / idefics3); soup.py stops
-  if tensor names differ, so a mixed average cannot be built; SmolVLM accepts only --max-patches 12.
+| main, Qwen3.5 (ResuVL-L) | Qwen/Qwen3.5-0.8B, 0.87 B | Q35* (averages: Q35*_soup*) | Q35_soup3 0.858 / 0.822 (released; test 0.845 bf16); 5-seed mean 0.836 / 0.808 | lr 2e-5, 10 epochs, max-patches 30, 1,000 synthetic pages: no gain; max-patches 20 gains on val only (Q35p20_soup3 0.864 / 0.835, not adopted); OCR-trained bases LightOnOCR-3, OvisOCR2, Xiaomi-OCR-0: no gain. Base-model axis under 1B exhausted; nothing queued since 2026-10-22 |
+| main before 2026-10-16, InternVL (ResuVL-L v0.1) | OpenGVLab/InternVL3-1B-hf, 0.94 B | Z*, ZR*, S_soup* | S_soup10_clean 0.732 / 0.724 (released as v0.1; test 0.735) | replaced by Qwen3.5 (+0.12 / +0.10 on single-seed means); not continued |
+| SmolVLM (ResuVL-M) | HuggingFaceTB/SmolVLM-500M-Instruct, 0.51 B | SV_* (averages: SV_soup*) | SV_soup3_tiles30 0.644 / 0.676 (released; test 0.681 under transformers 5.5.4); 3-seed mean 0.619 / 0.654 | perturbation 0.9 (3-seed mean 0.628 / 0.665, average 0.674 / 0.658), 5-seed average 0.657 / 0.673, 993 extra pages, NEFTune, key-by-key: none adopted |
+| granite-docling (ResuVL-S) | ibm-granite/granite-docling-258M, 0.26 B | GD_* | GD_soup4_lr1e-4 0.660 / 0.649 (released; test 0.652 under transformers 5.5.4); single-seed mean 0.616 / 0.616 | perturbation off or 0.9, NEFTune, lower vision-encoder lr, 30/48 tiles, key-by-key: none adopted |
+- Safeguards in code: models.load_processor picks the base processor from the checkpoint's config (internvl /
+  qwen3_5 / idefics3 by vocabulary size); soup.py stops if tensor names differ, so a mixed average cannot be built;
+  SmolVLM and granite-docling accept only --max-patches 12, 20, 30 or 48.
 
 ## Protocol (fixed before any new run)
 - **Dev set (used for every decision):** gold pages 1–50 (`labels_gold_v6_verified.jsonl`, reviewed, CVs never trained
