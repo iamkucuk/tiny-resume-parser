@@ -49,6 +49,31 @@ class DistillTrainer(Trainer):
         return (loss, out) if return_outputs else loss
 
 
+class MTPTrainer(Trainer):
+    """cross-entropy + w * the MTP head's cross-entropy on token i+2 (mtp.py); logs the head's loss as mtp_loss."""
+
+    def __init__(self, *a, mtp_weight=0.3, capture=None, **kw):
+        super().__init__(*a, **kw)
+        self.mtp_weight, self.capture = mtp_weight, capture
+        self._mtp_sum, self._mtp_n = 0.0, 0
+
+    def compute_loss(self, model, inputs, return_outputs=False, **kw):
+        from .mtp import mtp_loss
+
+        out = model(**inputs)
+        m = self.accelerator.unwrap_model(model)
+        aux = mtp_loss(m.mtp, m.lm_head, self.capture.data, inputs["labels"])
+        self._mtp_sum, self._mtp_n = self._mtp_sum + float(aux), self._mtp_n + 1
+        loss = out.loss + self.mtp_weight * aux
+        return (loss, out) if return_outputs else loss
+
+    def log(self, logs, *a, **kw):
+        if self._mtp_n and "loss" in logs:
+            logs["mtp_loss"] = round(self._mtp_sum / self._mtp_n, 4)
+            self._mtp_sum, self._mtp_n = 0.0, 0
+        super().log(logs, *a, **kw)
+
+
 def augment_page(im: Image.Image) -> Image.Image:
     """Photometric/geometric noise that keeps every character readable, so the label stays true:
     lower resolution (resize down and back), small rotation, JPEG artefacts, contrast/brightness, slight blur."""
@@ -143,6 +168,12 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--teacher", help="fine-tuned larger model with the same tokenizer: distil its logits")
     ap.add_argument("--kd-weight", type=float, default=0.5, help="weight of the distillation term (--teacher)")
     ap.add_argument("--kd-temp", type=float, default=2.0, help="softmax temperature of the distillation term")
+    ap.add_argument(
+        "--mtp-weight",
+        type=float,
+        default=0.0,
+        help="Qwen3.5 only: weight of the MTP head's loss on token i+2 (mtp.py; 0 = off); the head is saved as mtp.*",
+    )
     ap.add_argument("--no-grad-ckpt", action="store_true", help="no gradient checkpointing: faster, more GPU memory")
     ap.add_argument("--save-every-epoch", action="store_true", help="save out/checkpoint-<step> after every epoch")
     ap.add_argument("--workers", type=int, default=0, help="DataLoader worker processes")
@@ -213,6 +244,18 @@ def main(argv: list[str] | None = None) -> int:
         model.enable_input_require_grads()
         print(f"full fine-tune: {sum(p.numel() for p in model.parameters()) / 1e6:.1f} M parameters, bf16 {bf16}")
 
+    extra = {}
+    if args.mtp_weight:
+        from .mtp import Capture, MTPHead, pretrained_state
+
+        if args.teacher or args.lora or model.config.model_type != "qwen3_5":
+            raise SystemExit("--mtp-weight: Qwen3.5 full fine-tune only, without --teacher")
+        model.mtp = MTPHead(model.config.text_config)
+        model.mtp.load_state_dict(pretrained_state(args.model))
+        model.mtp.float()
+        extra = dict(mtp_weight=args.mtp_weight, capture=Capture(model))
+        print(f"MTP head from {args.model}, loss weight {args.mtp_weight}")
+
     kd = {}
     if args.teacher:
         teacher = AutoModelForImageTextToText.from_pretrained(args.teacher, dtype=torch.bfloat16).eval()
@@ -224,8 +267,9 @@ def main(argv: list[str] | None = None) -> int:
         kd["kd_temp"] = args.kd_temp
         print(f"distilling from {args.teacher}: weight {args.kd_weight}, temperature {args.kd_temp}")
 
-    trainer = (DistillTrainer if kd else Trainer)(
+    trainer = (DistillTrainer if kd else MTPTrainer if extra else Trainer)(
         **kd,
+        **extra,
         model=model,
         args=TrainingArguments(
             output_dir=str(args.out),

@@ -1650,3 +1650,54 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   it would also be 0.63B + a text model, over the 1B limit as a product. Open: whether to build the pipeline anyway as
   the outside baseline (needs Nemotron on the 1,393 training pages, ~80 min, plus a fine-tuned text model).
 - 16:52 User chose to stop here: no pipeline baseline. Model download and NP_test deleted on TRUBA; NP_dev outputs kept (the record).
+
+## 2026-11-05 20:30 — Two new lines: Qwen3.5's MTP head (speed, then F1) and label voting (F1)
+- User asked whether to try a multi-token prediction (MTP) head, then chose to try it and label voting both
+  ("an incremental research and learning project"). Literature (2026-11-05 search, plus D_methods.md of 2026-10-16):
+  MTP as an extra loss gave no significant gain when fine-tuning Llama 2 and was worse than next-token training at
+  small sizes in pretraining (Gloeckle et al. 2024, arXiv 2404.19737); MuToR (arXiv 2505.10518) says MTP gains have not
+  carried over to fine-tuning. As a drafter it is a speed tool: copied Qwen3.5 base heads are used on fine-tuned
+  models (a 9B model card reports 74-76 % acceptance with the base head unchanged). Expectation stated before running:
+  no F1 gain from the loss; a speed gain only where a 2-token main pass costs about the same as a 1-token pass.
+- Checked: Qwen3.5-0.8B ships a 1-layer MTP head (config mtp_num_hidden_layers 1; 15 tensors, 20,452,864 parameters:
+  873.4M with it, 853.0M without). transformers 5.5.4 drops it on load (_keys_to_ignore_on_load_unexpected ^mtp.*), so
+  the released ResuVL-L file has 852,985,920 parameters and no head (README / model card say 0.87B: the base count).
+  The head was fetched by byte range from the base weights (runs/mtp/qwen35_0.8b_mtp.safetensors, local only).
+- Wiring as in vLLM qwen3_5_mtp.py: RMSNorm(embedding of token i+1) and RMSNorm(main hidden state at i), concatenated,
+  fc, one full-attention decoder layer, RMSNorm, the main output layer -> token i+2. Teacher forcing on ResuVL-L's own
+  answers (5 val pages from Q35_soup3/eval_final_val, 4,517 answer tokens, CPU): with the main model's post-norm state
+  3,881 right (85.9 %), pre-norm 3,081 (68.2 %); main model reproduces 4,500 (99.6 %). Post-norm is the wiring.
+- Draft-and-check decoding (experiments/mtp_decode.py): head drafts token n+2, the main model checks it while writing
+  n+1. Needed: Gated DeltaNet layers in transformers 5.5.4 use their cached state only for 1 new token (else they
+  restart from zero), so the cached branch is run for 2-3 tokens; a rejected draft is undone by restoring the saved
+  linear-attention states and cropping the attention cache. Result, first 400 tokens of 2 val pages: answers identical
+  to greedy (2 / 2), 359 of 440 drafts accepted (82 %), 1.81 tokens per main pass, but 92 s against 80 s for greedy.
+  Cause measured on the M2 Max CPU: a main pass costs 51 / 79 / 109 ms for 1 / 2 / 3 tokens (aten::mm +27 %, the
+  recurrent-rule elementwise ops and attention +75-90 % from 1 to 2 tokens; ~4,000 small ops per pass, prefill of a
+  1,385-token prompt 17 s). Decoding on this CPU is limited by per-op work, not by reading weights, so checking a draft
+  costs ~1.5 passes and gains nothing. Next for this line: the same script on an H100, where a 2-token pass should
+  cost about the same as 1.
+- MTP as an extra loss (src/tiny_resume_parser/mtp.py, train.py --mtp-weight): the head is attached as model.mtp,
+  initialised from Qwen3.5's pretrained head, trained jointly; loss = CE + 0.3 x the head's CE on token i+2 at learnt
+  answer positions (DeepSeek-V3's first weight). Saved under mtp.*, which transformers skips on load, so scoring and
+  parse read the plain model and the trained head stays in the file for drafting. Forward check on 2 training pages
+  with the release weights: head loss 0.56 / 0.59 (main 0.006 / 0.005). Smoke job MTPsmoke (1644100, 16 pages, 1
+  epoch) pending on AssocGrpCpuLimit. Planned: MTP03_seed42/1/2 = released recipe + --mtp-weight 0.3, against the
+  Qwen3.5 five-seed mean at max-patches 12 (0.836 / 0.808).
+- Label voting pilot (hypothesis: labels from the most typical of several teacher runs agree better with the reviewed
+  gold than a single run, which caps students at ~0.912): 4 more GLM runs (runs 3-6) on the 41 CVs / 51 pages behind
+  the 50 dev gold pages, prompt unchanged since the original labels (checked: label.py diff since 3a00f77 touches only
+  env names and comments). Runs 2-6 are independent of the gold (run 1 + review, so run 1 is left out of the pool).
+  Measure: per page the medoid run (highest mean lenient F1 against the other runs) vs reviewed gold, against the mean
+  single run. Pass line set now: medoid above the single-run mean by more than 0.01 lenient F1. Running locally
+  (runs/label_vote/run3-6.jsonl), ~64 s per page, all four ~3.6 h.
+- 22:21 MTPsmoke (1644100, 5 min, H100) passed as a pipeline check: train with --mtp-weight 0.3 on 16 pages, 1 epoch,
+  4 steps: loss 0.84 -> 0.52, mtp_loss 0.99 -> 0.60; saved model.safetensors holds 489 tensors, 15 of them mtp.*;
+  evaluate.py loaded checkpoint-4 without error (2 + 2 pages unparsed at the token limit, as expected after 4 steps).
+  Queued MTP03_seed42/1/2 (1644108-10, afterok on the smoke run): configs/resuvl-l.toml + --mtp-weight 0.3.
+- 22:21 MTPdec (1644101, H100, bf16, released ResuVL-L + Qwen3.5's pretrained head, 10 val pages): greedy 166.9 s,
+  draft-and-check 94.1 s (1.77x faster), 4,214 of 4,965 drafts accepted (84.9 %), 1.85 tokens per main pass. But only
+  6 of 10 answers are identical to greedy. Likely cause (not yet tested): bf16 rounding differs between a 2-token and
+  a 1-token pass, so near-tied tokens flip. Queued MTPdec32 (1644120): same 10 pages in float32 (if the cause is
+  rounding, 10 / 10 identical) and MTPdecall (1644121): bf16 greedy vs draft-and-check on all 50 gold + 79 val pages,
+  both answer sets rescored, to see whether the differences change F1.
