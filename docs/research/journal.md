@@ -1701,3 +1701,53 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   a 1-token pass, so near-tied tokens flip. Queued MTPdec32 (1644120): same 10 pages in float32 (if the cause is
   rounding, 10 / 10 identical) and MTPdecall (1644121): bf16 greedy vs draft-and-check on all 50 gold + 79 val pages,
   both answer sets rescored, to see whether the differences change F1.
+- 22:45 MTPdec32 (1644120, H100, float32, same 10 val pages): 10 / 10 answers identical to greedy. So the bf16
+  differences come from rounding (2-token vs 1-token passes), not from the decoding logic. Speed in float32: greedy
+  307.8 s, draft-and-check 125.5 s; the first greedy page took 142 s (first-call kernel setup), so without page 1:
+  165.5 s vs 108.7 s (1.52x). 4,170 of 4,911 drafts accepted (84.9 %).
+- 23:15 MTPdecall (1644121, H100, bf16, batch 1, released ResuVL-L + Qwen3.5's pretrained head, all dev pages):
+  | set | identical answers | greedy lenient F1 | draft-and-check lenient F1 | greedy s | draft-and-check s | drafts accepted |
+  |---|---|---|---|---|---|---|
+  | gold 1-50 | 39 / 50 | 0.864 | 0.857 | 634.3 | 393.0 | 18,706 / 21,547 (86.8 %) |
+  | val (79) | 51 / 79 | 0.826 | 0.828 | 995.6 | 628.3 | 28,503 / 33,353 (85.5 %) |
+  Total 1,629.9 s vs 1,021.3 s: 1.60x faster. F1 differences -0.007 / +0.002, opposite signs and inside the seed
+  spread. For scale: the same weights scored 0.858 / 0.822 at batch 8 (release record) and 0.864 / 0.826 here at batch
+  1, so bf16 rounding from batch shape alone moves F1 by a similar amount. Conclusion: on a GPU, drafting with the
+  unchanged pretrained head gives ~1.6x faster decoding at unchanged accuracy (identical answers in float32). On the
+  M2 CPU it gives nothing. Next for this line (optional): a head trained on ResuVL-L's own answers could raise
+  acceptance above 86 %; the MTP-loss runs will also save a jointly trained head to test as a drafter.
+- 23:40 MTP03_seed42/1/2 (1644108-10, ~1 h 20 min each; +~4 % time over Q35 runs). Val-chosen: seed42 ep6 0.828 /
+  0.811, seed1 ep5 0.821 / 0.813, seed2 ep6 0.828 / 0.819; mean 0.826 / 0.814 vs the same seeds without the MTP loss
+  (Q35_seed42/1/2) 0.835 / 0.806: -0.009 / +0.008, opposite signs, inside the spread. As expected from the
+  literature: no gain so far. Seeds 3 and 4 (1644135/36) running for a 5 vs 5 comparison (baseline 0.836 / 0.808).
+  Queued MTP03_soup3 (1644181, average of the three val-chosen checkpoints, against Q35_soup3 0.858 / 0.822) and
+  MTPacc (1644182): drafting accuracy on 20 val pages of the average's own jointly trained head vs Qwen3.5's
+  pretrained head (86 % on ResuVL-L).
+- 00:09 MTP03_soup3 (1644181, average of the three val-chosen MTP03 checkpoints, mtp.* averaged too): dev
+  0.838 / 0.834 vs Q35_soup3 0.858 / 0.822 (-0.020 / +0.012): opposite signs again, no F1 change shown.
+  MTPacc (1644182, 20 val pages, teacher forcing on the average's own answers, 17,141 tokens): its own jointly trained
+  head 16,895 right (98.6 %); Qwen3.5's pretrained head on the same model 16,587 (96.8 %). On ResuVL-L (trained without
+  the loss) the pretrained head scored 85.9 %. So the MTP loss leaves F1 where it was but changes the main model's
+  hidden states so that token i+2 is far easier to draft: fewer rejected drafts, so faster drafted decoding.
+  Queued MTPdecsoup (1644190): greedy vs draft-and-check with the average's own head on all dev pages, rescored.
+- 00:50 MTPhead (1644202, H100, 16 min): only the head trained (20.5 M parameters, from Qwen3.5's pretrained head) on
+  the frozen released ResuVL-L, training labels teacher-forced (the model reproduces them almost exactly), lr 1e-4, 2
+  epochs; mtp_loss 0.36 -> 0.046. Teacher forcing on the release's own answers (20 val pages, 17,702 tokens): trained
+  head 17,274 right (97.6 %), pretrained head 15,498 (87.6 %). Close to the 98.6 % of the MTP-loss average's own head.
+  So the released model does not need retraining for fast drafting: a 16-minute head (+20 M parameters, 873 M total,
+  under the 1B limit) is enough. Timing with this head not run yet.
+- 00:55 Label voting pilot, result. 5 independent teacher runs (2-6) on the 50 dev gold pages, all ok (run 3's one
+  failed page relabelled). Lenient F1 against the reviewed gold, pooled over pages (experiments/label_vote.py,
+  runs/label_vote/vote5.json):
+  | labels | P | R | F1 |
+  |---|---|---|---|
+  | one run (mean over the 5) | 0.908 | 0.922 | 0.915 |
+  | medoid of 5 runs (a whole record) | 0.928 | 0.939 | 0.934 |
+  | pairs in at least 3 of 5 runs (diagnostic) | 0.935 | 0.938 | 0.936 |
+  Medoid +0.018 over one run: above the pass line set before the result (+0.01). Medoid of 3 runs, all 10 subsets of
+  the 5: +0.012 on average (+0.005 to +0.019). The medoid is spread over all runs (chosen 12 / 12 / 15 / 5 / 6 times),
+  so no single run is just better. Caveat: the reviewed gold is the original run plus <1 % edits, so this measures
+  agreement with one more teacher draw; the medoid is by construction the draw closest to the others. It shows the
+  labels a student would learn from agree better with what it is scored against (the 0.912 ceiling rises to ~0.93),
+  not that they are more correct. Next: relabel the 1,472 training pages (the original run counts as one draw there),
+  2 more runs for a 3-run medoid or 4 for a 5-run medoid; ~27 h per run at 3 workers. Needs the user's go-ahead.

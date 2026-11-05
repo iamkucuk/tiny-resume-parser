@@ -52,9 +52,9 @@ class DistillTrainer(Trainer):
 class MTPTrainer(Trainer):
     """cross-entropy + w * the MTP head's cross-entropy on token i+2 (mtp.py); logs the head's loss as mtp_loss."""
 
-    def __init__(self, *a, mtp_weight=0.3, capture=None, **kw):
+    def __init__(self, *a, mtp_weight=0.3, capture=None, mtp_only=False, **kw):
         super().__init__(*a, **kw)
-        self.mtp_weight, self.capture = mtp_weight, capture
+        self.mtp_weight, self.capture, self.mtp_only = mtp_weight, capture, mtp_only
         self._mtp_sum, self._mtp_n = 0.0, 0
 
     def compute_loss(self, model, inputs, return_outputs=False, **kw):
@@ -64,7 +64,7 @@ class MTPTrainer(Trainer):
         m = self.accelerator.unwrap_model(model)
         aux = mtp_loss(m.mtp, m.lm_head, self.capture.data, inputs["labels"])
         self._mtp_sum, self._mtp_n = self._mtp_sum + float(aux), self._mtp_n + 1
-        loss = out.loss + self.mtp_weight * aux
+        loss = aux if self.mtp_only else out.loss + self.mtp_weight * aux
         return (loss, out) if return_outputs else loss
 
     def log(self, logs, *a, **kw):
@@ -174,6 +174,14 @@ def build_parser() -> argparse.ArgumentParser:
         default=0.0,
         help="Qwen3.5 only: weight of the MTP head's loss on token i+2 (mtp.py; 0 = off); the head is saved as mtp.*",
     )
+    ap.add_argument(
+        "--mtp-only",
+        action="store_true",
+        help="train only the MTP head, all other weights frozen (a drafter for --model)",
+    )
+    ap.add_argument(
+        "--mtp-init", help="where the MTP head starts: .safetensors, model folder or Hub id (default --model)"
+    )
     ap.add_argument("--no-grad-ckpt", action="store_true", help="no gradient checkpointing: faster, more GPU memory")
     ap.add_argument("--save-every-epoch", action="store_true", help="save out/checkpoint-<step> after every epoch")
     ap.add_argument("--workers", type=int, default=0, help="DataLoader worker processes")
@@ -245,16 +253,22 @@ def main(argv: list[str] | None = None) -> int:
         print(f"full fine-tune: {sum(p.numel() for p in model.parameters()) / 1e6:.1f} M parameters, bf16 {bf16}")
 
     extra = {}
-    if args.mtp_weight:
+    if args.mtp_weight or args.mtp_only:
         from .mtp import Capture, MTPHead, pretrained_state
 
         if args.teacher or args.lora or model.config.model_type != "qwen3_5":
-            raise SystemExit("--mtp-weight: Qwen3.5 full fine-tune only, without --teacher")
+            raise SystemExit("--mtp-weight / --mtp-only: Qwen3.5 full fine-tune only, without --teacher")
         model.mtp = MTPHead(model.config.text_config)
-        model.mtp.load_state_dict(pretrained_state(args.model))
+        model.mtp.load_state_dict(pretrained_state(args.mtp_init or args.model))
         model.mtp.float()
-        extra = dict(mtp_weight=args.mtp_weight, capture=Capture(model))
-        print(f"MTP head from {args.model}, loss weight {args.mtp_weight}")
+        if args.mtp_only:
+            model.requires_grad_(False)
+            model.mtp.requires_grad_(True)
+        extra = dict(mtp_weight=args.mtp_weight, capture=Capture(model), mtp_only=args.mtp_only)
+        n = sum(p.numel() for p in model.parameters() if p.requires_grad) / 1e6
+        print(
+            f"MTP head from {args.mtp_init or args.model}, weight {args.mtp_weight}, only {args.mtp_only}: {n:.1f} M trained"
+        )
 
     kd = {}
     if args.teacher:
