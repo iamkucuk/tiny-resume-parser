@@ -9,4 +9,4 @@ Modules, in the order data flows through them:
     parse     CV files (images, PDFs) -> JSON
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.2"
