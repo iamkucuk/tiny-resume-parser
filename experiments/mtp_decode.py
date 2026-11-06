@@ -101,10 +101,13 @@ def restore(cache, saved, length):
 
 
 @torch.no_grad()
-def draft_decode(model, processor, head, cap, image, max_patches=12, max_new_tokens=3000):
-    """Greedy answer with one MTP draft per main pass: (answer text, answer tokens, main passes, drafts accepted)."""
-    embed = model.model.language_model.embed_tokens
+def draft_decode(model, processor, head, cap, image, max_patches=12, max_new_tokens=3000, drafts=1):
+    """Greedy answer with up to `drafts` MTP drafts per main pass: (answer text, answer tokens, main passes, drafts
+    accepted). With drafts > 1 the head runs again on its own output state and draft, as vLLM does for Qwen3.5."""
+    lm = model.model.language_model
+    embed = lm.embed_tokens
     end_id = processor.tokenizer.convert_tokens_to_ids(family(processor)["end"])
+    pos_hook = lm.rotary_emb.register_forward_pre_hook(lambda m, a: cap.update(pos=a[1]))
     inputs = processor(
         text=[prompt_text(processor)], images=[image], return_tensors="pt", **family(processor)["size"](max_patches)
     ).to(model.device)
@@ -114,6 +117,7 @@ def draft_decode(model, processor, head, cap, image, max_patches=12, max_new_tok
     n_prompt = C = len(toks)  # C: positions in the main cache
     E = cap["embeds"][0]  # prompt input embeddings, image features included
     H, COS, SIN = cap["hidden"][0], cap["pe"][0][0], cap["pe"][1][0]  # per position with a correct prefix
+    POS = cap["pos"][:, 0]  # (3, positions): rotary position ids, for the positions of chained drafts
     toks.append(int(out.logits[0, -1].argmax()))
     pending = [toks[-1]]  # committed tokens not yet in the main cache
     mcache, M = DynamicCache(), 0  # the head's cache and the positions it has processed
@@ -124,31 +128,38 @@ def draft_decode(model, processor, head, cap, image, max_patches=12, max_new_tok
         nxt = torch.stack([E[j] if j < n_prompt else embed.weight[toks[j]] for j in range(M + 1, last + 2)])[None]
         q = last + 1 - M
         mask = torch.ones(q, M + q, dtype=torch.bool, device=model.device).tril(M)[None, None]
-        x = head(nxt, H[M:][None], (COS[M:][None], SIN[M:][None]), attention_mask=mask, past_key_values=mcache)
-        draft = int(model.lm_head(x[:, -1])[0].argmax())
+        x = head(nxt, H[M:][None], (COS[M:][None], SIN[M:][None]), attention_mask=mask, past_key_values=mcache)[:, -1:]
         M = last + 1
+        draft = [int(model.lm_head(x[:, -1])[0].argmax())]
+        for k in range(1, drafts):  # chained drafts at speculative positions, removed from the head's cache after
+            pe = lm.rotary_emb(x, POS[:, -1:, None] + k)
+            x = head(embed.weight[draft[-1]][None, None], x, pe, past_key_values=mcache)
+            draft.append(int(model.lm_head(x[:, -1])[0].argmax()))
+        mcache.crop(M)
         saved = save_linear_states(cache)
-        o = model(
-            input_ids=torch.tensor([pending + [draft]], device=model.device), past_key_values=cache, use_cache=True
-        )
+        o = model(input_ids=torch.tensor([pending + draft], device=model.device), past_key_values=cache, use_cache=True)
         pred = o.logits[0].argmax(-1).tolist()
         passes += 1
         p = len(pending)
-        ok = pred[p - 1] == draft
-        new = slice(H.shape[0] - C, p + 1 if ok else p)  # skip positions stored after an earlier rejected draft
+        n_ok = 0
+        while n_ok < len(draft) and pred[p - 1 + n_ok] == draft[n_ok]:
+            n_ok += 1
+        accepted += n_ok
+        new = slice(H.shape[0] - C, p + n_ok)  # fed positions with a correct prefix, not stored yet
         H = torch.cat([H, cap["hidden"][0][new]])
         COS, SIN = torch.cat([COS, cap["pe"][0][0][new]]), torch.cat([SIN, cap["pe"][1][0][new]])
-        if ok:
-            accepted += 1
-            toks += [draft, pred[p]]
-            C += p + 1
-            pending = [pred[p]]
-            if draft == end_id:
-                toks.pop()
-        else:  # commit the main model's own token and undo the draft in the main cache
-            toks.append(pred[p - 1])
+        POS = torch.cat([POS, cap["pos"][:, 0][:, new]], 1)
+        committed = draft[:n_ok] + [pred[p - 1 + n_ok]]  # accepted drafts, then the main model's own next token
+        toks += committed
+        if n_ok == len(draft):  # everything fed was right: the cache keeps it
+            C += p + n_ok
+            pending = [committed[-1]]
+        else:  # undo the fed tokens; the committed ones are fed again next pass
             restore(cache, saved, C)
-            pending = pending + [pred[p - 1]]
+            pending = pending + committed
+        if end_id in committed:
+            toks = toks[: len(toks) - len(committed) + committed.index(end_id) + 1]
+    pos_hook.remove()
     answer = toks[n_prompt:]
     answer = answer[: answer.index(end_id) + 1] if end_id in answer else answer
     answer = answer[:max_new_tokens]
@@ -180,6 +191,7 @@ def main():
     ap.add_argument("--n", type=int, default=5)
     ap.add_argument("--device", choices=["cuda", "mps", "cpu"])
     ap.add_argument("--max-new-tokens", type=int, default=3000)
+    ap.add_argument("--drafts", type=int, default=1, help="decode: MTP drafts per main pass (the head is chained)")
     ap.add_argument("--out", type=Path)
     ap.add_argument(
         "--fp32", action="store_true", help="run the model in float32 (tests whether bf16 rounding differs)"
@@ -215,7 +227,9 @@ def main():
             t0 = time.time()
             ref, n_ref = generate_pages(model, processor, [image], 12, args.max_new_tokens)[0]
             t1 = time.time()
-            ans, n_ans, passes, acc = draft_decode(model, processor, head, cap, image, 12, args.max_new_tokens)
+            ans, n_ans, passes, acc = draft_decode(
+                model, processor, head, cap, image, 12, args.max_new_tokens, args.drafts
+            )
             t2 = time.time()
             res.append(
                 dict(
@@ -244,7 +258,10 @@ def main():
             passes=sum(x["passes"] for x in res),
             accepted=sum(x["accepted"] for x in res),
         )
-    summary = dict(mode=args.mode, model=args.model, mtp=args.mtp, device=device, pages=len(res)) | summary
+    summary = (
+        dict(mode=args.mode, model=args.model, mtp=args.mtp, drafts=args.drafts, device=device, pages=len(res))
+        | summary
+    )
     print(json.dumps(summary))
     if args.out:
         args.out.write_text(json.dumps(dict(summary=summary, pages=res), indent=1))

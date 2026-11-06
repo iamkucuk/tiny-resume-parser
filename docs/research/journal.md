@@ -1751,3 +1751,22 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   labels a student would learn from agree better with what it is scored against (the 0.912 ceiling rises to ~0.93),
   not that they are more correct. Next: relabel the 1,472 training pages (the original run counts as one draw there),
   2 more runs for a 3-run medoid or 4 for a 5-run medoid; ~27 h per run at 3 workers. Needs the user's go-ahead.
+- 01:00 MTPdecsoup (1644190, H100, bf16, MTP03_soup3 with its own jointly trained head, all dev pages):
+  | set | identical | greedy lenient | drafted lenient | greedy s | drafted s | drafts accepted |
+  |---|---|---|---|---|---|---|
+  | gold 1-50 | 34 / 50 | 0.843 | 0.847 | 703.5 | 400.6 | 20,161 / 20,432 (98.7 %) |
+  | val (79) | 62 / 79 | 0.835 | 0.832 | 995.8 | 598.1 | 30,415 / 30,943 (98.3 %) |
+  Total 1,699.3 s vs 998.7 s: 1.70x (vs 1.60x with ResuVL-L + the pretrained head at 85-87 %). F1 differences
+  +0.004 / -0.003: noise. ~1.98 tokens per main pass, so one draft per pass is now the limit: at ~98 % acceptance,
+  drafting 2-3 tokens per pass (running the head again on its own output, as DeepSeek-V3 / vLLM do) is the next
+  speed step. The greedy scores here (0.843 / 0.835, batch 1) differ from the soup's batch-8 scores (0.838 / 0.834)
+  by bf16 rounding again.
+- 01:30 MTP03_seed3/4 (1644135/36) done. Val-chosen: seed3 ep6 0.831 / 0.811, seed4 ep4 0.826 / 0.815. Five seeds with
+  the MTP loss: mean 0.827 / 0.814 (gold range 0.821-0.831, val 0.811-0.819) vs five without (Q35 seeds 42, 1-4)
+  0.836 / 0.808: -0.009 / +0.006, opposite signs, inside the spread. Verdict: the MTP loss (weight 0.3) does not change
+  F1, as Gloeckle et al. and MuToR led us to expect; not adopted for accuracy. Its effect is on drafting (98.6 %).
+- 01:30 Multi-token drafting added to experiments/mtp_decode.py (--drafts K: the head runs again on its own post-norm
+  output and draft, at speculative positions removed from its cache after each pass; rotary positions continue from
+  the last main position). CPU check, 1 val page, 250 tokens, pretrained head: answers identical to greedy for K = 1,
+  2, 3; main passes 143 / 115 / 107. GPU timing queued (MTPdraftK): released ResuVL-L + the 16-minute trained head
+  (runs/MTPhead), K = 1, 2, 3, 30 val pages.
