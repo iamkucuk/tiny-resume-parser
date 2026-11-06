@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tiny-resume-parser"
-version = "0.3.0"
+version = "0.3.1"
 description = "Fine-tuned sub-1B vision-language models that read a CV page image and write ATS JSON; runs on a laptop CPU"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -13,6 +13,7 @@ authors = [{ name = "Furkan Kucuk" }]
 keywords = ["resume-parser", "cv-parser", "vision-language-model", "document-ai", "ats"]
 dependencies = [
     "torch>=2.6",
+    "torchvision",                               # Qwen3.5 processor (ResuVL-L) needs it
     "transformers==5.5.4",
     "accelerate>=1.0",
     "pydantic>=2.13",

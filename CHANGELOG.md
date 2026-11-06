@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1 — 2026-11-06
+
+- torchvision is now a dependency: since 0.2.0, ResuVL-L's processor (Qwen3.5) could not be loaded without it, so
+  `pip install` of the package followed by `parse --model furkankucuk/ResuVL-L` failed where torchvision was not
+  already installed (it is on Colab). Found by the new drafting test in CI, which is the first test to load it.
+
 ## 0.3.0 — 2026-11-06
 
 - `tiny-resume-parser parse --drafts K`: on a GPU, ResuVL-L's multi-token prediction head drafts up to K tokens per

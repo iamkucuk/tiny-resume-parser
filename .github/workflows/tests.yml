@@ -16,7 +16,7 @@ jobs:
           python-version: "3.12"
       - name: Install (CPU torch)
         run: |
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
           pip install -e ".[train,dev]"
       - name: Run tests
         run: pytest -v
