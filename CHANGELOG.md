@@ -1,7 +1,17 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — 2026-11-06
 
+- `tiny-resume-parser parse --drafts K`: on a GPU, ResuVL-L's multi-token prediction head drafts up to K tokens per
+  step and the model checks them in one pass (`draft.py`). With 3 drafts, decoding was 2.46 times faster on an H100
+  at the same field F1 (30 validation pages); in bf16 about one answer in four differs somewhere from plain decoding,
+  by rounding. No speed-up on a CPU. Without `--drafts`, nothing changes.
+- ResuVL-L's weight file on Hugging Face now holds that head (`mtp.*` tensors, 20 million parameters, trained for 16
+  minutes on the frozen model), where Qwen3.5's own files keep it. The model's other weights are unchanged, and
+  transformers ignores the head when loading.
+- `train --mtp-weight`, `--mtp-only` and `--mtp-init` train with the head as an extra loss or train the head alone
+  (`mtp.py`). As an extra loss it did not change field F1 over five seeds.
+- `experiments/label_vote.py`: scores labels chosen from several labelling runs against the reviewed pages.
 - Public docs and model cards name the models ResuVL-S, ResuVL-M, ResuVL-L and ResuVL-L v0.1 only; training configs
   are renamed to `configs/resuvl-s.toml`, `resuvl-m.toml`, `resuvl-l.toml` and `resuvl-l-v0.1.toml`.
 

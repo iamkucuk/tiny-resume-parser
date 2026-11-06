@@ -71,6 +71,13 @@ Precision: on a GPU with bf16 the weights stay in float32 and the matrix product
 `generate_pages` builds the prompt with the processor's chat template, cuts the image into the same tiles as in
 training and decodes greedily. The tile setting at inference must match the one the model was trained with.
 
+[`draft.py`](../src/tiny_resume_parser/draft.py) decodes one page faster on a GPU. The multi-token prediction head of
+[`mtp.py`](../src/tiny_resume_parser/mtp.py) proposes the next tokens from the model's last state, and one pass of
+the model checks them all; drafts are kept up to the first one that differs from the model's own choice. Qwen3.5's
+linear-attention layers only continue from their cached state one token at a time in transformers 5.5.4, so
+`continue_linear_attn` runs that step for several tokens, and a rejected draft is undone by restoring the saved
+states and cropping the attention cache.
+
 ## 6. Scoring: `metrics.py`, `evaluate.py`, `rescore.py`
 
 Field F1 (as in Donut, arXiv 2111.15664) flattens a record into `(path, value)` pairs and ignores list order:

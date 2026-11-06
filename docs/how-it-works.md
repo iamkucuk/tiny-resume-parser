@@ -82,3 +82,7 @@ those models' weights are averaged ([`soup.py`](../src/tiny_resume_parser/soup.p
 pages, and never reads the PDF's text layer. The model writes the answer with greedy decoding. If the answer is cut
 off or has a syntax error, the complete values before the error are kept, and the result is validated against the
 schema. Each page is returned as its own record; merging the pages of one CV is not implemented.
+With `--drafts K` (ResuVL-L, useful on a GPU), the multi-token prediction head stored in the weight file drafts up to
+K next tokens, and the model checks them in the same pass that writes its next token, keeping its own choice wherever
+they differ ([`draft.py`](../src/tiny_resume_parser/draft.py); speed and scores in
+[findings.md](findings.md#faster-decoding-with-the-base-models-drafting-head)).

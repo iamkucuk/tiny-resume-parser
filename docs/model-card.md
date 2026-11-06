@@ -6,11 +6,12 @@ ResuVL-L of version 0.1.0, stays available as revision `v0.1.0` of the ResuVL-L 
 
 | | ResuVL-L | ResuVL-M | ResuVL-S |
 |---|---|---|---|
-| Parameters | 0.87B | 0.51B | 0.26B |
+| Parameters | 0.87B (0.85B model, 0.02B drafting head) | 0.51B | 0.26B |
 | Training | full fine-tune, average of 3 runs | full fine-tune, average of 3 runs | full fine-tune, average of 4 runs |
 | Lenient F1, 204 test pages | 0.845 | 0.681 | 0.652 |
 | Lenient F1 (gold dev / val) | 0.858 / 0.822 | 0.644 / 0.676 | 0.660 / 0.649 |
 | CPU time per page (M2 Max) | ~55 s (bf16 language model) | ~68 s (fp32) | ~30 s (fp32) |
+| Faster GPU decoding | 2.46× with `--drafts 3` (H100) | not available | not available |
 
 ## Intended use
 
@@ -57,6 +58,8 @@ limits what models trained on its labels can reach.
 ## Limitations
 
 - One page at a time; multi-page CVs are returned page by page.
+- Drafted decoding (`--drafts`) gives the same F1 as plain decoding, but in bf16 about one answer in four differs
+  somewhere from the plain answer, by rounding; it gives no speed-up on a CPU.
 - Other languages, scripts and very unusual layouts are untested.
 - Text written visibly on the page is read like any other text; robustness to injected instructions is not measured.
 - Pages with no parseable answer on the test set: 2 of 204 (ResuVL-L), 4 (ResuVL-M), 13 (ResuVL-S, which also hits the token limit on 7 pages).

@@ -79,7 +79,9 @@ tiny-resume-parser parse cv.pdf --model furkankucuk/ResuVL-L
 ```
 
 PDF pages are rendered at 120 dpi; PNG and JPEG files are read as they are. `--model` also
-takes a model trained with [docs/training.md](docs/training.md).
+takes a model trained with [docs/training.md](docs/training.md). On a GPU, `--drafts 3` makes ResuVL-L about 2.4
+times faster: a small extra layer in its weight file drafts the next tokens and the model checks them in one pass
+([findings](docs/findings.md#faster-decoding-with-the-base-models-drafting-head)).
 
 Two notebooks run on Colab or a local machine. [examples/try_resuvl.ipynb](examples/try_resuvl.ipynb)
 ([open in Colab](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/try_resuvl.ipynb)) reads an example page or your own CV with a released model and shows field
@@ -116,13 +118,15 @@ smaller (0.87B against 0.94B). Within one base model, three changes raised the s
 fine-tuning all weights instead of LoRA adapters, adding image noise while also training the vision encoder, and
 averaging the weights of several fine-tuned models. Preference training
 (DPO), reinforcement learning on the F1 score (GRPO), generating one JSON key at a time and constrained decoding
-did not improve it; GRPO stayed within the seed spread both on training pages and on 974 pages the model had not seen. The largest group of remaining errors is values the model leaves out; misread characters are one of the smallest.
+did not improve it; GRPO stayed within the seed spread both on training pages and on 974 pages the model had not seen.
+On a GPU, the base model's own multi-token prediction head, retrained for 16 minutes, drafts tokens that ResuVL-L checks
+in one pass, which makes decoding 2.3 to 2.5 times faster at the same F1. The largest group of remaining errors is values the model leaves out; misread characters are one of the smallest.
 [docs/findings.md](docs/findings.md) gives the measured effect of each change.
 
 ## Repository
 
 ```
-src/tiny_resume_parser/   the package: schema, data, models, train, generate, evaluate, metrics, soup, label, parse
+src/tiny_resume_parser/   the package: schema, data, models, train, generate, draft, evaluate, metrics, soup, label, parse
 configs/                  training settings for each model
 examples/                 eight labelled pages and a notebook that trains on them (Colab or local)
 slurm/                    cluster jobs: train and score, average, test

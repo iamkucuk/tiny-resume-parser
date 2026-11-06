@@ -61,6 +61,7 @@ average reached 0.660 / 0.649, +0.044 / +0.033 over a single model (ResuVL-S).
 | Generating one JSON key per call (29 calls per page) | at best 0.728 / 0.710 against 0.728 / 0.732 |
 | Decoding constrained to the schema | 0.694 against 0.693 and 5.4× slower; useful only to guarantee valid JSON |
 | Stopping loops at generation time (repetition penalty, banning repeated word sequences) | no gain on ResuVL-L v0.1, lower on ResuVL-M; the ban also broke normal JSON |
+| Multi-token prediction as an extra training loss (ResuVL-L, weight 0.3, 5 seeds; arXiv 2404.19737) | 0.827 / 0.814 against 0.836 / 0.808 without it |
 
 Smaller changes that did not help either: training on labels rewritten into a canonical form (−0.01), 24 image tiles
 for ResuVL-L v0.1 (−0.05 on gold), 2 pages per step (−0.02), other learning rates and epoch counts, NEFTune noise on text
@@ -134,6 +135,44 @@ instead of 528, so ResuVL-L v0.1 was trained on the real pages alone for the sam
 reached 0.716 / 0.723. With training length matched, the synthetic pages add +0.025 on the gold pages and nothing on
 validation, so they were not adopted. 3,000 synthetic pages gave 0.750 / 0.742 after about 1,650 steps; no run on the
 real pages alone matches that length. For ResuVL-L, 1,000 synthetic pages gave 0.843 / 0.812 against 0.835 / 0.806.
+
+## Faster decoding with the base model's drafting head
+
+ResuVL-L's base model ships with a small extra layer, a multi-token prediction (MTP) head, that predicts the token
+after next from the model's last state and the next token. ResuVL-L's fine-tuning did not use it, and the first
+release left it out. Used as a drafter, the head proposes the next tokens and the model checks them all in one pass;
+every token that disagrees with the model's own choice is replaced by it, so the answer is the model's greedy answer.
+The method is speculative decoding with a built-in draft model, as in DeepSeek-V3 and vLLM's Qwen3.5 support.
+
+**The head needed only 16 minutes of training.** Attached unchanged to ResuVL-L, the pretrained head drafted 86 % of
+tokens correctly and made decoding 1.60 times faster on an H100 over the 129 development pages, with 0.857 / 0.828
+against 0.864 / 0.826 for plain decoding. Training only the head (20 million parameters) on the frozen model's
+training answers, for two epochs, raised its correct drafts on the model's own answers from 87.6 % to 97.6 % (20
+validation pages). The model itself was not changed, so its scores stay those of the release.
+
+**Two or three drafted tokens per step give 2.3 to 2.5 times faster decoding, at the same F1.** On 30 validation
+pages, with the trained head:
+
+| Drafted tokens per step | Tokens per model pass | Faster than plain decoding | Lenient F1, plain / drafted |
+|---|---|---|---|
+| 1 | 1.97 | 1.91× | 0.841 / 0.854 |
+| 2 | 2.74 | 2.28× | 0.852 / 0.855 |
+| 3 | 3.19 | 2.46× | 0.852 / 0.851 |
+
+A third draft adds less than the second because each draft beyond the first is built on the head's own output, and
+fewer of them are right. The F1 differences are within the seed spread and go both ways.
+
+**The answers are the same in float32 but not always in bf16.** In float32, drafted and plain decoding gave the same
+answer on 10 of 10 pages. In bf16, about one answer in four differed somewhere: a pass over several tokens rounds the
+matrix products differently from a one-token pass, and a near-tie between two tokens can then go the other way. The
+same weights decoded plainly at batch size 8 instead of 1 also changed the gold score, from 0.864 to 0.858, so bf16
+answers were never fixed to the token.
+
+**No gain on a CPU.** On an M2 Max a pass over 2 or 3 tokens takes 1.5 or 2.1 times as long as a one-token pass,
+so checking drafts costs about what it saves. On a GPU, a pass over a few tokens costs about the same as one.
+
+The head is in ResuVL-L's weight file, and `tiny-resume-parser parse --drafts 3` uses it. Training the head together
+with the model, as an extra loss, gave a head that drafted 98 % correctly but did not change F1 (see above).
 
 ## Where the errors are
 
