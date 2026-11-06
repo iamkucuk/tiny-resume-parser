@@ -1,11 +1,13 @@
 """Qwen3.5's multi-token prediction (MTP) head: from the main model's hidden state at position i and the embedding
-of token i+1, it predicts token i+2. Live experiment (2026-11-05), used two ways:
+of token i+1, it predicts token i+2. Used two ways:
 
   - extra training loss: train.py --mtp-weight W adds W x the head's cross-entropy on the answer tokens, so the
     language model also learns to look two tokens ahead (Gloeckle et al. 2024, arXiv 2404.19737; DeepSeek-V3 uses
     weight 0.3 then 0.1). The head is attached as model.mtp and saved with the model under Qwen's own tensor names
     (mtp.*); transformers skips those names when loading, so evaluation and parsing read the plain model.
-  - drafting for faster decoding: experiments/mtp_decode.py.
+    Tried on five seeds at weight 0.3: no change in field F1, so it is not part of the training recipe.
+  - drafting for faster decoding: draft.py (tiny-resume-parser parse --drafts K). ResuVL-L's weight file holds a
+    head trained for it (only the head, on the frozen model's training answers); experiments/mtp_decode.py times it.
 
 Wiring follows vLLM's Qwen3.5 MTP (vllm/model_executor/models/qwen3_5_mtp.py): RMSNorm the next token's embedding
 and the main model's final (post-norm) hidden state, concatenate them (embedding first), project to the hidden size,
@@ -61,9 +63,13 @@ def pretrained_state(source: str = QWEN35_ID) -> dict[str, torch.Tensor]:
         files = sorted(path.glob("*.safetensors"))
     else:
         from huggingface_hub import hf_hub_download
+        from huggingface_hub.errors import EntryNotFoundError
 
-        index = hf_hub_download(source, "model.safetensors.index.json")
-        names = sorted({f for k, f in json.load(open(index))["weight_map"].items() if k.startswith("mtp.")})
+        try:  # sharded weights (Qwen's own repositories): only the files that hold mtp.*
+            index = hf_hub_download(source, "model.safetensors.index.json")
+            names = sorted({f for k, f in json.load(open(index))["weight_map"].items() if k.startswith("mtp.")})
+        except EntryNotFoundError:  # one weight file (ResuVL-L)
+            names = ["model.safetensors"]
         files = [Path(hf_hub_download(source, f)) for f in names]
     out = {}
     for f in files:

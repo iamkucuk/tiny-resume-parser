@@ -2,6 +2,7 @@
 
     tiny-resume-parser parse cv.pdf --model PATH_OR_HF_ID              # prints JSON
     tiny-resume-parser parse page1.png page2.jpg --model PATH --out cv.json
+    tiny-resume-parser parse cv.pdf --model furkankucuk/ResuVL-L --drafts 3   # GPU: ~2.4x faster (draft.py)
 
 PDF pages are rendered to images at 120 dpi, the resolution of the training pages (A4 = 992 x 1403 px); the text
 layer of the PDF is never read. Each page is read on its own; merging the pages of one CV into a single record is
@@ -17,6 +18,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from .draft import draft_decode, load_drafter
 from .generate import generate_pages, load_model
 from .metrics import read_answer
 from .models import TRAINED_PATCHES, family_name
@@ -35,15 +37,26 @@ def page_images(path: Path) -> list[Image.Image]:
 
 
 def read_cv(
-    paths: list[Path], model: str, device: str | None = None, max_patches: int | None = None, max_new_tokens: int = 3000
+    paths: list[Path],
+    model: str,
+    device: str | None = None,
+    max_patches: int | None = None,
+    max_new_tokens: int = 3000,
+    drafts: int = 0,
 ) -> list[dict]:
-    """[{file, page, valid, record}] for every page of every file; valid = the record passes the schema."""
+    """[{file, page, valid, record}] for every page of every file; valid = the record passes the schema.
+    drafts > 0: decode with the model's MTP head drafting that many tokens per pass (draft.py; ResuVL-L only)."""
     m, processor, _ = load_model(model, device=device)
     max_patches = max_patches or TRAINED_PATCHES[family_name(processor)]
+    if drafts:
+        head, cap = load_drafter(m, model)
     out = []
     for path in paths:
         for i, image in enumerate(page_images(path), 1):
-            answer, _ = generate_pages(m, processor, [image], max_patches, max_new_tokens)[0]
+            if drafts:
+                answer = draft_decode(m, processor, head, cap, image, max_patches, max_new_tokens, drafts)[0]
+            else:
+                answer, _ = generate_pages(m, processor, [image], max_patches, max_new_tokens)[0]
             record, status = read_answer(answer, fix=True)
             out.append({"file": str(path), "page": i, "valid": status == "valid", "record": record})
     return out
@@ -59,8 +72,16 @@ def main(argv: list[str] | None = None) -> None:
         "--max-patches", type=int, help="image tiles per page; default: the value the model family was trained with"
     )
     ap.add_argument("--max-new-tokens", type=int, default=3000)
+    ap.add_argument(
+        "--drafts",
+        type=int,
+        default=0,
+        help="ResuVL-L on a GPU: tokens its MTP head drafts per step (3 was fastest on an H100; no gain on a CPU)",
+    )
     args = ap.parse_args(argv)
-    pages = read_cv(args.files, args.model, args.device, args.max_patches, args.max_new_tokens)
+    if args.drafts < 0:
+        ap.error("--drafts must be 0 or more")
+    pages = read_cv(args.files, args.model, args.device, args.max_patches, args.max_new_tokens, args.drafts)
     text = json.dumps(pages, ensure_ascii=False, indent=1)
     if args.out:
         args.out.write_text(text)
