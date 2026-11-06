@@ -1770,3 +1770,19 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   the last main position). CPU check, 1 val page, 250 tokens, pretrained head: answers identical to greedy for K = 1,
   2, 3; main passes 143 / 115 / 107. GPU timing queued (MTPdraftK): released ResuVL-L + the 16-minute trained head
   (runs/MTPhead), K = 1, 2, 3, 30 val pages.
+- 03:00 MTPdraftK (1644306, H100, bf16, released ResuVL-L + the 16-minute head-only trained head, first 30 val pages,
+  each K timed with its own greedy pass):
+  | drafts per pass | identical | greedy lenient | drafted lenient | greedy s | drafted s | speed-up | tokens per main pass |
+  |---|---|---|---|---|---|---|---|
+  | 1 | 22 / 30 | 0.841 | 0.854 | 530.1 | 277.8 | 1.91x | 1.97 |
+  | 2 | 23 / 30 | 0.852 | 0.855 | 405.0 | 177.7 | 2.28x | 2.74 |
+  | 3 | 22 / 30 | 0.852 | 0.851 | 406.3 | 165.0 | 2.46x | 3.19 |
+  Accepted drafts 12,388 / 16,032 / 17,285 of at most 12,738 / ~18,400 / ~23,700 drafted (97 % / ~87 % / ~73 %): each
+  extra draft is accepted less often, because the head's later drafts are built on its own outputs rather than on the
+  main model's. K = 3 gains only 8 % over K = 2 in time; K = 4 is not worth timing. Greedy time for the same pages
+  varies 405-530 s between runs on the same GPU type, so speed-ups are read within a row. F1 differences
+  (-0.001 to +0.013) are noise from bf16 rounding of multi-token passes (float32 gives identical answers, 2026-11-05).
+  Verdict: drafting with Qwen3.5's own MTP head is a working, lossless-in-score speed-up of ~2.3-2.5x on an H100 for
+  +20M parameters (873M total, under 1B), no retraining of the released weights. Not yet in the package: it needs the
+  patched linear-attention layers (transformers 5.5.4 internals) and batch size 1; vLLM's built-in Qwen3.5 MTP
+  speculative decoding is the release route to test next.
