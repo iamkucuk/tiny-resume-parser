@@ -1786,3 +1786,32 @@ Runs alongside ZP_noperturb (perturbation off on InternVL), which measures the o
   +20M parameters (873M total, under 1B), no retraining of the released weights. Not yet in the package: it needs the
   patched linear-attention layers (transformers 5.5.4 internals) and batch size 1; vLLM's built-in Qwen3.5 MTP
   speculative decoding is the release route to test next.
+
+## 2026-11-06 09:53 — Drafting with the MTP head in bf16: summary of what holds and what does not
+
+Question (user, 2026-11-06): does draft-and-check decoding with Qwen3.5's MTP head work in bf16, not only float32?
+Answer: yes. Every speed-up above was measured in bf16 on an H100; float32 was used once, as a diagnostic.
+
+| run (2026-11-05/06) | head | pages | speed-up | identical answers | greedy → drafted lenient F1 |
+|---|---|---|---|---|---|
+| MTPdecall | Qwen3.5's pretrained head, unchanged | gold 1-50 + val 79 | 1.60x | 90 / 129 | gold 0.864 → 0.857, val 0.826 → 0.828 |
+| MTPdecsoup | head trained jointly with the MTP loss (MTP03_soup3) | gold 1-50 + val 79 | 1.70x | 96 / 129 | gold 0.843 → 0.847, val 0.835 → 0.832 |
+| MTPdraftK K=1 | 16-minute head-only trained head, released ResuVL-L | first 30 val | 1.91x | 22 / 30 | 0.841 → 0.854 |
+| MTPdraftK K=2 | same | first 30 val | 2.28x | 23 / 30 | 0.852 → 0.855 |
+| MTPdraftK K=3 | same | first 30 val | 2.46x | 22 / 30 | 0.852 → 0.851 |
+
+What holds in bf16:
+- Accuracy: all drafted-minus-greedy F1 differences lie between -0.007 and +0.013, with both signs, inside the seed
+  spread (0.01-0.02). No run shows a loss.
+- Speed: the speed-up is a property of the decoding, not of the number format: float32 on the same 10 pages gave
+  1.52x against 1.77x in bf16 with the same pretrained head (MTPdec32 vs MTPdec), at the same 84.9 % acceptance.
+
+What does not hold in bf16:
+- Token-for-token identity with greedy decoding. 22-30 % of pages differ somewhere. Cause, tested: a pass over 2-4
+  tokens rounds bf16 matrix products differently from a 1-token pass, so near-tied tokens can flip; float32 on 10 pages
+  gave 10 / 10 identical answers (MTPdec32), so the draft-and-check logic itself is exact.
+- This is the same size of effect as plain bf16 decoding at a different batch size: the released weights scored gold
+  0.858 at batch 8 and 0.864 at batch 1 with no drafting at all. bf16 greedy output was never fixed to the token.
+
+Not tested: fp16; batch size above 1 with drafting (mtp_decode.py handles one page at a time); a GPU other than H100;
+vLLM's own Qwen3.5 MTP speculative decoding (needs an install, so the user's approval).
