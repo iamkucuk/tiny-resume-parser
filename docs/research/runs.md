@@ -520,3 +520,19 @@ Cancelled at 13:38 (daytime job limit on the shared cluster); scores up to that 
 - nvidia/Nemotron-3.5-Parse zero-shot on gold 1-50 + validation (129 pages), single pass, default prompt.
   Label text found anywhere in the output, gold / val: values 0.920 / 0.914, words 0.914 / 0.935; released ResuVL-L
   0.937 / 0.914 and 0.962 / 0.949. Command: experiments/nemotron_parse.py read, then coverage.
+
+## MTP03_seed42 / _seed1 / _seed2 / _seed3 / _seed4 (2026-11-05, jobs 1644108–10, 1644135–36, ~1 h 20 min each) — not adopted
+- Released ResuVL-L recipe (configs/resuvl-l.toml) + `train --mtp-weight 0.3`: Qwen3.5's MTP head attached and its
+  cross-entropy on token i+2 added to the loss (pipeline check MTPsmoke, 1644100, 16 pages, 1 epoch). Val-chosen:
+  seed42 ep6 0.828 / 0.811, seed1 ep5 0.821 / 0.813, seed2 ep6 0.828 / 0.819, seed3 ep6 0.831 / 0.811, seed4 ep4
+  0.826 / 0.815; mean 0.827 / 0.814 vs five seeds without it 0.836 / 0.808 (-0.009 / +0.006, inside the spread).
+
+## MTP03_soup3 (2026-11-05, job 1644181) — not adopted
+- Average of the three val-chosen MTP03 checkpoints (seeds 42, 1, 2), mtp.* averaged too: 0.838 / 0.834 vs Q35_soup3
+  0.858 / 0.822. Its jointly trained head drafted 98.3-98.7 % correctly (MTPdecsoup: 1.70x faster on an H100).
+
+## MTPhead (2026-11-06 00:50, job 1644202, 16 min) — adopted: the drafting head of release 0.3.0
+- `train --mtp-only --mtp-init Qwen/Qwen3.5-0.8B` on the released ResuVL-L (runs/release_bf16/ResuVL-L-v2, frozen;
+  its 473 tensors saved back unchanged, checked 2026-11-06), lr 1e-4, 2 epochs, training labels; mtp_loss 0.36 ->
+  0.046. Token i+2 right on the release's own answers (20 val pages): 97.6 % vs 87.6 % for the pretrained head.
+  Drafting with it: 1.91x / 2.28x / 2.46x faster for 1 / 2 / 3 drafts (MTPdraftK, 30 val pages, H100).

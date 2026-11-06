@@ -1815,3 +1815,27 @@ What does not hold in bf16:
 
 Not tested: fp16; batch size above 1 with drafting (mtp_decode.py handles one page at a time); a GPU other than H100;
 vLLM's own Qwen3.5 MTP speculative decoding (needs an install, so the user's approval).
+
+## 2026-11-06 13:00 — Release 0.3.0: drafted decoding in the package, the trained head in ResuVL-L's weight file
+
+User (2026-11-06): "update the repository and the Hugging Face model repo as well ... appropriately".
+- Package: src/tiny_resume_parser/draft.py (moved from experiments/mtp_decode.py, which now times it) and
+  `parse --drafts K`. tests/test_draft.py: a tiny random Qwen3.5 in float32 with a head that always drafts one
+  frequent token; drafted answers must equal greedy for K = 1, 2, 3 with drafts both kept and rejected. Breaking
+  the accept rule (keeping every draft) makes all three fail. mtp.pretrained_state reads a Hub id without an index
+  file (ResuVL-L has one model.safetensors).
+- Weights: published model.safetensors (sha256 d0fb3069…, identical to TRUBA's runs/release_bf16/ResuVL-L-v2) + the
+  15 mtp.* tensors of MTPhead, cast float32 -> bf16 (the dtype the speed tests ran in) = 873,438,784 parameters,
+  sha256 0694b6fb…. MTPhead's main tensors are float32 copies of the release's bf16 values, bit for bit (all 473,
+  checked on TRUBA with numpy: low 16 bits zero, high 16 bits equal). Head extracted on the login node without
+  torch (torch on the login node dumped core).
+- Checks before upload (Mac, Apple GPU): transformers loads the file (473 weights, mtp.* skipped); parse with and
+  without --drafts 3 gave byte-identical JSON on examples/pages/1642522554463_p1.jpg. After upload, from an empty
+  cache with the Hub id: same JSON.
+- Hugging Face furkankucuk/ResuVL-L: tag v0.2.0 = b3506572 (old file), commit 657fd985 = new weight file + model
+  card section "Faster decoding on a GPU", tag v0.3.0 = 657fd985.
+- Not run before release (user asked why a GPU was needed; it is not needed for the release): drafting on the 204
+  test pages. Queued for the night as MTPv030test (1644860, --begin=20:00): it rebuilds the file on TRUBA from
+  MTPhead (its hash should equal 0694b6fb…) and scores plain vs 3 drafts on the test pages.
+- TRUBA access was unreliable all morning: the expctl tunnel server is Juno (experiments.furkankucuk.net =
+  45.152.161.163), which had ~2 GB of 18 GB RAM free and memory "full" pressure 66 % (avg300).

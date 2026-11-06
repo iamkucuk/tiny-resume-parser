@@ -8,7 +8,7 @@
   by rounding. No speed-up on a CPU. Without `--drafts`, nothing changes.
 - ResuVL-L's weight file on Hugging Face now holds that head (`mtp.*` tensors, 20 million parameters, trained for 16
   minutes on the frozen model), where Qwen3.5's own files keep it. The model's other weights are unchanged, and
-  transformers ignores the head when loading.
+  transformers ignores the head when loading. The file without the head stays available as revision `v0.2.0`.
 - `train --mtp-weight`, `--mtp-only` and `--mtp-init` train with the head as an extra loss or train the head alone
   (`mtp.py`). As an extra loss it did not change field F1 over five seeds.
 - `experiments/label_vote.py`: scores labels chosen from several labelling runs against the reviewed pages.
