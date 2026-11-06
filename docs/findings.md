@@ -153,14 +153,16 @@ validation pages). The model itself was not changed, so its scores stay those of
 **Two or three drafted tokens per step give 2.3 to 2.5 times faster decoding, at the same F1.** On 30 validation
 pages, with the trained head:
 
-| Drafted tokens per step | Tokens per model pass | Faster than plain decoding | Lenient F1, plain / drafted |
-|---|---|---|---|
-| 1 | 1.97 | 1.91× | 0.841 / 0.854 |
-| 2 | 2.74 | 2.28× | 0.852 / 0.855 |
-| 3 | 3.19 | 2.46× | 0.852 / 0.851 |
+| Drafted tokens per step | Tokens per model pass | Seconds per page, plain / drafted | Faster | Lenient F1, plain / drafted |
+|---|---|---|---|---|
+| 1 | 1.97 | 17.7 / 9.3 | 1.91× | 0.841 / 0.854 |
+| 2 | 2.74 | 13.5 / 5.9 | 2.28× | 0.852 / 0.855 |
+| 3 | 3.19 | 13.5 / 5.5 | 2.46× | 0.852 / 0.851 |
 
-A third draft adds less than the second because each draft beyond the first is built on the head's own output, and
-fewer of them are right. The F1 differences are within the seed spread and go both ways.
+Each pair of times was measured in one job, one page at a time in bf16; plain decoding of the same pages took 13.5 to
+17.7 seconds per page in different jobs on the same GPU type, so the speed-ups compare within a row. A third draft
+adds less than the second because each draft beyond the first is built on the head's own output, and fewer of them
+are right. The F1 differences are within the seed spread and go both ways.
 
 **The answers are the same in float32 but not always in bf16.** In float32, drafted and plain decoding gave the same
 answer on 10 of 10 pages. In bf16, about one answer in four differed somewhere: a pass over several tokens rounds the

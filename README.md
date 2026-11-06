@@ -16,7 +16,8 @@
 **In short:** on 204 held-out CV pages, 86 % of the values ResuVL-L writes match the human-reviewed labels and it
 finds 83 % of the values in those labels (field F1 0.845). The model that made the training labels, run a second time
 on 50 reviewed pages, scores 0.912, which is the practical ceiling for models trained on its labels. ResuVL-L reads one
-page in about a minute on a laptop CPU, with no GPU and no PDF text layer.
+page in about a minute on a laptop CPU, with no GPU and no PDF text layer. On an H100 GPU it reads a page in about
+5.5 seconds with drafted decoding (`--drafts 3`), against 13.5 seconds without it, at the same field F1.
 
 Most resume parsers read the text layer of a PDF. That layer can differ from what a recruiter sees: hidden text is
 extracted like visible text, two-column layouts come out interleaved, scanned pages have no text layer at all, and
@@ -45,6 +46,14 @@ reach. Definitions and development scores are in
 [docs/evaluation.md](docs/evaluation.md); CPU times are medians over 10 validation pages on an Apple M2 Max, in float32 except for ResuVL-L, whose language
 model runs in bf16 on CPUs that support it.
 ResuVL-L v0.1 stays available as revision `v0.1.0` of the ResuVL-L repository.
+
+**Faster on a GPU.** Since version 0.3.0, ResuVL-L's weight file includes the multi-token prediction head of its base
+model, retrained for 16 minutes. With `--drafts 3`, the head proposes the next three tokens, the model checks them in
+the same pass that writes its own next token, and every draft that differs from the model's choice is replaced. On an
+H100 this cuts the time per page from 13.5 to 5.5 seconds, 2.46 times faster, with the same field F1. It gives no
+speed-up on a CPU. Details: [findings](docs/findings.md#faster-decoding-with-the-base-models-drafting-head).
+
+<img alt="Bar chart of ResuVL-L seconds per CV page on an H100 GPU, plain against drafted decoding: 1 drafted token per step 17.7 s against 9.3 s (1.91 times faster), 2 drafted tokens 13.5 s against 5.9 s (2.28 times), 3 drafted tokens 13.5 s against 5.5 s (2.46 times)." src="docs/assets/speed.svg" width="700">
 
 ## Limits of the data
 

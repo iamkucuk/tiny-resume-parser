@@ -11,7 +11,7 @@ ResuVL-L of version 0.1.0, stays available as revision `v0.1.0` of the ResuVL-L 
 | Lenient F1, 204 test pages | 0.845 | 0.681 | 0.652 |
 | Lenient F1 (gold dev / val) | 0.858 / 0.822 | 0.644 / 0.676 | 0.660 / 0.649 |
 | CPU time per page (M2 Max) | ~55 s (bf16 language model) | ~68 s (fp32) | ~30 s (fp32) |
-| Faster GPU decoding | 2.46× with `--drafts 3` (H100) | not available | not available |
+| GPU time per page (H100) | 5.5 s with `--drafts 3`, 13.5 s without | not measured | not measured |
 
 ## Intended use
 

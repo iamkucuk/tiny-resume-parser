@@ -2,7 +2,7 @@
 
     python docs/assets/make_figures.py
 
-Numbers come from the research record (docs/research/journal.md, 2026-10-15 and 2026-10-16) and are written out below so a
+Numbers come from the research record (docs/research/journal.md, 2026-10-15, 2026-10-16 and 2026-11-06) and are written out below so a
 change is one edit here. The example figure uses docs/assets/example_page.jpg and ResuVL-L's answer
 for that page (docs/assets/example_answer.json).
 """
@@ -35,6 +35,14 @@ LOST = [
     ("written in part", 3.1),
     ("misread characters", 2.9),
     ("under another field", 1.8),
+]
+
+# ResuVL-L decoding time on one H100, bf16, first 30 validation pages; each pair (plain, drafted) timed in one job
+# (journal 2026-11-06 03:00, MTPdraftK: totals 530.1 / 277.8, 405.0 / 177.7, 406.3 / 165.0 s).
+SPEED = [  # (drafted tokens per step, plain s per page, drafted s per page)
+    (1, 530.1 / 30, 277.8 / 30),
+    (2, 405.0 / 30, 177.7 / 30),
+    (3, 406.3 / 30, 165.0 / 30),
 ]
 
 # One light version on a white card: GitHub picks <picture> variants by the operating-system theme, which can differ
@@ -100,6 +108,45 @@ def lost_chart(theme: str) -> None:
     plt.close(fig)
 
 
+def speed_chart(theme: str) -> None:
+    t = THEMES[theme]
+    fig, ax = plt.subplots(figsize=(7.5, 2.9))
+    y = 0
+    ticks, labels = [], []
+    for k, plain, drafted in SPEED[::-1]:
+        ax.barh(y + 0.2, plain, height=0.38, color=t["grid"])
+        ax.barh(y - 0.2, drafted, height=0.38, color=t["bar"])
+        ax.text(plain + 0.2, y + 0.2, f"{plain:.1f} s  plain", va="center", fontsize=9.5, color=t["muted"])
+        ax.text(
+            drafted + 0.2,
+            y - 0.2,
+            f"{drafted:.1f} s  drafted, {plain / drafted:.2f}x faster",
+            va="center",
+            fontsize=9.5,
+            color=t["text"],
+        )
+        ticks.append(y)
+        labels.append(f"{k} drafted token{'s' if k > 1 else ''}\nper step")
+        y += 1.2
+    ax.set_yticks(ticks, labels)
+    ax.set_xlim(0, 27)
+    ax.set_title(
+        "ResuVL-L seconds per CV page on an H100 GPU (lower is faster)", loc="left", fontsize=11, color=t["text"]
+    )
+    style(ax, t)
+    ax.tick_params(axis="y", labelcolor=t["text"])
+    fig.text(
+        0.01,
+        0.01,
+        "30 validation pages, bf16, one page at a time. Each pair was timed in one job; same field F1 with and without drafts.",
+        fontsize=8.5,
+        color=t["muted"],
+    )
+    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    fig.savefig(ASSETS / "speed.svg", facecolor="white")
+    plt.close(fig)
+
+
 def compact_json(x, indent: int = 0) -> str:
     """JSON with one key per line but lists of plain values on one line, so more of the answer fits."""
     pad = "  " * indent
@@ -144,5 +191,6 @@ if __name__ == "__main__":
     for theme in THEMES:
         results_chart(theme)
         lost_chart(theme)
+        speed_chart(theme)
     example_figure()
     print("wrote", sorted(p.name for p in ASSETS.glob("*.svg")) + ["example.png"])
