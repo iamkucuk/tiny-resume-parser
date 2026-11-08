@@ -6,6 +6,8 @@ Scores below are lenient field F1 on 50 reviewed gold pages and 79 validation pa
 
 ## How the recipe developed
 
+<img alt="Dot chart of lenient field F1 on 50 gold and 79 validation pages after each step: LoRA fine-tune about 0.65 on gold; full fine-tune 0.684 / 0.671; with image noise and a trained vision encoder 0.706 / 0.708; average of 10 runs (ResuVL-L v0.1) 0.732 / 0.724; newer base model 0.835 / 0.806; average of 3 runs (ResuVL-L) 0.858 / 0.822." src="assets/steps.svg" width="900">
+
 The recipe developed through successive changes evaluated against baselines on both development sets. However, several changes helped only one set or failed to transfer across model sizes.
 
 **Getting a valid answer at all.** The first LoRA fine-tune for ResuVL-L v0.1 reached a low training loss, yet none of 10 answers was valid JSON. Every answer repeated one entry of the label's `corrections` list until the 2,500-token limit. That list recorded spelling fixes made by the labelling model, so its content was not visible on the page.
@@ -121,6 +123,8 @@ The base model's multi-token prediction head speeds up GPU decoding without redu
 ResuVL-L's base model includes a multi-token prediction (MTP) head that predicts the token after next from the current state and next token. ResuVL-L fine-tuning did not use this head, and the initial release omitted it. The mechanism operates as speculative decoding with a built-in draft model, similar to DeepSeek-V3 and vLLM's Qwen3.5 support.
 
 Because disagreeing tokens are replaced by the base model's choice, the output matches greedy decoding.
+
+<img alt="Diagram of drafted decoding. The head drafts three tokens. One model pass computes the model's own choice at each of the three positions. Drafts 1 and 2 match and are kept; draft 3 differs and is replaced by the model's choice, giving three tokens from one pass." src="assets/drafting.svg" width="900">
 
 **The head needed only 16 minutes of training.** Attached unchanged to ResuVL-L, the pretrained head drafted 86 % of tokens correctly and accelerated H100 decoding 1.60 times on 129 development pages (0.857 / 0.828 versus 0.864 / 0.826). Training only the head's 20 million parameters on frozen model answers for two epochs took 16 minutes. This training raised correct drafts on model answers from 87.6 % to 97.6 % on 20 validation pages without changing release model weights.
 

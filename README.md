@@ -65,6 +65,8 @@ With `--drafts 3`, decoding proceeds in three steps:
 2. The model checks them in the same pass that writes its own next token.
 3. Every draft that differs from the model's choice is replaced.
 
+<img alt="Diagram of drafted decoding. The head drafts three tokens. One model pass computes the model's own choice at each of the three positions. Drafts 1 and 2 match and are kept; draft 3 differs and is replaced by the model's choice, giving three tokens from one pass." src="docs/assets/drafting.svg" width="900">
+
 Details are in [findings](docs/findings.md#faster-decoding-with-the-base-models-drafting-head).
 
 <img alt="Bar chart of ResuVL-L seconds per CV page on an H100 GPU, plain against drafted decoding: 1 drafted token per step 17.7 s against 9.3 s (1.91 times faster), 2 drafted tokens 13.5 s against 5.9 s (2.28 times), 3 drafted tokens 13.5 s against 5.5 s (2.46 times)." src="docs/assets/speed.svg" width="700">
@@ -141,6 +143,8 @@ To read a CV, the released model receives only the page image and writes the JSO
 No large model and no PDF text layer are used ([reading a CV](docs/how-it-works.md#reading-a-cv)).
 
 ## Findings
+
+<img alt="Dot chart of lenient field F1 on 50 gold and 79 validation pages after each step: LoRA fine-tune about 0.65 on gold; full fine-tune 0.684 / 0.671; with image noise and a trained vision encoder 0.706 / 0.708; average of 10 runs (ResuVL-L v0.1) 0.732 / 0.724; newer base model 0.835 / 0.806; average of 3 runs (ResuVL-L) 0.858 / 0.822." src="docs/assets/steps.svg" width="900">
 
 The largest gain came from the base model.
 ResuVL-L and ResuVL-L v0.1 use the same training recipe and differ only in their base models.
