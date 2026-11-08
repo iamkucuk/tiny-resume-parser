@@ -1,58 +1,50 @@
 # Findings
 
-This page summarises what changed the score and what did not, in the order the work happened. Every change was
-compared with a named baseline run, usually over three training seeds, and was kept only if it beat the
-seed-to-seed spread (about 0.012 F1) on both development sets: 50 reviewed gold pages and 79 validation pages.
-Scores below are lenient field F1 on those two sets, written as gold / validation. The full record of every run,
-including the reasoning before each one, is in the [research log](research/journal.md); the code of the methods
-that were not adopted is kept in the [`archive-2026-10-15`](https://github.com/iamkucuk/tiny-resume-parser/tree/archive-2026-10-15) tag.
+This page summarises what changed the score and what did not, in the order the work happened. A change was kept only if it beat the seed-to-seed spread of about 0.012 F1 on both development sets. Every change was compared with a named baseline run, usually over three training seeds.
+
+Scores below are lenient field F1 on 50 reviewed gold pages and 79 validation pages, written as gold / validation. The full record of every run, including the reasoning before each one, is in the [research log](research/journal.md). The code of the methods that were not adopted is kept in the [`archive-2026-10-15`](https://github.com/iamkucuk/tiny-resume-parser/tree/archive-2026-10-15) tag.
 
 ## How the recipe developed
 
-**Getting a valid answer at all.** The first LoRA fine-tune for ResuVL-L v0.1 reached a low training loss, yet none
-of 10 answers was valid JSON: every answer repeated one entry of the label's `corrections` list until the
-2,500-token limit. That list recorded spelling fixes the labelling model had made, so its content was not visible
-on the page. Removing it from the target, together with token perturbation (on about one page in ten, one input
-token of the answer is replaced by a random token while the target stays correct; Nougat, arXiv 2308.13418),
-raised valid answers to 21 of 50. A later test with the final recipe turned token perturbation off over 3 seeds:
-0.716 / 0.711 against 0.706 / 0.708 with it, and no fewer loops (8 answers hit the token limit either way), so the
-loops ended because the `corrections` list was removed. The two smaller models gave the same answer. For
-ResuVL-S, turning perturbation off gave 0.610 / 0.618 against 0.617 / 0.611 (3-seed means), and raising
-it to Nougat's strength (about 9 replaced tokens per page) gave 0.583 / 0.608. For ResuVL-M the stronger setting
-raised the 3-seed mean to 0.628 / 0.665 from 0.619 / 0.654, within the seed spread, and the average of those three
-models scored 0.674 / 0.658 against 0.644 / 0.676: higher on one set, lower on the other. The recipe keeps the light
-setting. The lesson that stayed: training loss did not show the
-loops; only generating answers did.
+The recipe developed through successive changes evaluated against baselines on both development sets. However, several changes helped only one set or failed to transfer across model sizes.
 
-**LoRA, then full fine-tuning.** More epochs, a trainable image-to-text projector and 12 image tiles instead of 6
-brought LoRA to about 0.65 on the gold pages, where it stopped improving. The 12 tiles helped tall pages (+0.094 on
-the 6 such gold pages) and nothing else. Fine-tuning all weights instead gave 0.693 / 0.669, about +0.03.
+**Getting a valid answer at all.** The first LoRA fine-tune for ResuVL-L v0.1 reached a low training loss, yet none of 10 answers was valid JSON. Every answer repeated one entry of the label's `corrections` list until the 2,500-token limit. That list recorded spelling fixes made by the labelling model, so its content was not visible on the page.
 
-**Image noise and the vision encoder.** Training on pages with mild noise (lower resolution, rotation up to 1.5°,
-contrast, blur, JPEG artefacts, on half of the pages) and also training the vision encoder raised the 3-seed mean
-from 0.684 / 0.671 to 0.706 / 0.708. Each change alone helped only one of the two sets.
+Removing `corrections` from the target, together with token perturbation, raised valid answers to 21 of 50. Token perturbation replaced one input token with a random token on about one page in ten while keeping the target correct (Nougat, arXiv 2308.13418). A later test with the final recipe turned perturbation off over 3 seeds, scoring 0.716 / 0.711 compared with 0.706 / 0.708 with it.
 
-**Weight averaging.** Averaging the weights of 10 fine-tuned models ("model soup", arXiv 2203.05482) gave
-0.732 / 0.724, +0.023 / +0.017 over the mean of the single models (0.709 / 0.707), at no extra inference cost. In an
-earlier set of runs, larger averages (13 to 19 models) did not score higher on validation. ResuVL-L v0.1
-averages 10 runs trained only on the licensed pages.
+Turning perturbation off did not reduce loops, as 8 answers hit the token limit either way. The loops ended because the `corrections` list was removed. Training loss did not show the loops; only generating answers did.
 
-**Answer repair.** On 1 of the 50 gold pages ResuVL-L v0.1 writes no valid JSON (broken answers come
-from a loop, a bad escape or a missing comma). Repairing the answer after generation (fix escapes, keep the complete
-values before the break, drop repeated list items) raises gold from 0.732 to 0.739 and leaves validation unchanged. Development decisions compare unrepaired answers; the `parse` command returns repaired ones.
+The two smaller models confirmed this result:
+- **ResuVL-S without perturbation** scored 0.610 / 0.618 against 0.617 / 0.611 with it across 3-seed means.
+- **ResuVL-S with Nougat strength** (about 9 replaced tokens per page) dropped to 0.583 / 0.608.
+- **ResuVL-M with stronger perturbation** scored 0.628 / 0.665 compared with 0.619 / 0.654, which stayed within the seed spread.
+- **The average of the three ResuVL-M models with the stronger setting** scored 0.674 / 0.658 against 0.644 / 0.676 for the average with the light setting: higher on one set, lower on the other.
 
-**More data.** Training on half of the pages cost 0.04 to 0.08 with the same number of steps, so the number of
-distinct pages matters. Adding 993 pages from a second dataset gave +0.011 / +0.013 over 6 seeds, which is within
-noise; its licence is unknown, so released weights do not use it.
+The recipe keeps the light setting.
 
-**The two smaller models.** The ResuVL-L v0.1 recipe did not transfer. ResuVL-M's base model with it scored 0.370 / 0.460, and 10
-of its 50 gold answers looped to the token limit. A 6× higher learning rate and 10 epochs gave 0.596 / 0.627; 30
-image tiles instead of 12 added +0.043 / +0.032 (20 tiles scored the same over 3 seeds and was only 4 % faster on
-CPU); averaging 3 seeds gave 0.644 / 0.676 (ResuVL-M). ResuVL-S needed
-an even higher learning rate (1e-4: +0.024 / +0.031 over 6e-5), did worse with more than 12 tiles, and its 4-seed
-average reached 0.660 / 0.649, +0.044 / +0.033 over a single model (ResuVL-S).
+**LoRA, then full fine-tuning.** More epochs, a trainable image-to-text projector, and 12 image tiles instead of 6 brought LoRA to about 0.65 on gold pages, where improvement stopped. The 12 tiles helped tall pages (+0.094 on the 6 tall gold pages) and nothing else. Fine-tuning all weights instead gave 0.693 / 0.669, gaining about +0.03 over LoRA.
+
+**Image noise and the vision encoder.** Adding mild image noise and training the vision encoder raised the 3-seed mean from 0.684 / 0.671 to 0.706 / 0.708. Mild noise included lower resolution, rotation up to 1.5°, contrast, blur, and JPEG artefacts on half of the pages. Each change alone helped only one of the two sets.
+
+**Weight averaging.** Averaging the weights of 10 fine-tuned models ("model soup", arXiv 2203.05482) gave 0.732 / 0.724. This was a gain of +0.023 / +0.017 over the single-model mean of 0.709 / 0.707, at no extra inference cost. Larger averages of 13 to 19 models did not score higher on validation in earlier runs.
+
+ResuVL-L v0.1 averages 10 runs trained only on the licensed pages.
+
+**Answer repair.** On 1 of the 50 gold pages, ResuVL-L v0.1 writes invalid JSON caused by a loop, a bad escape, or a missing comma. Repairing answers after generation raises gold from 0.732 to 0.739 and leaves validation unchanged. Post-processing fixes escapes, keeps complete values before the break, and drops repeated list items.
+
+Development decisions compare unrepaired answers; the `parse` command returns repaired ones.
+
+**More data.** Training on half of the pages reduced scores by 0.04 to 0.08 for the same step count, showing that distinct page count matters. Adding 993 pages from a second dataset gave +0.011 / +0.013 over 6 seeds, which falls within noise. Because its licence is unknown, released weights do not use this second dataset.
+
+**The two smaller models.** The ResuVL-L v0.1 recipe did not transfer directly to smaller models. ResuVL-M's base model scored only 0.370 / 0.460 with it, and 10 of its 50 gold answers looped to the token limit. A 6× higher learning rate and 10 epochs improved ResuVL-M to 0.596 / 0.627.
+
+Using 30 image tiles instead of 12 added +0.043 / +0.032 to ResuVL-M. Using 20 tiles scored the same over 3 seeds and ran only 4 % faster on CPU. Averaging 3 seeds gave 0.644 / 0.676 for ResuVL-M.
+
+ResuVL-S required an even higher learning rate of 1e-4 (+0.024 / +0.031 over 6e-5) and scored worse with more than 12 tiles. Its 4-seed average reached 0.660 / 0.649, an increase of +0.044 / +0.033 over a single model.
 
 ## What did not help
+
+Several training and decoding modifications failed to beat the baseline. Most of these attempts fell within the seed spread, lost score, or slowed decoding.
 
 | Tried | Result |
 |---|---|
@@ -63,95 +55,76 @@ average reached 0.660 / 0.649, +0.044 / +0.033 over a single model (ResuVL-S).
 | Stopping loops at generation time (repetition penalty, banning repeated word sequences) | no gain on ResuVL-L v0.1, lower on ResuVL-M; the ban also broke normal JSON |
 | Multi-token prediction as an extra training loss (ResuVL-L, weight 0.3, 5 seeds; arXiv 2404.19737) | 0.827 / 0.814 against 0.836 / 0.808 without it |
 
-Smaller changes that did not help either: training on labels rewritten into a canonical form (−0.01), 24 image tiles
-for ResuVL-L v0.1 (−0.05 on gold), 2 pages per step (−0.02), other learning rates and epoch counts, NEFTune noise on text
-embeddings, a 10× lower learning rate for the vision encoder, a first training stage on page transcripts, and a
-second model that checks and fixes the labels (it fixed 14 real errors on 30 pages and introduced about 8 new ones).
-Their numbers are in the [research log](research/journal.md).
+Smaller changes with measured scores also failed:
+
+| Smaller change | Result |
+|---|---|
+| Training on labels rewritten into a canonical form | −0.01 |
+| 24 image tiles for ResuVL-L v0.1 | −0.05 on gold |
+| 2 pages per step | −0.02 |
+| Second model that checks and fixes labels | Fixed 14 real errors on 30 pages and introduced about 8 new ones |
+
+Other changes that did not help include other learning rates and epoch counts, NEFTune noise on text embeddings, and a 10× lower learning rate for the vision encoder. A first training stage on page transcripts also failed to help. Their numbers are in the [research log](research/journal.md).
 
 ## Why reinforcement learning did not help
 
-GRPO started from a fully fine-tuned ResuVL-L v0.1 model (0.705 / 0.719). For each training page it sampled 4 answers at
-temperature 1 and rewarded each with its field F1 against the label, for about 350 steps of 4 pages. Four settings
-(learning rate 1e-6 and 3e-6, temperature 0.7, a KL penalty) all ended within the seed spread. The training logs, the
-answers before and after, and 8 new samples per page from the starting model show why
-([`grpo_probe.py`](https://github.com/iamkucuk/tiny-resume-parser/tree/archive-2026-10-15/experiments/grpo_probe.py)).
+Reinforcement learning with GRPO did not improve over supervised fine-tuning. Across four tested hyperparameter settings, all runs ended within the seed spread.
 
-**The answers changed, but not in one direction.** After GRPO, 39 to 46 of the 50 gold answers differ from before,
-about as many as after one more epoch of supervised training. On pages that stay valid JSON, the values gained and
-lost cancel out (+79 and −75 at learning rate 1e-6). The net change comes from a few pages switching between valid
-and invalid JSON, each holding about 100 values, which is why gold and validation moved in opposite directions.
+GRPO started from a fully fine-tuned ResuVL-L v0.1 model scoring 0.705 / 0.719. For each training page, it sampled 4 answers at temperature 1 and rewarded each with its field F1 against the label. Training ran for about 350 steps of 4 pages. Four settings were tested: learning rate 1e-6, learning rate 3e-6, temperature 0.7, and a KL penalty.
 
-**There was a learning signal, but little room on the training pages.** The 4 samples of a page differed by about
-0.23 F1, and only 1 % of groups gave no signal. The room above the greedy answer, however, was small on the pages
-GRPO trained on, because supervised training had already fitted them:
+The training logs, the answers before and after, and 8 new samples per page from the starting model show why ([`grpo_probe.py`](https://github.com/iamkucuk/tiny-resume-parser/tree/archive-2026-10-15/experiments/grpo_probe.py)).
+
+**The answers changed, but not in one direction.** After GRPO, 39 to 46 of the 50 gold answers differed from before, matching the variation seen after one more supervised epoch. On pages that stayed valid JSON, values gained and lost cancelled out (+79 and −75 at learning rate 1e-6). The net change came from a few pages switching between valid and invalid JSON, each holding about 100 values, causing gold and validation to move in opposite directions.
+
+**There was a learning signal, but little room on the training pages.** The 4 samples of a page differed by about 0.23 F1, and only 1 % of groups gave no signal. However, room above the greedy answer was small on training pages because supervised training had already fitted them:
 
 | Starting model, 8 samples per page | Greedy answer | Mean sample | Best sample | Pages where a sample beats greedy by > 0.02 |
 |---|---|---|---|---|
 | 40 training pages | 0.910 | 0.811 | 0.925 | 8 of 40 |
 | 50 gold pages (not trained on) | 0.703 | 0.571 | 0.768 | 27 of 50 |
 
-**Much of the reward measured whether a sample was valid JSON.** At temperature 1, 4 % of samples on training pages
-are not JSON (14 % on gold pages). Leaving those out cuts the reward variance within a page to a third. Greedy
-decoding rarely produces such answers, so learning to avoid them raised the training reward without changing the
-greedy answer.
+**Much of the reward measured whether a sample was valid JSON.** At temperature 1, 4 % of samples on training pages were not JSON, compared with 14 % on gold pages. Leaving out invalid samples cut reward variance within a page to a third. Greedy decoding rarely produces invalid JSON, so learning to avoid it raised training reward without altering greedy outputs.
 
-**The reward also follows the labels' arbitrary splits.** For 24 % of sample pairs, field F1 and content F1 rank the
-two samples in opposite order: field F1 prefers the sample that splits text into fields the way the label does,
-even when the other sample has more correct content.
+**The reward also follows the labels' arbitrary splits.** For 24 % of sample pairs, field F1 and content F1 ranked the two samples in opposite order. Field F1 preferred samples splitting text to match the label, even when the alternative had more correct content.
 
-One expected cause turned out to be wrong: the model does produce many of the values it misses. Of the values the
-greedy answer misses, 74 % on training pages and 56 % on gold pages appear in at least one of the 8 samples. The
-reward simply did not concentrate on them.
+One expected cause turned out to be wrong: the model does produce many missed values. Of values missed by the greedy answer, 74 % on training pages and 56 % on gold pages appeared in at least one of the 8 samples. The reward simply did not concentrate on them.
 
-Two follow-ups were then tested. GRPO on 974 pages the supervised model had never seen (on unseen gold pages a sample
-beat the greedy answer on 27 of 50, against 8 of 40 training pages) gave 0.708 / 0.714 with the field F1 reward and 0.718 / 0.712 with the content F1
-reward, against 0.705 / 0.719 for the starting model: again within the seed spread. Keeping only pages where a sample
-beats the greedy answer remains untested.
+Two follow-ups were then tested. GRPO on 974 pages the supervised model had never seen (on unseen gold pages a sample beat the greedy answer on 27 of 50, against 8 of 40 training pages) was run with each reward. Compared with the starting model's 0.705 / 0.719, field F1 reward scored 0.708 / 0.714 and content F1 reward scored 0.718 / 0.712. Both remained within the seed spread; keeping only pages where a sample beats greedy remains untested.
 
 ## A newer base model: ResuVL-L
 
-A literature search in October 2026 ranked a newer base model inside the 1B limit first, ahead of more data and of
-transfer from a larger model. ResuVL-L was trained with the ResuVL-L v0.1 recipe unchanged, on a newer and smaller
-base model.
+A newer base model within the 1B limit gave the largest single score gain. Further tuning of the recipe on this base model did not produce additional gains.
 
-**The new base model is the largest single gain.** Three runs averaged 0.835 / 0.806 against 0.711 / 0.707 for
-ResuVL-L v0.1, about six times the seed spread on both sets, and every epoch from the fourth on scored at least 0.826
-on the gold pages. Averaging the three runs gave 0.858 / 0.822, and this average is the released ResuVL-L. Its base
-model has a newer and larger language model, and its model card describes training on image and text tokens together
-from early on; which of these causes the gain was not tested.
+A literature search in October 2026 ranked this newer base model ahead of adding more data or transferring from a larger model. ResuVL-L was trained with the ResuVL-L v0.1 recipe unchanged, using this newer and smaller base model.
 
-**The ResuVL-L recipe was not improved by further tuning.** The ResuVL-L v0.1 settings were kept after three checks
-against the five-seed mean of 0.836 / 0.808. A 2× higher learning rate gave 0.840 / 0.799. Ten epochs instead of
-six gave 0.829 / 0.809; validation stayed between 0.80 and 0.82 from the fifth to the tenth epoch, so the model has
-converged by the sixth. Larger page images help on validation only: up to 20 tiles gave 0.842 / 0.820 over five
-seeds, and 30 tiles gave 0.845 / 0.814. The validation gain is at the edge of the seed spread and the gold gain inside
-it, and the larger images cost up to 1.7 times the image tokens on a CPU, so 12 tiles were kept.
+**The new base model is the largest single gain.** Three runs averaged 0.835 / 0.806 compared with 0.711 / 0.707 for ResuVL-L v0.1, about six times the seed spread on both sets. Every epoch from the fourth onward scored at least 0.826 on gold pages. Averaging the three runs gave 0.858 / 0.822, which forms the released ResuVL-L.
 
-**Synthetic pages: the gain was mostly longer training.** 1,000 pages were rendered from training labels with new
-names and contact details, four layouts, nine fonts and nine colours, so their labels are exact. Added to the training
-pages, they gave 0.741 / 0.724 for ResuVL-L v0.1, against 0.711 / 0.707. Those runs also took 882 training steps
-instead of 528, so ResuVL-L v0.1 was trained on the real pages alone for the same number of steps (10 epochs): it
-reached 0.716 / 0.723. With training length matched, the synthetic pages add +0.025 on the gold pages and nothing on
-validation, so they were not adopted. 3,000 synthetic pages gave 0.750 / 0.742 after about 1,650 steps; no run on the
-real pages alone matches that length. For ResuVL-L, 1,000 synthetic pages gave 0.843 / 0.812 against 0.835 / 0.806.
+The base model uses a newer, larger language model, and its model card describes joint early training on image and text tokens. Which of these two factors drove the gain was not tested.
+
+**The ResuVL-L recipe was not improved by further tuning.** Settings from ResuVL-L v0.1 were retained after three checks against the five-seed mean of 0.836 / 0.808:
+- **Learning rate**: A 2× higher learning rate gave 0.840 / 0.799 compared with 0.836 / 0.808.
+- **Epoch count**: Ten epochs gave 0.829 / 0.809 instead of 0.836 / 0.808 for six epochs, with validation staying between 0.80 and 0.82 from the fifth to the tenth epoch, so the model has converged by the sixth.
+- **Image tiles**: 20 tiles gave 0.842 / 0.820 and 30 tiles gave 0.845 / 0.814 over five seeds, but increased CPU image token costs up to 1.7 times.
+
+Because the validation gain was at the edge of the seed spread and gold gain remained inside it, 12 tiles were kept.
+
+**Synthetic pages: the gain was mostly longer training.** Adding 1,000 synthetic pages with exact labels to ResuVL-L v0.1 gave 0.741 / 0.724 against 0.711 / 0.707. These pages featured new names, contact details, four layouts, nine fonts, and nine colours. However, these runs took 882 training steps instead of the standard 528 steps.
+
+Training ResuVL-L v0.1 on real pages alone for the same 882 steps (10 epochs) reached 0.716 / 0.723. With training steps matched, synthetic pages added +0.025 on gold and nothing on validation, so they were not adopted.
+
+Using 3,000 synthetic pages scored 0.750 / 0.742 after about 1,650 steps, but no real-page run matched that length. On ResuVL-L, 1,000 synthetic pages yielded 0.843 / 0.812 compared with 0.835 / 0.806.
 
 ## Faster decoding with the base model's drafting head
 
-ResuVL-L's base model ships with a small extra layer, a multi-token prediction (MTP) head, that predicts the token
-after next from the model's last state and the next token. ResuVL-L's fine-tuning did not use it, and the first
-release left it out. Used as a drafter, the head proposes the next tokens and the model checks them all in one pass;
-every token that disagrees with the model's own choice is replaced by it, so the answer is the model's greedy answer.
-The method is speculative decoding with a built-in draft model, as in DeepSeek-V3 and vLLM's Qwen3.5 support.
+The base model's multi-token prediction head speeds up GPU decoding without reducing F1 accuracy. However, this drafted decoding provides no speedup on a CPU.
 
-**The head needed only 16 minutes of training.** Attached unchanged to ResuVL-L, the pretrained head drafted 86 % of
-tokens correctly and made decoding 1.60 times faster on an H100 over the 129 development pages, with 0.857 / 0.828
-against 0.864 / 0.826 for plain decoding. Training only the head (20 million parameters) on the frozen model's
-training answers, for two epochs, raised its correct drafts on the model's own answers from 87.6 % to 97.6 % (20
-validation pages). The model itself was not changed, so its scores stay those of the release.
+ResuVL-L's base model includes a multi-token prediction (MTP) head that predicts the token after next from the current state and next token. ResuVL-L fine-tuning did not use this head, and the initial release omitted it. The mechanism operates as speculative decoding with a built-in draft model, similar to DeepSeek-V3 and vLLM's Qwen3.5 support.
 
-**Two or three drafted tokens per step give 2.3 to 2.5 times faster decoding, at the same F1.** On 30 validation
-pages, with the trained head:
+Because disagreeing tokens are replaced by the base model's choice, the output matches greedy decoding.
+
+**The head needed only 16 minutes of training.** Attached unchanged to ResuVL-L, the pretrained head drafted 86 % of tokens correctly and accelerated H100 decoding 1.60 times on 129 development pages (0.857 / 0.828 versus 0.864 / 0.826). Training only the head's 20 million parameters on frozen model answers for two epochs took 16 minutes. This training raised correct drafts on model answers from 87.6 % to 97.6 % on 20 validation pages without changing release model weights.
+
+**Two or three drafted tokens per step give 2.3 to 2.5 times faster decoding, at the same F1.** Measurements on 30 validation pages with the trained head show consistent acceleration:
 
 | Drafted tokens per step | Tokens per model pass | Seconds per page, plain / drafted | Faster | Lenient F1, plain / drafted |
 |---|---|---|---|---|
@@ -159,34 +132,27 @@ pages, with the trained head:
 | 2 | 2.74 | 13.5 / 5.9 | 2.28× | 0.852 / 0.855 |
 | 3 | 3.19 | 13.5 / 5.5 | 2.46× | 0.852 / 0.851 |
 
-Each pair of times was measured in one job, one page at a time in bf16; plain decoding of the same pages took 13.5 to
-17.7 seconds per page in different jobs on the same GPU type, so the speed-ups compare within a row. A third draft
-adds less than the second because each draft beyond the first is built on the head's own output, and fewer of them
-are right. The F1 differences are within the seed spread and go both ways.
+Each pair of times was measured in one job, processing one page at a time in bf16. Plain decoding of these pages took 13.5 to 17.7 seconds in separate runs on the same GPU type, so speedups compare within each row. A third draft adds less speed than the second because later drafts rely on the head's own output, where accuracy drops.
 
-**The answers are the same in float32 but not always in bf16.** In float32, drafted and plain decoding gave the same
-answer on 10 of 10 pages. In bf16, about one answer in four differed somewhere: a pass over several tokens rounds the
-matrix products differently from a one-token pass, and a near-tie between two tokens can then go the other way. The
-same weights decoded plainly at batch size 8 instead of 1 also changed the gold score, from 0.864 to 0.858, so bf16
-answers were never fixed to the token.
+**The answers are the same in float32 but not always in bf16.** In float32, drafted and plain decoding gave identical answers on 10 of 10 pages. In bf16, about one in four answers differed because multi-token passes round matrix products differently, allowing near-ties to resolve differently. Decoding the same weights plainly at batch size 8 instead of 1 shifted gold F1 from 0.864 to 0.858, showing bf16 answers were never fixed to the token.
 
-**No gain on a CPU.** On an M2 Max a pass over 2 or 3 tokens takes 1.5 or 2.1 times as long as a one-token pass,
-so checking drafts costs about what it saves. On a GPU, a pass over a few tokens costs about the same as one.
+**No gain on a CPU.** On an Apple M2 Max, a pass over 2 or 3 tokens takes 1.5 or 2.1 times as long as a single-token pass, eliminating any time savings. On a GPU, checking several tokens in one pass costs about the same as checking one.
 
-The head is in ResuVL-L's weight file, and `tiny-resume-parser parse --drafts 3` uses it. Training the head together
-with the model, as an extra loss, gave a head that drafted 98 % correctly but did not change F1 (see above).
+The head is included in ResuVL-L's weight file and runs via `tiny-resume-parser parse --drafts 3`. Training the head jointly with the model as an auxiliary loss gave 98 % draft accuracy but did not alter F1.
 
 ## Where the errors are
 
 <img alt="Bar chart of gold values ResuVL-L v0.1 loses: left out 10.6 %, page not parsed 6.7 %, joined with other text 4.6 %, written in part 3.1 %, misread characters 2.9 %, under another field 1.8 %." src="assets/lost-values.svg" width="700">
 
-The breakdown is of an earlier ResuVL-L v0.1 average on the 50 gold pages, before it was rebuilt without the pages
-of unknown licence; the released ResuVL-L v0.1 scores within 0.01 of it. The largest loss is values the model does not write at all. Misread characters are one of the smallest. Part of the
-remaining gap is in the labels themselves. When the labelling model labels 50 reviewed pages a second time, it
-scores 0.912 field F1 against them; about half of the disagreements are the same text split into fields
-differently. Measured by content F1, which ignores how text is split, the second run reaches 0.967.
+Omitted values account for the largest loss of score, whereas misread characters represent one of the smallest. Part of the remaining error gap lies in ambiguities within the labels themselves.
+
+This error breakdown is of an earlier ResuVL-L v0.1 average on the 50 gold pages, before it was rebuilt without the pages of unknown licence. The released ResuVL-L v0.1 scores within 0.01 of it.
+
+When the labelling model labels 50 reviewed pages a second time, it scores 0.912 field F1 against them. About half of those disagreements stem from identical text split into fields differently. When scored with content F1, which ignores field boundaries, agreement reaches 0.967.
 
 ## Open questions
 
-- Why ResuVL-S loses accuracy above 12 tiles, and why 2 pages per step scored lower.
-- Merging the pages of one CV, and faster CPU inference through quantisation.
+Several open questions remain unresolved in current releases:
+- **ResuVL-S degradation**: Why ResuVL-S loses accuracy above 12 tiles, and why 2 pages per step scored lower.
+- **Document handling and CPU deployment**: Merging the pages of one CV, and achieving faster CPU inference through quantisation.
+

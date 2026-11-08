@@ -1,8 +1,6 @@
 # Model card
 
-The three models are released on Hugging Face as [ResuVL-L](https://huggingface.co/furkankucuk/ResuVL-L), [ResuVL-M](https://huggingface.co/furkankucuk/ResuVL-M) and
-[ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S). ResuVL-L v0.1 (0.94B, 0.735 on the test pages), the
-ResuVL-L of version 0.1.0, stays available as revision `v0.1.0` of the ResuVL-L repository. ResuVL-L needs transformers 5.2 or later.
+The three models are released on Hugging Face as [ResuVL-L](https://huggingface.co/furkankucuk/ResuVL-L), [ResuVL-M](https://huggingface.co/furkankucuk/ResuVL-M) and [ResuVL-S](https://huggingface.co/furkankucuk/ResuVL-S). ResuVL-L needs transformers 5.2 or later. ResuVL-L v0.1 (0.94B parameters, 0.735 on the test pages), the ResuVL-L of version 0.1.0, stays available as revision `v0.1.0` of the ResuVL-L repository.
 
 | | ResuVL-L | ResuVL-M | ResuVL-S |
 |---|---|---|---|
@@ -15,51 +13,39 @@ ResuVL-L of version 0.1.0, stays available as revision `v0.1.0` of the ResuVL-L 
 
 ## Intended use
 
-Reading one CV page image (or a rendered PDF page) and writing its content as JSON in a fixed schema, on the
-machine that holds the CV. Output is a draft for a person or an applicant-tracking system to check.
+The models read one CV page image (or a rendered PDF page) and write its content as JSON in a fixed schema. Output is a draft for a person or an applicant-tracking system to check. This runs on the machine that holds the CV.
 
 ## Not intended for
 
-Ranking or rejecting candidates. The model extracts what is written; it does not judge it, and its errors (left-out
-values and misread ones, about 17 % of label values on the test pages for ResuVL-L) must not decide anything about a person without review.
+The models are not intended for ranking or rejecting candidates. Model errors must not decide anything about a person without review. The model extracts what is written and does not judge it, with left-out and misread values affecting about 17 % of label values on the test pages for ResuVL-L.
 
 ## Training data
 
-1,393 CV page images from the [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu)
-(invoiceModelisation, Roboflow Universe, CC BY 4.0), labelled by GLM-5.3-Flash. 80 % French and
-19 % English CVs, single pages. Some development runs added pages from `hadikp/resume-data-pdf`, whose licence could
-not be verified; the released weights were trained without them.
+The training data contains 1,393 CV page images from the [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu) (invoiceModelisation, Roboflow Universe, CC BY 4.0), labelled by GLM-5.3-Flash. Some development runs added pages from `hadikp/resume-data-pdf`, whose licence could not be verified; the released weights were trained without them. These single pages are 80 % French and 19 % English CVs.
 
 ## Limits of the training data
 
-**The labels come from a model that was not made for French.** Every label was written by GLM-5.3-Flash, whose
-model card lists English and Chinese as its languages, while 80 % of the CVs are French. Its errors on French text
-become part of the training labels, and the students learn them. The 254 test and development pages were reviewed by
-hand starting from those labels, and the review changed fewer than 1 % of values, so the test measures agreement with
-reviewed model labels, not with labels written independently by people. Run a second time, the labelling model scores
-0.912 against the reviewed labels, which limits what models trained on its labels can reach.
+**The labels come from a model that was not made for French.** Every label was written by GLM-5.3-Flash, whose model card lists English and Chinese as its languages, while 80 % of the CVs are French. Its errors on French text become part of the training labels, and the students learn them.
 
-**English-trained base models, a small and narrow sample of French.** The base models that ResuVL was fine-tuned
-from learned to read mostly on English text. Those of ResuVL-S and ResuVL-M list English as their only language;
-those of ResuVL-L and ResuVL-L v0.1 are listed as multilingual, but neither model card gives a share per
-language, and French is likely a small part of their training data next to English. The training set here gives about 330,000 words of French from 1,116 CV pages, and it is narrow
-French: names, job titles, school names, dates and short skill lists, with half of all values one word long and few
-full sentences. Fine-tuning therefore asks models that read English well to learn to read French from a small and
-narrow sample, which covers little of French spelling, accents and vocabulary, while long training on it may weaken
-the English reading they started with. This makes training harder; how much of the remaining error it causes has not
-been measured.
+The 254 test and development pages were reviewed by hand starting from those labels, and the review changed fewer than 1 % of values. The test therefore measures agreement with reviewed model labels, not with labels written independently by people. Run a second time, the labelling model scores 0.912 against the reviewed labels, which limits what models trained on its labels can reach.
+
+**English-trained base models, a small and narrow sample of French.** The base models that ResuVL was fine-tuned from learned to read mostly on English text:
+- **ResuVL-S and ResuVL-M**: list English as their only language.
+- **ResuVL-L and ResuVL-L v0.1**: listed as multilingual, but neither model card gives a share per language, and French is likely a small part next to English.
+
+The training set here gives about 330,000 words of French from 1,116 CV pages. This French is narrow: names, job titles, school names, dates and short skill lists. Half of all values are one word long, with few full sentences.
+
+Fine-tuning asks models that read English well to learn to read French from a small and narrow sample. This covers little of French spelling, accents and vocabulary, while long training on it may weaken the English reading they started with. This makes training harder; how much of the remaining error it causes has not been measured.
 
 ## Evaluation
 
-Field F1 on 204 held-out human-reviewed test pages (scored once), after choosing on 50 reviewed and 79 validation pages ([evaluation.md](evaluation.md)). The labelling model,
-run a second time on 50 reviewed pages, scores 0.912 lenient F1 against them; this variation between labelling runs
-limits what models trained on its labels can reach.
+Models are evaluated by field F1 on 204 held-out human-reviewed test pages, scored once after choosing on 50 reviewed and 79 validation pages ([evaluation.md](evaluation.md)). Variation between labelling runs limits what models trained on its labels can reach. Run a second time on 50 reviewed pages, the labelling model scores 0.912 lenient F1 against them.
 
 ## Limitations
 
-- One page at a time; multi-page CVs are returned page by page.
-- Drafted decoding (`--drafts`) gives the same F1 as plain decoding, but in bf16 about one answer in four differs
-  somewhere from the plain answer, by rounding; it gives no speed-up on a CPU.
+The models have five limitations:
+- **One page at a time**; multi-page CVs are returned page by page.
+- **Drafted decoding** (`--drafts`) gives the same F1 as plain decoding. In bf16, about one answer in four differs somewhere from the plain answer, by rounding; it gives no speed-up on a CPU.
 - Other languages, scripts and very unusual layouts are untested.
 - Text written visibly on the page is read like any other text; robustness to injected instructions is not measured.
 - Pages with no parseable answer on the test set: 2 of 204 (ResuVL-L), 4 (ResuVL-M), 13 (ResuVL-S, which also hits the token limit on 7 pages).
@@ -67,3 +53,4 @@ limits what models trained on its labels can reach.
 ## Licence
 
 Weights: CC BY-NC 4.0 (noncommercial). Each base model's own licence also applies.
+

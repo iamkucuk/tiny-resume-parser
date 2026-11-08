@@ -1,11 +1,10 @@
 # Cluster jobs
 
-SLURM scripts for the reported runs. They contain no cluster-specific settings:
+These SLURM scripts run the reported runs. They contain no cluster-specific settings:
 
-- Submit from the repository root. The scripts read code and data from that folder and write to `runs/NAME/`.
-- Put the environment in `slurm/site.sh` (copy [`site.example.sh`](site.example.sh)): which Python environment to
-  activate and where models are cached. Every script sources it if it exists.
-- Pass cluster flags (partition, account, log paths) on the `sbatch` command line.
+- **Submit from the repository root**. The scripts read code and data from that folder and write to `runs/NAME/`.
+- **Put the environment in `slurm/site.sh`** (copy [`site.example.sh`](site.example.sh)): which Python environment to activate and where models are cached. Every script sources it if it exists.
+- **Pass cluster flags** (partition, account, log paths) on the `sbatch` command line.
 
 | Script | Job |
 |---|---|
@@ -19,5 +18,5 @@ sbatch -p gpu -A myaccount --gres=gpu:1 --cpus-per-task=16 --time=03:00:00 \
   slurm/exp.slurm resuvl_s_seed1 "--config configs/resuvl-s.toml --seed 1" "--max-patches 12"
 ```
 
-A full fine-tune of ResuVL-L v0.1 takes about 1 hour on one H100, including scoring, and saves up to 6 checkpoints of
-3.5 GB before all but one are deleted.
+A full fine-tune of ResuVL-L v0.1 takes about 1 hour on one H100, including scoring. It saves up to 6 checkpoints of 3.5 GB before all but one are deleted.
+

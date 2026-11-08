@@ -3,20 +3,17 @@
 [![Try the models in Colab](https://img.shields.io/badge/Colab-try%20the%20models-F9AB00?logo=googlecolab)](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/try_resuvl.ipynb)
 [![Train on eight pages in Colab](https://img.shields.io/badge/Colab-train%20on%208%20pages-F9AB00?logo=googlecolab)](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/train_on_eight_pages.ipynb)
 
-Eight labelled CV pages for trying the code without the full dataset. The files use the same format as the full
-label files ([docs/training.md](../docs/training.md#data)), so every command runs on them when
-`TINY_RESUME_PARSER_DATA=examples` is set.
+Eight labelled CV pages allow trying the code without the full dataset. The labels were written by the teacher model and were not reviewed by hand, so they contain the teacher's errors. The files use the same format as the full label files ([docs/training.md](../docs/training.md#data)), so every command runs on them when `TINY_RESUME_PARSER_DATA=examples` is set.
 
 - `train.jsonl`: six pages from the training split.
 - `eval.jsonl`: two pages from the validation split, which no released model was trained on.
 - `pages/`: the page images, at the resolution used in training.
 
-The labels were written by the teacher model and were not reviewed by hand, so they contain the teacher's errors.
-Six pages are enough to see the whole pipeline run and the model memorise them (field F1 0.78, 1.00 and 0.93 on those pages in
-three test runs), but not to read new CVs (0.16, 0.01 and 0.00 on the two unseen pages, against 0.41 for the released
-ResuVL-S): [train_on_eight_pages.ipynb](train_on_eight_pages.ipynb) shows both.
-[train_on_eight_pages_executed.ipynb](train_on_eight_pages_executed.ipynb) is the same notebook after a full run on an Apple M2 Max (12 minutes), with
-all outputs saved ([open it in Colab](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/train_on_eight_pages_executed.ipynb)); its widgets show only after running it again.
+Six pages are enough to see the whole pipeline run and the model memorise them, but not to read new CVs:
+- **Six memorised pages**: field F1 of 0.78, 1.00, and 0.93 across three test runs.
+- **Two unseen pages**: field F1 of 0.16, 0.01, and 0.00 across those three runs, against 0.41 for the released ResuVL-S.
+
+[train_on_eight_pages.ipynb](train_on_eight_pages.ipynb) shows both. [train_on_eight_pages_executed.ipynb](train_on_eight_pages_executed.ipynb) is the same notebook after a full run on an Apple M2 Max (12 minutes), with all outputs saved ([open it in Colab](https://colab.research.google.com/github/iamkucuk/tiny-resume-parser/blob/main/examples/train_on_eight_pages_executed.ipynb)). Its widgets show only after running it again.
 
 ## Quickstart
 
@@ -29,5 +26,5 @@ tiny-resume-parser evaluate --model runs/example/model --labels examples/eval.js
 
 ## Source
 
-The page images come from the [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu)
-by invoiceModelisation on Roboflow Universe, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+The page images come from the [Cv Parsing Dataset](https://universe.roboflow.com/invoicemodelisation/cv-parsing-ksgbu) by invoiceModelisation on Roboflow Universe, licensed [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+
